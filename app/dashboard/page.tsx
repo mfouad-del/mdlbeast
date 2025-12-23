@@ -2,19 +2,25 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { LayoutDashboard, FilePlus, FileMinus, Search, Users, LogOut } from "lucide-react"
+import { LayoutDashboard, FilePlus, FileMinus, Search, Users, LogOut, Scan, FileText, Briefcase, Database } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
 import type { Correspondence, User, SystemSettings } from "@/types"
 import Dashboard from "@/components/Dashboard"
 import DocumentForm from "@/components/DocumentForm"
 import DocumentList from "@/components/DocumentList"
+import BarcodeScanner from "@/components/BarcodeScanner"
+import ReportGenerator from "@/components/ReportGenerator"
+import UserManagement from "@/components/UserManagement"
 
 export default function DashboardPage() {
   const router = useRouter()
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [activeTab, setActiveTab] = useState("dashboard")
   const [docs, setDocs] = useState<Correspondence[]>([])
+  const [tenants, setTenants] = useState<any[]>([])
+  const [users, setUsers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [newTenant, setNewTenant] = useState({ name: '', slug: '', logo_url: '' })
 
   const [settings] = useState<SystemSettings>({
     primaryColor: "#0f172a",
@@ -33,7 +39,7 @@ export default function DashboardPage() {
         setCurrentUser(user)
 
         const documents = await apiClient.getDocuments()
-        const mappedDocs = documents.map((doc: any) => ({
+        const mappedDocs = (documents || []).map((doc: any) => ({
           ...doc,
           barcodeId: doc.barcode,
           title: doc.subject,
@@ -41,6 +47,17 @@ export default function DashboardPage() {
           documentDate: doc.date,
         }))
         setDocs(mappedDocs)
+
+        // tenants and users
+        try {
+          const t = await apiClient.getTenants().catch(() => [])
+          setTenants(t || [])
+
+          const u = await apiClient.getUsers().catch(() => [])
+          setUsers(u || [])
+        } catch (e) {
+          console.warn('Failed to load tenants or users', e)
+        }
       } catch (error) {
         console.error("Failed to load data:", error)
         router.push("/")
@@ -135,7 +152,11 @@ export default function DashboardPage() {
           <NavItem id="outgoing" label="قيد صادر جديد" icon={FileMinus} />
           <NavItem id="list" label="الأرشيف والبحث" icon={Search} />
           <div className="h-px bg-slate-100 my-4 mx-4"></div>
+          <NavItem id="scanner" label="تتبع الباركود" icon={Scan} />
+          <NavItem id="reports" label="مركز التقارير" icon={FileText} />
           <NavItem id="users" label="إدارة المستخدمين" icon={Users} adminOnly />
+          <NavItem id="companies" label="إدارة المؤسسات" icon={Briefcase} adminOnly />
+          <NavItem id="backup" label="النسخ الاحتياطي" icon={Database} adminOnly />
         </nav>
 
         <div className="p-6 border-t border-slate-100 bg-slate-50/30">
@@ -167,7 +188,67 @@ export default function DashboardPage() {
           {activeTab === "incoming" && <DocumentForm type="INCOMING" onSave={handleSaveDoc} />}
           {activeTab === "outgoing" && <DocumentForm type="OUTGOING" onSave={handleSaveDoc} />}
           {activeTab === "list" && <DocumentList docs={docs} settings={settings} />}
-        </div>
+          {activeTab === "scanner" && <BarcodeScanner />}
+          {activeTab === "reports" && <ReportGenerator docs={docs} settings={{ orgName: settings.orgName || '', logoUrl: settings.logoUrl || '' }} />}
+          {activeTab === "users" && <UserManagement users={users} onUpdateUsers={async () => { const u = await apiClient.getUsers().catch(()=>[]); setUsers(u); }} currentUserEmail={currentUser?.username || ''} />}
+          {activeTab === 'companies' && (
+            <div className="space-y-8">
+              <div className="bg-white p-8 rounded-3xl border border-slate-200">
+                <h3 className="text-xl font-black mb-6">إدارة المؤسسات</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <input value={newTenant.name} onChange={e => setNewTenant({...newTenant, name: e.target.value})} placeholder="اسم المؤسسة" className="w-full p-3 border rounded" />
+                    <input value={newTenant.logo_url} onChange={e => setNewTenant({...newTenant, logo_url: e.target.value})} placeholder="رابط الشعار" className="w-full p-3 border rounded" />
+                    <button className="bg-slate-900 text-white px-6 py-3 rounded" onClick={async () => {
+                      try {
+                        const slug = (newTenant.name || '').toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, '-').replace(/--+/g,'-')
+                        await apiClient.createTenant({ name: newTenant.name, slug, logo_url: newTenant.logo_url })
+                        const t = await apiClient.getTenants(); setTenants(t)
+                        setNewTenant({name:'',slug:'',logo_url:''})
+                      } catch (err) { console.error(err); alert('فشل الإنشاء') }
+                    }}>إنشاء مؤسسة</button>
+                  </div>
+                  <div>
+                    <div className="space-y-3 max-h-64 overflow-auto">
+                      {tenants.map(t => (
+                        <div key={t.id} className="p-3 border rounded flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <img src={t.logo_url} className="w-10 h-10 object-contain" />
+                            <div>
+                              <div className="font-black">{t.name}</div>
+                              <div className="text-xs text-slate-400">{t.slug}</div>
+                            </div>
+                          </div>
+                          <div>
+                            <button className="text-red-500" onClick={async () => { if (!confirm('حذف؟')) return; try { await apiClient.deleteTenant(t.id); setTenants(await apiClient.getTenants()); } catch(e){alert('فشل حذف')} }}>حذف</button>
+                          </div>
+                        </div>
+                      ))}
+                      {tenants.length === 0 && <div className="p-3 text-slate-400">لا توجد مؤسسات مسجلة</div>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          {activeTab === 'backup' && (
+            <div className="space-y-6">
+              <div className="bg-white p-8 rounded-3xl border border-slate-200">
+                <h3 className="text-xl font-black mb-4">تصدير البيانات</h3>
+                <p className="text-sm text-slate-500 mb-4">يمكنك تنزيل نسخة JSON من البيانات الحالية (المستندات، المؤسسات، المستخدمين).</p>
+                <div className="flex gap-3">
+                  <button className="bg-slate-900 text-white px-6 py-3 rounded" onClick={async () => {
+                    try {
+                      const [docsData, tenantsData, usersData] = await Promise.all([apiClient.getDocuments(), apiClient.getTenants(), apiClient.getUsers().catch(()=>[])]);
+                      const payload = { docs: docsData, tenants: tenantsData, users: usersData, generated_at: new Date().toISOString() }
+                      const blob = new Blob([JSON.stringify(payload,null,2)], { type: 'application/json' });
+                      const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `backup-${new Date().toISOString().replace(/:/g,'-')}.json`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+                    } catch (err) { console.error(err); alert('فشل التصدير') }
+                  }}>تحميل JSON</button>
+                </div>
+              </div>
+            </div>
+          )}        </div>
       </main>
     </div>
   )

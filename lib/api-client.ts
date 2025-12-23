@@ -38,10 +38,28 @@ class ApiClient {
       (headers as any)["Authorization"] = `Bearer ${this.token}`
     }
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers,
-    })
+    // Timeout & abort support
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 10000)
+
+    let response: Response
+    try {
+      response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        ...options,
+        headers,
+        signal: controller.signal,
+      })
+    } catch (err: any) {
+      if (err.name === 'AbortError') throw new Error('Request timeout')
+      throw err
+    } finally {
+      clearTimeout(timeout)
+    }
+
+    // Treat 204 No Content and 304 Not Modified as empty responses
+    if (response.status === 204 || response.status === 304) {
+      return null as any
+    }
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: "Network error" }))
@@ -71,7 +89,8 @@ class ApiClient {
   // Documents
   async getDocuments(params?: { status?: string; type?: string; search?: string }) {
     const queryParams = new URLSearchParams(params as any).toString()
-    return this.request<any[]>(`/documents${queryParams ? `?${queryParams}` : ""}`)
+    const res = await this.request<any[]>(`/documents${queryParams ? `?${queryParams}` : ""}`)
+    return res || []
   }
 
   async getDocumentByBarcode(barcode: string) {
@@ -174,7 +193,12 @@ class ApiClient {
   }
 
   async getCurrentUser() {
-    return this.request<any>("/users/me")
+    try {
+      return await this.request<any>("/users/me")
+    } catch (err) {
+      // return null on 401/timeout/etc to allow UI to handle redirects
+      return null
+    }
   }
 }
 
