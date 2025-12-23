@@ -8,7 +8,14 @@ DirectoryIndex index.html
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
-  # DO NOT rewrite _next or static files (serve binary assets directly)
+  # If a request comes to /_next or /static at the site root, internally rewrite it to /archive
+  # This allows requests like https://zaco.sa/_next/... to be served from /archive/_next/...
+  RewriteCond %{REQUEST_URI} ^/_next/ [OR]
+  RewriteCond %{REQUEST_URI} ^/static/ [OR]
+  RewriteCond %{REQUEST_URI} \.(css|js|png|jpg|jpeg|gif|svg|woff2|woff|ttf|otf|eot|ico)$ [NC]
+  RewriteRule ^(.*)$ /archive/$1 [L]
+
+  # DO NOT rewrite already-correct archive _next/static requests
   RewriteCond %{REQUEST_URI} ^/archive/_next/ [OR]
   RewriteCond %{REQUEST_URI} ^/archive/static/ [OR]
   RewriteCond %{REQUEST_URI} \.(css|js|png|jpg|jpeg|gif|svg|woff2|woff|ttf|otf|eot|ico)$ [NC]

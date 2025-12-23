@@ -1,5 +1,13 @@
 # Public root-level .htaccess to protect /archive from site-wide redirects and WordPress rewrites
 
+# Ensure requests to /_next and /static are served from /archive
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  # Internally map requests like /_next/* -> /archive/_next/* (avoid WP catching them)
+  RewriteRule ^_next/(.*)$ /archive/_next/$1 [L]
+  RewriteRule ^static/(.*)$ /archive/static/$1 [L]
+</IfModule>
+
 # Force canonical host: redirect www to non-www (preserve path)
 <IfModule mod_rewrite.c>
   RewriteEngine On
@@ -31,6 +39,8 @@
 <IfModule mod_headers.c>
   <FilesMatch "\.(ttf|otf|eot|woff|woff2)$">
     Header set Access-Control-Allow-Origin "*"
+    # Also set CORS for cross-host fetches
+    Header set Access-Control-Allow-Methods "GET, OPTIONS"
   </FilesMatch>
 </IfModule>
 
