@@ -162,18 +162,45 @@ app.post("/debug/reset-db", async (req, res) => {
       path.resolve(process.cwd(), "scripts"),            // working directory scripts
     ]
 
+    // helper: check candidate has both SQL files
+    const hasBoth = (dir: string) => {
+      try {
+        return fs.existsSync(path.join(dir, "01_create_tables.sql")) && fs.existsSync(path.join(dir, "02_seed_data.sql"))
+      } catch (e) {
+        return false
+      }
+    }
+
     let base: string | null = null
     for (const c of candidates) {
-      if (fs.existsSync(c)) {
+      if (hasBoth(c)) {
         base = c
         break
       }
     }
 
+    // If not found yet, walk up from current dir to find a scripts folder with the files
     if (!base) {
-      throw new Error("SQL scripts not found. Searched: " + candidates.join(", "))
+      let cur = path.resolve(process.cwd())
+      for (let i = 0; i < 6; i++) {
+        const candidate = path.join(cur, "scripts")
+        if (hasBoth(candidate)) {
+          base = candidate
+          break
+        }
+        const parent = path.dirname(cur)
+        if (parent === cur) break
+        cur = parent
+      }
     }
 
+    if (!base) {
+      // helpful debug info
+      const tried = candidates.concat([path.resolve(process.cwd())]).join(", ")
+      throw new Error("SQL scripts not found. Searched: " + tried + "; __dirname=" + __dirname + " cwd=" + process.cwd())
+    }
+
+    console.log("Reset DB: using scripts dir:", base)
     const createSql = fs.readFileSync(path.join(base, "01_create_tables.sql"), "utf8")
     const seedSql = fs.readFileSync(path.join(base, "02_seed_data.sql"), "utf8")
 
