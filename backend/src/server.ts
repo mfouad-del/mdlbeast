@@ -39,18 +39,23 @@ app.get("/health", (_req, res) => {
   res.send("ok")
 })
 
-// Debug DB check (only enabled when DEBUG=true)
-if (process.env.DEBUG === "true") {
-  app.get("/debug/db", async (_req, res) => {
+// Debug DB check (enabled with DEBUG=true or with a secret via DEBUG_SECRET)
+const DEBUG_SECRET = process.env.DEBUG_SECRET || ""
+app.get("/debug/db", async (req, res) => {
+  const secret = req.query.secret
+  if (process.env.DEBUG === "true" || (typeof secret === "string" && secret === DEBUG_SECRET && DEBUG_SECRET !== "")) {
     try {
       const result = await query("SELECT COUNT(*)::int as cnt FROM users")
-      res.json({ users: result.rows[0].cnt })
+      const cols = await query("SELECT column_name FROM information_schema.columns WHERE table_name='users'")
+      res.json({ users: result.rows[0].cnt, columns: cols.rows.map((r) => r.column_name) })
     } catch (err: any) {
       console.error("Debug DB error:", err)
       res.status(500).json({ error: err.message || String(err) })
     }
-  })
-}
+  } else {
+    res.status(404).send("Not found")
+  }
+})
 
 // Routes
 app.use("/api/auth", authRoutes)
