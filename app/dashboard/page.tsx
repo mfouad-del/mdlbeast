@@ -102,7 +102,7 @@ export default function DashboardPage() {
   if (!currentUser) return null
 
   const NavItem = ({ id, label, icon: Icon, adminOnly = false }: any) => {
-    if (adminOnly && currentUser.role !== "ADMIN") return null
+    if (adminOnly && String(currentUser?.role || '').toLowerCase() !== 'admin') return null
     return (
       <button
         onClick={() => setActiveTab(id)}
@@ -154,7 +154,7 @@ export default function DashboardPage() {
                 {currentUser.full_name || currentUser.name}
               </div>
               <div className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
-                {currentUser.role === "ADMIN" ? "مدير نظام" : "محرر"}
+                {String(currentUser.role || '').toLowerCase() === 'admin' ? "مدير نظام" : "محرر"}
               </div>
             </div>
           </div>
