@@ -303,7 +303,7 @@ app.post("/debug/run-migration", async (req, res) => {
 
   try {
     const filename = String(req.query.file || req.body?.file || "").trim()
-    const allowed = new Set(["01_create_tables.sql", "02_seed_data.sql", "03_create_modules_tables.sql"])
+    const allowed = new Set(["01_create_tables.sql", "02_seed_data.sql", "03_create_modules_tables.sql", "04_seed_modules.sql"])
     if (!allowed.has(filename)) {
       return res.status(400).json({ error: "Invalid or unsupported migration file" })
     }

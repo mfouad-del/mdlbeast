@@ -28,6 +28,21 @@ router.get("/", async (req: Request, res: Response) => {
   }
 })
 
+// Get timeline for barcode
+router.get("/:barcode/timeline", async (req: Request, res: Response) => {
+  try {
+    const { barcode } = req.params
+    const bc = await query("SELECT id FROM barcodes WHERE barcode = $1 LIMIT 1", [barcode])
+    if (bc.rows.length === 0) return res.status(404).json({ error: "Not found" })
+    const bcId = bc.rows[0].id
+    const t = await query("SELECT id, actor_id, action, meta, created_at FROM barcode_timeline WHERE barcode_id = $1 ORDER BY created_at DESC", [bcId])
+    res.json(t.rows)
+  } catch (err: any) {
+    console.error("Get timeline error:", err)
+    res.status(500).json({ error: "Failed to fetch timeline" })
+  }
+})
+
 // Add timeline entry
 router.post("/:barcode/timeline", async (req: Request, res: Response) => {
   try {
