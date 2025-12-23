@@ -78,7 +78,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, c
 
   const startEditing = (user: User) => {
     setEditingUserId(user.id);
-    setEditUser({ name: user.full_name || user.name || user.username || '', email: user.email, password: '', role: user.role });
+    setEditUser({ name: user.full_name || user.name || user.username || '', email: user.email || user.username || '', password: '', role: user.role });
     setShowAddForm(false);
   };
 
@@ -115,9 +115,11 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, c
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2">البريد الإلكتروني</label>
               <div className="relative">
                 <Mail className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                <input required type="email" className="w-full pr-12 p-4 bg-slate-50 rounded-2xl outline-none focus:bg-white focus:border-slate-900 font-bold" 
-                  value={editingUserId ? editUser.email : newUser.email} 
-                  onChange={e => editingUserId ? setEditUser({...editUser, email: e.target.value}) : setNewUser({...newUser, email: e.target.value})} />
+                <input type="email" className={`w-full pr-12 p-4 rounded-2xl outline-none focus:bg-white focus:border-slate-900 font-bold ${editingUserId ? 'bg-slate-100 cursor-not-allowed' : 'bg-slate-50'}`} 
+                  value={editingUserId ? (editUser.email || '') : newUser.email} 
+                  onChange={e => editingUserId ? setEditUser({...editUser, email: e.target.value}) : setNewUser({...newUser, email: e.target.value})} 
+                  required={!editingUserId} readOnly={!!editingUserId} />
+                {editingUserId && <div className="text-[10px] text-slate-400 mt-2">لا يمكن تغيير البريد من هنا. لإعادة تعيين البريد تواصل مع المسؤول.</div>
               </div>
            </div>
            <div className="space-y-2">
