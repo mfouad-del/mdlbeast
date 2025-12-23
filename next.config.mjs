@@ -12,10 +12,10 @@ const nextConfig = {
     ],
     unoptimized: true,
   },
-  basePath: process.env.NEXT_BASE_PATH || undefined,
-  assetPrefix: process.env.NEXT_BASE_PATH || undefined,
+  basePath: process.env.NEXT_BASE_PATH || '/archive',
+  assetPrefix: process.env.NEXT_BASE_PATH || '/archive',
   trailingSlash: true,
-  output: "standalone",
+  output: "export",
 }
 
 export default nextConfig
