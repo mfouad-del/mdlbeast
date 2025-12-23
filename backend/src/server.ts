@@ -75,13 +75,37 @@ app.get("/debug/db", async (req, res) => {
   }
 })
 
-// Routes
-app.use("/api/auth", authRoutes)
-app.use("/api/documents", documentRoutes)
-app.use("/api/users", userRoutes)
+// Debug: hash plaintext passwords for users that are not bcrypt hashes
+app.post("/debug/hash-passwords", async (req, res) => {
+  const secret = req.query.secret
+  if (!(process.env.DEBUG === "true" || (typeof secret === "string" && secret === DEBUG_SECRET && DEBUG_SECRET !== ""))) {
+    return res.status(404).send("Not found")
+  }
 
-// Error handling
-app.use(errorHandler)
+  try {
+    const usersRes = await query("SELECT id, password FROM users")
+    const toUpdate: Array<{ id: any; old: string; newHash?: string }> = []
+    for (const row of usersRes.rows) {
+      const p = String(row.password || "")
+      if (!p.startsWith("$2")) {
+        // not a bcrypt hash
+        toUpdate.push({ id: row.id, old: p })
+      }
+    }
+
+    const updated: Array<{ id: any }> = []
+    for (const u of toUpdate) {
+      const hashed = await (await import("bcrypt")).hash(u.old, 10)
+      await query("UPDATE users SET password = $1 WHERE id = $2", [hashed, u.id])
+      updated.push({ id: u.id })
+    }
+
+    res.json({ updatedCount: updated.length, updated })
+  } catch (err: any) {
+    console.error("Hash passwords error:", err)
+    res.status(500).json({ error: err.message || String(err) })
+  }
+})
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`)
