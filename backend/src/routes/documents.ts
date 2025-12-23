@@ -1,4 +1,5 @@
 import express from "express"
+import type { Request, Response } from "express"
 import { body, validationResult } from "express-validator"
 import { query } from "../config/database"
 import { authenticateToken } from "../middleware/auth"
@@ -10,7 +11,7 @@ const router = express.Router()
 router.use(authenticateToken)
 
 // Get all documents
-router.get("/", async (req, res) => {
+router.get("/", async (req: Request, res: Response) => {
   try {
     const { status, type, search, limit = 100, offset = 0 } = req.query
 
