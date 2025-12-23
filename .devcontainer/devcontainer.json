@@ -1,0 +1,15 @@
+{
+  "name": "Zaco Archive Dev Container",
+  "image": "mcr.microsoft.com/vscode/devcontainers/javascript-node:20",
+  "features": {},
+  "postCreateCommand": "npm install && cd backend && npm install",
+  "extensions": [
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "ms-azuretools.vscode-docker"
+  ],
+  "forwardPorts": [3000, 3001],
+  "settings": {
+    "terminal.integrated.shell.linux": "/bin/bash"
+  }
+}

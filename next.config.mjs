@@ -12,10 +12,14 @@ const nextConfig = {
     ],
     unoptimized: true,
   },
-  // basePath: '/archive', // قم بإلغاء التعليق عند النشر على zaco.sa/archive
-  // assetPrefix: '/archive',
+  const BASE_PATH = process.env.NEXT_BASE_PATH || ''
+  const ASSET_PREFIX = BASE_PATH || ''
+  basePath: BASE_PATH || undefined,
+  assetPrefix: ASSET_PREFIX || undefined,
   trailingSlash: true,
   output: "standalone",
 }
+
+export { BASE_PATH as nextBasePath }
 
 export default nextConfig
