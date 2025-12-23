@@ -18,6 +18,4 @@ const nextConfig = {
   output: "standalone",
 }
 
-export { BASE_PATH as nextBasePath }
-
 export default nextConfig
