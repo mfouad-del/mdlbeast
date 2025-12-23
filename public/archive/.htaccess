@@ -3,6 +3,8 @@
 # - Set CORS headers for fonts and common static assets
 # - Prevent directory listing
 
+DirectoryIndex index.html
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
@@ -18,9 +20,11 @@
   <FilesMatch "\.(ttf|ttc|otf|eot|woff|woff2|css|js)$">
     Header set Access-Control-Allow-Origin "*"
     Header set Access-Control-Allow-Methods "GET, OPTIONS"
-    Header always set Access-Control-Allow-Headers "*"
+    # Avoid setting Access-Control-Allow-Headers here to prevent server errors on some hosts
   </FilesMatch>
 </IfModule>
 
 # Prevent directory listing
-Options -Indexes
+<IfModule mod_autoindex.c>
+  Options -Indexes
+</IfModule>
