@@ -107,6 +107,40 @@ app.post("/debug/hash-passwords", async (req, res) => {
   }
 })
 
+// Debug: list registered routes (protected)
+app.get("/debug/routes", (req, res) => {
+  const secret = req.query.secret
+  if (!(process.env.DEBUG === "true" || (typeof secret === "string" && secret === DEBUG_SECRET && DEBUG_SECRET !== ""))) {
+    return res.status(404).send("Not found")
+  }
+
+  try {
+    // extract route info from Express stack
+    const routes: Array<{ method: string; path: string }> = []
+    ;(app as any)._router.stack.forEach((middleware: any) => {
+      if (middleware.route) {
+        // routes registered directly on the app
+        const m = Object.keys(middleware.route.methods)[0].toUpperCase()
+        routes.push({ method: m, path: middleware.route.path })
+      } else if (middleware.name === "router") {
+        // router middleware
+        middleware.handle.stack.forEach((handler: any) => {
+          const route = handler.route
+          if (route) {
+            const method = Object.keys(route.methods)[0].toUpperCase()
+            routes.push({ method, path: route.path })
+          }
+        })
+      }
+    })
+
+    res.json({ routes })
+  } catch (err: any) {
+    console.error("Debug routes error:", err)
+    res.status(500).json({ error: err.message || String(err) })
+  }
+})
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`)
 })
