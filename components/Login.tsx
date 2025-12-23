@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation"
 import { Lock, Mail, ShieldCheck, RefreshCw, LogIn } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
 
-export default function Login() {
+export default function Login({ onLogin, logoUrl }: { onLogin?: (u: any) => void; logoUrl?: string }) {
   const router = useRouter()
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
@@ -42,6 +42,7 @@ export default function Login() {
 
       const data = await apiClient.login(username, password)
       localStorage.setItem("archivx_session_user", JSON.stringify(data.user))
+      if (onLogin) onLogin(data.user)
       router.push("/dashboard")
     } catch (err: any) {
       setError(err.message || "خطأ في اسم المستخدم أو كلمة المرور")
@@ -59,7 +60,7 @@ export default function Login() {
 
           <header className="text-center mb-10">
             <img
-              src="https://www.zaco.sa/logo2.png"
+              src={logoUrl || 'https://www.zaco.sa/logo2.png'}
               className="h-14 mx-auto mb-6 object-contain grayscale"
               alt="Logo"
             />
