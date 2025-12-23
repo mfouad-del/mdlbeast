@@ -24,11 +24,22 @@ router.post(
     try {
       const { username, password } = req.body
 
-      // Accept either email or username in the login field to support both DB schemas
-      const result = await query(
-        "SELECT * FROM users WHERE email = $1 OR username = $1 LIMIT 1",
-        [username],
+      // Accept either email or username in the login field to support different DB schemas.
+      // Check whether the `email` column exists first to avoid SQL errors on DBs without it.
+      const colRes = await query(
+        "SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'email' LIMIT 1",
       )
+      const hasEmail = colRes.rows.length > 0
+
+      let result: any
+      if (hasEmail) {
+        result = await query(
+          "SELECT * FROM users WHERE email = $1 OR username = $1 LIMIT 1",
+          [username],
+        )
+      } else {
+        result = await query("SELECT * FROM users WHERE username = $1 LIMIT 1", [username])
+      }
 
       if (result.rows.length === 0) {
         return res.status(401).json({ error: "Invalid credentials" })
