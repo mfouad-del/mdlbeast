@@ -1,0 +1,26 @@
+# .htaccess for the /archive static export folder
+# - Avoid rewrites for static/_next assets
+# - Set CORS headers for fonts and common static assets
+# - Prevent directory listing
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # DO NOT rewrite _next or static files (serve binary assets directly)
+  RewriteCond %{REQUEST_URI} ^/archive/_next/ [OR]
+  RewriteCond %{REQUEST_URI} ^/archive/static/ [OR]
+  RewriteCond %{REQUEST_URI} \.(css|js|png|jpg|jpeg|gif|svg|woff2|woff|ttf|otf|eot|ico)$ [NC]
+  RewriteRule .* - [L]
+</IfModule>
+
+# CORS for fonts and static assets
+<IfModule mod_headers.c>
+  <FilesMatch "\.(ttf|ttc|otf|eot|woff|woff2|css|js)$">
+    Header set Access-Control-Allow-Origin "*"
+    Header set Access-Control-Allow-Methods "GET, OPTIONS"
+    Header always set Access-Control-Allow-Headers "*"
+  </FilesMatch>
+</IfModule>
+
+# Prevent directory listing
+Options -Indexes

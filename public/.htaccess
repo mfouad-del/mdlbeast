@@ -1,0 +1,33 @@
+# Public root-level .htaccess to protect /archive from site-wide redirects and WordPress rewrites
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # --- EXCLUDE /archive from host canonicalization redirects (www/non-www) ---
+  # If your host forces www or non-www, exclude /archive path from that rule.
+  # Example: if you force www, make sure /archive is not redirected.
+  # This rule is a safe no-op that ensures the path is skipped by following redirects.
+  RewriteCond %{REQUEST_URI} !^/archive/ [NC]
+  # Example forced-www redirect (commented out intentionally if host already has one):
+  # RewriteCond %{HTTP_HOST} ^zaco\.sa$ [NC]
+  # RewriteRule ^(.*)$ https://www.zaco.sa/$1 [R=301,L]
+
+  # Ensure /archive is not rewritten to WordPress index.php
+  RewriteRule ^archive/ - [L]
+</IfModule>
+
+# Keep WordPress block but ensure it won't capture /archive
+# BEGIN WordPress
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  RewriteRule ^index\.php$ - [L]
+  RewriteCond %{REQUEST_URI} !^/archive/    # <-- ensure archive is excluded
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /index.php [L]
+</IfModule>
+# END WordPress
+
+# Security: prevent directory listing
+Options -Indexes
