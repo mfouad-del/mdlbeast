@@ -255,6 +255,24 @@ app.post("/debug/reset-db", async (req, res) => {
   }
 })
 
+// Debug: set admin password to known value (admin123) - protected
+app.post("/debug/set-admin-password", async (req, res) => {
+  const secret = req.query.secret
+  if (!(process.env.DEBUG === "true" || (typeof secret === "string" && secret === DEBUG_SECRET && DEBUG_SECRET !== ""))) {
+    return res.status(404).send("Not found")
+  }
+
+  try {
+    const bcrypt = await import("bcrypt")
+    const hashed = await bcrypt.hash("admin123", 10)
+    const upd = await query("UPDATE users SET password = $1 WHERE username = $2 OR email = $2 RETURNING id, username", [hashed, "admin@zaco.sa"])
+    res.json({ updated: upd.rowCount, rows: upd.rows })
+  } catch (err: any) {
+    console.error("Set admin password error:", err)
+    res.status(500).json({ error: err.message || String(err) })
+  }
+})
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`)
 })
