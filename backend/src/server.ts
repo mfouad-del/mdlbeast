@@ -400,6 +400,7 @@ app.get("/debug/backup-db", async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`)
+  console.log(`DEPLOY_HEARTBEAT ${new Date().toISOString()}`)
 })
 
 export default app
