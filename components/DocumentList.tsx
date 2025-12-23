@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import type { Correspondence, SystemSettings } from "@/lib/types"
+import type { Correspondence, SystemSettings } from "@/types"
 import { Search, ArrowRightLeft, FileSpreadsheet, AlertCircle, FileText, Calendar, ScanText } from "lucide-react"
 import { exportToCSV } from "@/lib/barcode-service"
 import BarcodePrinter from "./BarcodePrinter"

@@ -1,6 +1,6 @@
 "use client"
 
-import type { Correspondence } from "@/lib/types"
+import type { Correspondence } from "@/types"
 import { FilePlus, FileMinus, Layers, Calendar, Clock, AlertTriangle } from "lucide-react"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts"
 
