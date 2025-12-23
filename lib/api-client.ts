@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://zaco-backend.onrender.com/api"
 
 interface ApiResponse<T> {
   data?: T
@@ -35,7 +35,7 @@ class ApiClient {
     }
 
     if (this.token) {
-      headers["Authorization"] = `Bearer ${this.token}`
+      (headers as any)["Authorization"] = `Bearer ${this.token}`
     }
 
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
