@@ -285,6 +285,43 @@ app.post("/debug/set-admin-password", async (req, res) => {
   }
 })
 
+// Debug: stream a pg_dump of the database for backup (protected)
+app.get("/debug/backup-db", async (req, res) => {
+  const secret = req.query.secret
+  if (!(process.env.DEBUG === "true" || (typeof secret === "string" && secret === DEBUG_SECRET && DEBUG_SECRET !== ""))) {
+    return res.status(404).send("Not found")
+  }
+
+  try {
+    const { spawn } = await import("child_process")
+    const os = await import("os")
+    const path = await import("path")
+
+    const dbUrl = process.env.DATABASE_URL
+    if (!dbUrl) {
+      return res.status(500).json({ error: "DATABASE_URL not configured" })
+    }
+
+    const filename = `backup-${new Date().toISOString().replace(/[:.]/g, "-")}.dump`
+    res.setHeader("Content-Type", "application/octet-stream")
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`)
+
+    // Use pg_dump if available; stream output to client
+    const args = ["--format=custom", `--dbname=${dbUrl}`]
+    const child = spawn("pg_dump", args)
+
+    child.stdout.pipe(res)
+    child.stderr.on("data", (d) => console.error("pg_dump stderr:", String(d)))
+
+    child.on("exit", (code) => {
+      if (code !== 0) console.error("pg_dump exited with", code)
+    })
+  } catch (err: any) {
+    console.error("Backup DB error:", err)
+    res.status(500).json({ error: err.message || String(err) })
+  }
+})
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`)
 })
