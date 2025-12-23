@@ -146,6 +146,37 @@ app.get("/debug/routes", (req, res) => {
   }
 })
 
+// Debug: verbose route stack (shows mount regexp and handler names)
+app.get("/debug/routes-full", (req, res) => {
+  const secret = req.query.secret
+  if (!(process.env.DEBUG === "true" || (typeof secret === "string" && secret === DEBUG_SECRET && DEBUG_SECRET !== ""))) {
+    return res.status(404).send("Not found")
+  }
+
+  try {
+    const stack = (app as any)._router.stack.map((layer: any) => {
+      const info: any = {
+        name: layer.name,
+        // route paths if present
+        path: layer.route ? layer.route.path : undefined,
+        methods: layer.route ? Object.keys(layer.route.methods) : undefined,
+        // mount regexp (string) for routers
+        regexp: layer.regexp ? String(layer.regexp) : undefined,
+      }
+      // if router, include the nested handlers brief info
+      if (layer.name === 'router' && layer.handle && layer.handle.stack) {
+        info.children = layer.handle.stack.map((l: any) => ({ name: l.name, path: l.route ? l.route.path : undefined, methods: l.route ? Object.keys(l.route.methods) : undefined }))
+      }
+      return info
+    })
+
+    res.json({ stack })
+  } catch (err: any) {
+    console.error("Debug routes-full error:", err)
+    res.status(500).json({ error: err.message || String(err) })
+  }
+})
+
 // Debug: reset the entire public schema and re-run SQL migration + seed scripts
 app.post("/debug/reset-db", async (req, res) => {
   const secret = req.query.secret
