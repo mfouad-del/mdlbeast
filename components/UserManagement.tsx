@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { UserPlus, Trash2, Mail, Lock, UserCircle, Edit3, X, Check } from 'lucide-react';
 import { User } from '../types';
-import { ApiService } from '../services/api';
+import { apiClient } from '../lib/api-client';
 
 interface UserManagementProps {
   users: User[];
@@ -21,20 +21,31 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, c
       alert("هذا البريد الإلكتروني مسجل مسبقاً");
       return;
     }
-    
-    await ApiService.addUser(newUser);
-    onUpdateUsers([]);
-    setNewUser({ name: '', email: '', password: '', role: 'USER' });
-    setShowAddForm(false);
+    try {
+      await apiClient.createUser({ username: newUser.email, password: newUser.password, full_name: newUser.name, role: newUser.role === 'ADMIN' ? 'admin' : 'user' })
+      alert('تم إنشاء المستخدم بنجاح')
+      onUpdateUsers([])
+      setNewUser({ name: '', email: '', password: '', role: 'USER' });
+      setShowAddForm(false);
+    } catch (err: any) {
+      console.error(err)
+      alert(err.message || 'فشل إنشاء المستخدم')
+    }
   };
 
   const handleUpdateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingUserId) return;
-    await ApiService.updateUser(editingUserId, editUser);
-    onUpdateUsers([]);
-    setEditingUserId(null);
-    setEditUser({});
+    try {
+      await apiClient.updateUser(editingUserId, { full_name: editUser.name, role: editUser.role === 'ADMIN' ? 'admin' : 'user', password: editUser.password })
+      alert('تم تحديث المستخدم')
+      onUpdateUsers([])
+      setEditingUserId(null);
+      setEditUser({});
+    } catch (err: any) {
+      console.error(err)
+      alert(err.message || 'فشل تحديث المستخدم')
+    }
   };
 
   const deleteUser = async (id: string, email: string) => {
@@ -43,8 +54,14 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, c
       return;
     }
     if (confirm("هل أنت متأكد من حذف هذا المستخدم؟")) {
-      await ApiService.deleteUser(id);
-      onUpdateUsers([]);
+      try {
+        await apiClient.deleteUser(id)
+        alert('تم حذف المستخدم')
+        onUpdateUsers([])
+      } catch (err: any) {
+        console.error(err)
+        alert(err.message || 'فشل حذف المستخدم')
+      }
     }
   };
 
@@ -142,8 +159,8 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, c
                   </div>
                 </td>
                 <td className="px-8 py-6">
-                  <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black ${u.role === 'ADMIN' ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-blue-50 text-blue-600 border border-blue-100'}`}>
-                    {u.role === 'ADMIN' ? 'مدير نظام' : 'مستخدم'}
+                  <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black ${u.role === "ADMIN" ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-blue-50 text-blue-600 border border-blue-100'}`}>
+                    {u.role === "ADMIN" ? 'مدير نظام' : 'مستخدم'}
                   </span>
                 </td>
                 <td className="px-8 py-6">

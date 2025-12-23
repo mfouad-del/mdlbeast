@@ -18,10 +18,16 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
     return doc.date >= startDate && doc.date <= endDate;
   });
 
+  const [serverStats, setServerStats] = useState<{ total?: number; incoming?: number; outgoing?: number; archived?: number; urgent?: number }>({})
+
+  React.useEffect(() => {
+    import('../lib/api-client').then(m => m.apiClient.getStatistics().then((s: any) => setServerStats(s)).catch(() => {}))
+  }, [])
+
   const stats = {
-    total: filteredDocs.length,
-    incoming: filteredDocs.filter(d => d.type === DocType.INCOMING).length,
-    outgoing: filteredDocs.filter(d => d.type === DocType.OUTGOING).length,
+    total: serverStats.total ?? filteredDocs.length,
+    incoming: serverStats.incoming ?? filteredDocs.filter(d => d.type === DocType.INCOMING).length,
+    outgoing: serverStats.outgoing ?? filteredDocs.filter(d => d.type === DocType.OUTGOING).length,
   };
 
   const handlePrintReport = () => {

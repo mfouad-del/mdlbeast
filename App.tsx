@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { DocType, Correspondence, DocStatus, SystemSettings, Company, User } from './types';
 import { generateBusinessBarcode } from './services/barcodeService';
-import { ApiService } from './services/api';
+import { apiClient } from './lib/api-client';
 import Dashboard from './components/Dashboard';
 import DocumentForm from './components/DocumentForm';
 import DocumentList from './components/DocumentList';
@@ -38,34 +38,52 @@ const App: React.FC = () => {
   const loadInitialData = async () => {
     try {
       setIsLoading(true);
-      const fetchedCompanies = await ApiService.getCompanies();
+      // Tenants (companies)
+      const fetchedCompanies = await apiClient.getTenants().catch((e) => { console.warn('Tenants fetch failed', e); return [] as any[] })
       setCompanies(fetchedCompanies);
       
-      if (fetchedCompanies.length > 0) {
-        const initialId = selectedCompanyId || fetchedCompanies[0].id;
-        setSelectedCompanyId(initialId);
-        const fetchedDocs = await ApiService.getCorrespondence(initialId);
-        setDocs(fetchedDocs);
-      }
-      
-      const fetchedUsers = await ApiService.getUsers();
+      // Documents (global list)
+      const fetchedDocs = await apiClient.getDocuments().catch((e) => { console.warn('Documents fetch failed', e); return [] as any[] })
+      const normalized = (fetchedDocs || []).map((d: any) => ({
+        id: d.id,
+        barcodeId: d.barcode || d.barcode_id || d.barcodeId,
+        title: d.subject || d.title,
+        sender: d.sender,
+        recipient: d.receiver || d.recipient,
+        date: d.date ? d.date.split('T')?.[0] : (d.created_at ? new Date(d.created_at).toISOString().split('T')[0] : ''),
+        priority: d.priority,
+        type: (String(d.type || '').toLowerCase().includes('in') || String(d.type) === 'وارد') ? 'INCOMING' : 'OUTGOING',
+        createdAt: d.created_at
+      }))
+      setDocs(normalized);
+
+      // Users (requires admin/auth)
+      const fetchedUsers = await apiClient.getUsers().catch((e) => { console.warn('Users fetch failed', e); return [] as any[] })
       setUsers(fetchedUsers);
     } catch (e) {
-      console.error("Sync error");
+      console.error("Sync error", e);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadInitialData();
     const savedUser = localStorage.getItem('archivx_session_user');
     if (savedUser) setCurrentUser(JSON.parse(savedUser));
+
+    // If user token exists, try to fetch current user and then load data
+    const tryInit = async () => {
+      try {
+        await apiClient.getCurrentUser().then(u => { setCurrentUser(u) }).catch(() => null)
+      } catch (e) {}
+      loadInitialData();
+    }
+    tryInit();
   }, []);
 
   useEffect(() => {
     if (selectedCompanyId) {
-      ApiService.getCorrespondence(selectedCompanyId).then(setDocs);
+      apiClient.getDocuments({ search: '' }).then(setDocs).catch(() => {});
     }
   }, [selectedCompanyId]);
 
@@ -75,53 +93,32 @@ const App: React.FC = () => {
     const barcode = generateBusinessBarcode(data.type === DocType.INCOMING ? 'IN' : 'OUT');
     const docToSave = {
       ...data,
-      barcodeId: barcode,
-      companyId: selectedCompanyId,
-      status: DocStatus.PENDING,
+      barcode,
+      type: data.type,
+      sender: data.sender,
+      receiver: data.recipient || data.receiver,
       date: new Date().toISOString().split('T')[0],
-      createdAt: new Date().toISOString(),
-      createdBy: currentUser?.name
+      subject: data.title || data.subject,
+      priority: data.priority || 'عادي',
+      status: data.status || 'محفوظ',
     };
 
-    const savedDoc = await ApiService.saveCorrespondence(docToSave);
-    setDocs(prev => [savedDoc, ...prev]);
-    setActiveTab('list');
+    try {
+      const savedDoc = await apiClient.createDocument(docToSave as any);
+      setDocs(prev => [savedDoc, ...prev]);
+      setActiveTab('list');
+    } catch (err) {
+      console.error('Failed to save document', err);
+      alert('فشل حفظ المعاملة إلى الخادم. تأكد من تسجيل الدخول وصلاحيات المستخدم.');
+    }
   };
 
   const handleExportBackup = async () => {
-    const json = await ApiService.exportFullBackup();
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `ArchivX_FULL_BACKUP_${new Date().toISOString().replace(/:/g, '-')}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    alert('Export via server is restricted to admins. Use the backup endpoint on the server or contact the administrator.');
   };
 
   const handleImportBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!confirm("⚠️ تحذير أمني: استعادة النسخة الاحتياطية ستمسح كافة البيانات الحالية (المراسلات، المؤسسات، المستخدمين) وتستبدلها ببيانات الملف. هل تود الاستمرار؟")) {
-      if (backupFileInputRef.current) backupFileInputRef.current.value = '';
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const content = event.target?.result as string;
-      const success = await ApiService.importFullBackup(content);
-      if (success) {
-        alert("✅ تم استعادة النظام بالكامل بنجاح. سيتم الآن تحديث الصفحة لتطبيق التغييرات.");
-        window.location.reload();
-      } else {
-        alert("❌ فشلت عملية الاستعادة. تأكد من أن الملف بصيغة JSON صحيحة وتابعة لنظام ArchivX.");
-      }
-    };
-    reader.readAsText(file);
+    alert('Restore via the web UI is disabled. Use the server-side migration tools or contact the administrator to restore backups.');
   };
 
   const startEditCompany = (company: Company) => {
@@ -131,14 +128,20 @@ const App: React.FC = () => {
 
   const handleAddOrUpdateCompany = async () => {
     if (!newCompany.nameAr) return;
-    if (editingCompanyId) {
-      await ApiService.updateCompany(editingCompanyId, newCompany);
-      setEditingCompanyId(null);
-    } else {
-      await ApiService.addCompany(newCompany);
+    try {
+      const slug = newCompany.nameAr.toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, '-').replace(/--+/g, '-')
+      if (editingCompanyId) {
+        await apiClient.updateTenant(editingCompanyId, { name: newCompany.nameAr, slug, logo_url: newCompany.logoUrl })
+        setEditingCompanyId(null)
+      } else {
+        await apiClient.createTenant({ name: newCompany.nameAr, slug, logo_url: newCompany.logoUrl })
+      }
+      setNewCompany({ nameAr: '', nameEn: '', logoUrl: 'https://www.zaco.sa/logo2.png' });
+      loadInitialData();
+    } catch (err) {
+      console.error('Tenant upsert failed', err);
+      alert('فشل تحديث/إنشاء المؤسسة على الخادم');
     }
-    setNewCompany({ nameAr: '', nameEn: '', logoUrl: 'https://www.zaco.sa/logo2.png' });
-    loadInitialData();
   };
 
   if (!currentUser) return <Login onLogin={(u) => { setCurrentUser(u); localStorage.setItem('archivx_session_user', JSON.stringify(u)); }} logoUrl={currentCompany?.logoUrl || 'https://www.zaco.sa/logo2.png'} />;
@@ -193,10 +196,10 @@ const App: React.FC = () => {
         <div className="p-6 border-t border-slate-100 bg-slate-50/30">
           <button onClick={() => { localStorage.removeItem('archivx_session_user'); setCurrentUser(null); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-black text-red-600 hover:bg-red-50 transition-all mb-4"><LogOut size={16} /> تسجيل الخروج</button>
           <div className="p-4 bg-slate-900 rounded-[1.5rem] flex items-center gap-3 text-white shadow-2xl">
-             <div className="w-9 h-9 rounded-xl bg-slate-700 flex items-center justify-center font-black text-sm">{currentUser.name.substring(0, 1)}</div>
+             <div className="w-9 h-9 rounded-xl bg-slate-700 flex items-center justify-center font-black text-sm">{currentUser.name?.substring(0, 1) || 'U'}</div>
              <div className="overflow-hidden">
                <div className="text-[11px] font-black truncate leading-tight">{currentUser.name}</div>
-               <div className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{currentUser.role === 'ADMIN' ? 'مدير نظام' : 'محرر'}</div>
+               <div className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{currentUser.role === "ADMIN" ? 'مدير نظام' : 'محرر'}</div>
              </div>
           </div>
         </div>
@@ -208,7 +211,7 @@ const App: React.FC = () => {
           {activeTab === 'incoming' && <DocumentForm type={DocType.INCOMING} onSave={handleSaveDoc} />}
           {activeTab === 'outgoing' && <DocumentForm type={DocType.OUTGOING} onSave={handleSaveDoc} />}
           {activeTab === 'list' && <DocumentList docs={docs} settings={{...settings, orgName: currentCompany?.nameAr, logoUrl: currentCompany?.logoUrl, orgNameEn: currentCompany?.nameEn}} />}
-          {activeTab === 'scanner' && <BarcodeScanner docs={docs} />}
+          {activeTab === 'scanner' && <BarcodeScanner />}
           {activeTab === 'reports' && <ReportGenerator docs={docs} settings={{orgName: currentCompany?.nameAr || '', logoUrl: currentCompany?.logoUrl || ''}} />}
           {activeTab === 'users' && <UserManagement users={users} onUpdateUsers={async () => { loadInitialData(); }} currentUserEmail={currentUser.email} />}
           
@@ -265,7 +268,16 @@ const App: React.FC = () => {
                                   <button 
                                     onClick={async () => {
                                       if (companies.length <= 1) return;
-                                      if (confirm("هل تود حذف هذه المؤسسة نهائياً؟")) { await ApiService.deleteCompany(c.id); loadInitialData(); }
+                                      if (confirm("هل تود حذف هذه المؤسسة نهائياً؟")) { 
+                                        try {
+                                          await apiClient.deleteTenant(c.id)
+                                          alert('تم حذف المؤسسة')
+                                          loadInitialData()
+                                        } catch (err) {
+                                          console.error(err)
+                                          alert('فشل حذف المؤسسة')
+                                        }
+                                      }
                                     }} 
                                     className="text-red-300 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all p-2 hover:bg-red-50 rounded-full" title="حذف"
                                   >

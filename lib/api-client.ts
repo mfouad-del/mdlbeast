@@ -102,9 +102,75 @@ class ApiClient {
     return this.request<any>("/documents/stats/summary")
   }
 
+  // Barcodes
+  async searchBarcodes(q?: string) {
+    const qp = q ? `?q=${encodeURIComponent(q)}` : ""
+    return this.request<any[]>(`/barcodes${qp}`)
+  }
+
+  async getBarcode(barcode: string) {
+    return this.request<any>(`/barcodes/${encodeURIComponent(barcode)}`)
+  }
+
+  async getBarcodeTimeline(barcode: string) {
+    return this.request<any[]>(`/barcodes/${encodeURIComponent(barcode)}/timeline`)
+  }
+
+  async addBarcodeTimeline(barcode: string, payload: { action: string; actor_id?: number; meta?: any }) {
+    return this.request<any>(`/barcodes/${encodeURIComponent(barcode)}/timeline`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    })
+  }
+
+  // Tenants
+  async getTenants() {
+    return this.request<any[]>(`/tenants`)
+  }
+
+  async createTenant(payload: { name: string; slug: string; logo_url?: string }) {
+    return this.request<any>(`/tenants`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  }
+
+  async updateTenant(id: number | string, payload: { name?: string; slug?: string; logo_url?: string }) {
+    return this.request<any>(`/tenants/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    })
+  }
+
+  async deleteTenant(id: number | string) {
+    return this.request<any>(`/tenants/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
   // Users
   async getUsers() {
     return this.request<any[]>("/users")
+  }
+
+  async createUser(payload: { username: string; password: string; full_name: string; role: string }) {
+    return this.request<any>("/users", {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  }
+
+  async updateUser(id: number | string, payload: { full_name?: string; role?: string; password?: string }) {
+    return this.request<any>(`/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    })
+  }
+
+  async deleteUser(id: number | string) {
+    return this.request<any>(`/users/${id}`, {
+      method: 'DELETE',
+    })
   }
 
   async getCurrentUser() {
