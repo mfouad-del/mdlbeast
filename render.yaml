@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: zaco-backend
+    env: node
+    rootDirectory: backend
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
