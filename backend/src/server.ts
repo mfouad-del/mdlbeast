@@ -48,7 +48,24 @@ app.get("/debug/db", async (req, res) => {
     try {
       const result = await query("SELECT COUNT(*)::int as cnt FROM users")
       const cols = await query("SELECT column_name FROM information_schema.columns WHERE table_name='users'")
-      res.json({ users: result.rows[0].cnt, columns: cols.rows.map((r: any) => r.column_name) })
+      // sample user row for debugging (truncate password for safety)
+      let sampleUser: any = null
+      try {
+        const u = await query("SELECT id, email, password, role, name FROM users LIMIT 1")
+        if (u.rows.length > 0) {
+          const row = u.rows[0]
+          sampleUser = {
+            id: row.id,
+            email: row.email,
+            role: row.role,
+            name: row.name,
+            passwordStartsWith: row.password ? String(row.password).slice(0, 10) : null,
+          }
+        }
+      } catch (e) {
+        console.error("Debug sample user error:", e)
+      }
+      res.json({ users: result.rows[0].cnt, columns: cols.rows.map((r: any) => r.column_name), sampleUser })
     } catch (err: any) {
       console.error("Debug DB error:", err)
       res.status(500).json({ error: err.message || String(err) })
