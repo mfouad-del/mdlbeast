@@ -27,7 +27,7 @@ cp .env.example .env
 npm run dev
 ```
 
-Backend سيعمل على: http://localhost:3001
+Backend سيعمل على: https://zaco-backend.onrender.com
 
 ### 2️⃣ إنشاء قاعدة البيانات
 
@@ -60,11 +60,11 @@ cp .env.local.example .env.local
 npm run dev
 ```
 
-Frontend سيعمل على: http://localhost:3000
+Frontend سيعمل محليًا على المنفذ 3000 (http://<your-host>:3000)
 
 ## 🔐 تسجيل الدخول
 
-افتح http://localhost:3000 واستخدم:
+افتح http://<your-host>:3000 واستخدم:
 
 **Admin:**
 - Email: `admin@zaco.sa`

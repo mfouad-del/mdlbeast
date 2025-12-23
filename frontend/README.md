@@ -31,7 +31,7 @@ npm start
 
 ## الاتصال بالـ Backend
 
-تأكد من أن الـ Backend API يعمل على `http://localhost:3001` أو عدل المتغير البيئي.
+تأكد من أن الـ Backend API يعمل على `https://zaco-backend.onrender.com` أو عدل المتغير البيئي.
 
 ## رفع على الاستضافة
 

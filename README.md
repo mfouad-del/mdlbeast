@@ -76,7 +76,7 @@ npm install
 
 2. إنشاء ملف `.env.local`:
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:3001/api
+NEXT_PUBLIC_API_URL=https://zaco-backend.onrender.com/api
 # للإنتاج:
 # NEXT_PUBLIC_API_URL=https://api.zaco.sa/api
 ```

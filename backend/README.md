@@ -53,7 +53,7 @@ npm run build
 npm start
 ```
 
-Server سيعمل على: `http://localhost:3001`
+Server سيعمل على: `https://zaco-backend.onrender.com` (production)
 
 ## 📡 API Endpoints
 
@@ -96,12 +96,12 @@ npx ts-node src/scripts/generate-password.ts
 
 ### Health Check
 ```bash
-curl http://localhost:3001/health
+curl https://zaco-backend.onrender.com/health
 ```
 
 ### تسجيل دخول
 ```bash
-curl -X POST http://localhost:3001/api/auth/login \
+curl -X POST https://zaco-backend.onrender.com/api/auth/login \\
   -H "Content-Type: application/json" \
   -d '{"username":"admin@zaco.sa","password":"admin123"}'
 ```

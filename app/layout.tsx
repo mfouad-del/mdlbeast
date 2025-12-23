@@ -43,7 +43,7 @@ export default function RootLayout({
     <html lang="ar" dir="rtl" className={tajawal.variable}>
       <body className={`${tajawal.className} antialiased`}>
         {children}
-        <script dangerouslySetInnerHTML={{__html: `if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') { console.log = function(){}; }`}} />
+        <script dangerouslySetInnerHTML={{__html: `if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'development') { console.log = function(){}; }`}} />
         <Analytics />
       </body>
     </html>
