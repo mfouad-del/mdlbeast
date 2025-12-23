@@ -263,9 +263,21 @@ app.post("/debug/set-admin-password", async (req, res) => {
   }
 
   try {
+    // check if email column exists
+    const colRes = await query("SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'email' LIMIT 1")
+    const hasEmail = colRes.rows.length > 0
+
     const bcrypt = await import("bcrypt")
     const hashed = await bcrypt.hash("admin123", 10)
-    const upd = await query("UPDATE users SET password = $1 WHERE username = $2 OR email = $2 RETURNING id, username", [hashed, "admin@zaco.sa"])
+
+    let upd: any
+    if (hasEmail) {
+      upd = await query("UPDATE users SET password = $1 WHERE username = $2 OR email = $2 RETURNING id, username", [hashed, "admin@zaco.sa"])
+    } else {
+      upd = await query("UPDATE users SET password = $1 WHERE username = $2 RETURNING id, username", [hashed, "admin@zaco.sa"])
+    }
+
+    console.log("Set admin password: updated", upd.rowCount)
     res.json({ updated: upd.rowCount, rows: upd.rows })
   } catch (err: any) {
     console.error("Set admin password error:", err)
