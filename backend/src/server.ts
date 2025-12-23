@@ -7,6 +7,7 @@ import authRoutes from "./routes/auth"
 import documentRoutes from "./routes/documents"
 import userRoutes from "./routes/users"
 import { errorHandler } from "./middleware/errorHandler"
+import { query } from "./config/database"
 
 dotenv.config()
 
@@ -47,7 +48,7 @@ app.get("/debug/db", async (req, res) => {
     try {
       const result = await query("SELECT COUNT(*)::int as cnt FROM users")
       const cols = await query("SELECT column_name FROM information_schema.columns WHERE table_name='users'")
-      res.json({ users: result.rows[0].cnt, columns: cols.rows.map((r) => r.column_name) })
+      res.json({ users: result.rows[0].cnt, columns: cols.rows.map((r: any) => r.column_name) })
     } catch (err: any) {
       console.error("Debug DB error:", err)
       res.status(500).json({ error: err.message || String(err) })
