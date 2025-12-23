@@ -55,6 +55,27 @@ git push heroku main
 
 ### على zaco.sa/archive
 
+#### إصدار artifact ثابت عبر GitHub Actions (مناسب للرفع اليدوي إلى Bluehost)
+
+لقد أضفت Workflow جاهزًا لبناء وتصدير الموقع كملفات ثابتة (HTML/CSS/JS) ثم رفع مجلد `out/` كـ artifact.
+
+- المسار إلى ملف الـ workflow: `.github/workflows/export-static.yml`
+- يمكنك تشغيله يدويًا من تبويب **Actions → Build & Export Static Frontend → Run workflow** وإدخال القيم التالية (أو ترك القيم الافتراضية):
+  - `next_public_api_url`: `https://zaco-backend.onrender.com/api`
+  - `next_base_path`: `/archive` (إن أردت رفع الملفات إلى `https://zaco.sa/archive`)
+
+Workflow سيقوم ب:
+1. تثبيت الاعتماديات على بيئة Ubuntu (بما في ذلك أدوات البناء و libpq)
+2. تشغيل `npm run export` لإنتاج مجلد `out/`
+3. ضغط `out/` إلى `out.zip` ورفعه كـ artifact لتحميله
+
+بعد تشغيل الـ workflow:
+- نزّل الـ artifact `frontend-export-out` من صفحة الـ workflow run
+- فك الضغط وارفع محتويات `out/` إلى مجلد `public_html/archive` في استضافة Bluehost
+
+> ملاحظة: لا تقم بإضافة أي أسرار (مثل JWT_SECRET أو Database passwords) داخل الـ repo. استعمل `Repository secrets` أو صفحة الإدخال أثناء تشغيل الـ workflow إذا كانت مطلوبة.
+
+
 #### الطريقة 1: استخدام Reverse Proxy
 
 إذا كان لديك خادم يعمل على `zaco.sa`، أضف إعداد nginx:
