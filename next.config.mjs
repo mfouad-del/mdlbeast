@@ -12,10 +12,8 @@ const nextConfig = {
     ],
     unoptimized: true,
   },
-  const BASE_PATH = process.env.NEXT_BASE_PATH || ''
-  const ASSET_PREFIX = BASE_PATH || ''
-  basePath: BASE_PATH || undefined,
-  assetPrefix: ASSET_PREFIX || undefined,
+  basePath: process.env.NEXT_BASE_PATH || undefined,
+  assetPrefix: process.env.NEXT_BASE_PATH || undefined,
   trailingSlash: true,
   output: "standalone",
 }
