@@ -58,7 +58,11 @@ export interface Correspondence {
   type: DocType;
   title: string;
   sender: string;
+  /** fallback variant for some data sources */
+  from?: string;
   receiver: string;
+  /** fallback variant for some data sources */
+  to?: string;
   recipient: string;
   referenceNumber: string;
   internalRef: string;

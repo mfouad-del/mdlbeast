@@ -79,7 +79,7 @@ export default function Dashboard({ docs }: DashboardProps) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-sm">
           <h3 className="text-lg font-black mb-10 text-slate-900 font-heading">توزيع الحركة الشهرية</h3>
-          <div className="h-64 w-full">
+          <div className="h-64 min-h-[200px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={typeData}>
                 <XAxis

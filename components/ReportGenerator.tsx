@@ -37,15 +37,22 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
     const orgName = settings.orgName;
     const logoUrl = settings.logoUrl;
 
-    const tableRows = filteredDocs.map(doc => `
-      <tr>
-        <td style="text-align: center; font-family: monospace; font-weight: bold;">${doc.barcodeId}</td>
-        <td>${doc.title}</td>
-        <td style="text-align: center;">${doc.type === DocType.INCOMING ? 'وارد' : 'صادر'}</td>
-        <td>${doc.sender}</td>
-        <td style="text-align: center;">${doc.date}</td>
-      </tr>
-    `).join('');
+    const tableRows = filteredDocs.map(doc => {
+      const barcode = doc.barcode || doc.barcodeId || ''
+      const title = doc.subject || doc.title || ''
+      const typeStr = (String(doc.type || '').toLowerCase().includes('in') || String(doc.type) === DocType.INCOMING) ? 'وارد' : 'صادر'
+      const sender = doc.sender || doc.from || ''
+      const dateStr = doc.date || doc.documentDate || (doc.created_at ? new Date(doc.created_at).toISOString().split('T')[0] : '')
+      return `
+        <tr>
+          <td style="text-align: center; font-family: monospace; font-weight: bold;">${barcode}</td>
+          <td>${title}</td>
+          <td style="text-align: center;">${typeStr}</td>
+          <td>${sender}</td>
+          <td style="text-align: center;">${dateStr}</td>
+        </tr>
+      `
+    }).join('');
 
     printWindow.document.write(`
       <html>
@@ -62,12 +69,16 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
             }
             .header { 
               display: flex; 
-              justify-content: space-between; 
+              justify-content: center; 
               align-items: center; 
               border-bottom: 3px solid #0f172a; 
               padding-bottom: 20px; 
               margin-bottom: 30px;
+              position: relative;
             }
+            .header .corner-date { position: absolute; top: 12px; font-size: 12px; color: #64748b; }
+            .header .corner-left { left: 40px; }
+            .header .corner-right { right: 40px; }
             .header-info h1 { margin: 0; font-size: 20px; font-weight: 900; }
             .header-info p { margin: 5px 0; font-size: 12px; color: #64748b; }
             
@@ -114,12 +125,15 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
         </head>
         <body>
           <div class="header">
-             <img src="${logoUrl}" style="height: 70px;">
+             <div class="corner-date corner-left">تاريخ الطباعة: ${new Date().toLocaleString('ar-SA')}</div>
+             <div class="corner-date corner-right">نطاق: ${startDate} إلى ${endDate}</div>
              <div class="header-info" style="text-align: center;">
                 <h1>${orgName}</h1>
                 <p>نظام ArchivX Enterprise - مركز التقارير</p>
              </div>
-             <div style="width: 70px;"></div>
+             <div style="width: 120px; text-align:center;">
+               <img src="${logoUrl}" style="height: 70px; object-fit: contain;" />
+             </div>
           </div>
 
           <div class="report-title">

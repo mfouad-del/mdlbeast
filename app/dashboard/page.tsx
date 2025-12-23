@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { LayoutDashboard, FilePlus, FileMinus, Search, Users, LogOut, Scan, FileText, Briefcase, Database } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
 import type { Correspondence, User, SystemSettings } from "@/types"
+import { DocType } from '@/types'
 import Dashboard from "@/components/Dashboard"
 import DocumentForm from "@/components/DocumentForm"
 import DocumentList from "@/components/DocumentList"
@@ -19,6 +20,7 @@ export default function DashboardPage() {
   const [docs, setDocs] = useState<Correspondence[]>([])
   const [tenants, setTenants] = useState<any[]>([])
   const [users, setUsers] = useState<User[]>([])
+  const [selectedTenantId, setSelectedTenantId] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [newTenant, setNewTenant] = useState({ name: '', slug: '', logo_url: '' })
 
@@ -32,6 +34,13 @@ export default function DashboardPage() {
     companies: [],
   })
 
+  // Determine report settings based on selected tenant (show tenant logo/name if set)
+  const currentTenant = tenants.find(t => Number(t.id) === Number(selectedTenantId));
+  const reportSettings = {
+    orgName: currentTenant?.name || (settings.orgName || ''),
+    logoUrl: currentTenant?.logo_url || currentTenant?.logoUrl || (settings.logoUrl || '')
+  }
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -41,10 +50,18 @@ export default function DashboardPage() {
         const documents = await apiClient.getDocuments()
         const mappedDocs = (documents || []).map((doc: any) => ({
           ...doc,
-          barcodeId: doc.barcode,
-          title: doc.subject,
-          recipient: doc.receiver,
-          documentDate: doc.date,
+          id: doc.id,
+          barcode: doc.barcode || doc.barcodeId || '' ,
+          barcodeId: doc.barcode || doc.barcodeId || '' ,
+          title: doc.subject || doc.title || '',
+          subject: doc.subject || doc.title || '',
+          sender: doc.sender || doc.from || '',
+          receiver: doc.receiver || doc.recipient || '',
+          recipient: doc.receiver || doc.recipient || '',
+          date: doc.date || doc.documentDate || (doc.created_at ? new Date(doc.created_at).toISOString().split('T')[0] : ''),
+          documentDate: doc.date || doc.documentDate || '',
+          type: (String(doc.type || '').toLowerCase().includes('in') || String(doc.type) === 'وارد') ? DocType.INCOMING : DocType.OUTGOING,
+          companyId: doc.companyId || doc.tenant_id || null,
         }))
         setDocs(mappedDocs)
 
@@ -82,6 +99,7 @@ export default function DashboardPage() {
         classification: data.security,
         notes: data.description,
         attachments: data.pdfFile ? [data.pdfFile] : [],
+        tenant_id: selectedTenantId,
       }
 
       const savedDoc = await apiClient.createDocument(docToSave)
@@ -92,6 +110,7 @@ export default function DashboardPage() {
         title: savedDoc.subject,
         recipient: savedDoc.receiver,
         documentDate: savedDoc.date,
+        companyId: savedDoc.tenant_id || savedDoc.companyId || selectedTenantId,
       }
 
       setDocs((prev) => [mappedDoc, ...prev])
@@ -142,8 +161,13 @@ export default function DashboardPage() {
           <img src={settings.logoUrl || "/placeholder.svg"} className="h-12 w-auto mb-5 object-contain" alt="Logo" />
           <div className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] mb-6 leading-relaxed">
             مركز الأرشفة الرقمي الموحد
-          </div>
-        </div>
+          </div>           <div className="mt-4 px-2">
+             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mb-2">المؤسسة الحالية</label>
+             <select className="w-full p-3 bg-white border border-slate-200 rounded-2xl text-xs font-black" value={selectedTenantId ?? ''} onChange={(e) => setSelectedTenantId(e.target.value ? Number(e.target.value) : null)}>
+               <option value="">جميع المؤسسات</option>
+               {tenants.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+             </select>
+           </div>        </div>
 
         <nav className="flex-1 px-4 py-8 space-y-1.5 overflow-y-auto">
           <NavItem id="dashboard" label="لوحة التحكم" icon={LayoutDashboard} />
@@ -184,12 +208,12 @@ export default function DashboardPage() {
 
       <main className="flex-1 flex flex-col overflow-hidden relative">
         <div className="flex-1 overflow-y-auto p-8 lg:p-14 max-w-7xl mx-auto w-full">
-          {activeTab === "dashboard" && <Dashboard docs={docs} />}
+          {activeTab === "dashboard" && <Dashboard docs={selectedTenantId ? docs.filter(d => Number(d.companyId) === selectedTenantId) : docs} />}
           {activeTab === "incoming" && <DocumentForm type="INCOMING" onSave={handleSaveDoc} />}
           {activeTab === "outgoing" && <DocumentForm type="OUTGOING" onSave={handleSaveDoc} />}
-          {activeTab === "list" && <DocumentList docs={docs} settings={settings} />}
+          {activeTab === "list" && <DocumentList docs={selectedTenantId ? docs.filter(d => Number(d.companyId) === selectedTenantId) : docs} settings={settings} />}
           {activeTab === "scanner" && <BarcodeScanner />}
-          {activeTab === "reports" && <ReportGenerator docs={docs} settings={{ orgName: settings.orgName || '', logoUrl: settings.logoUrl || '' }} />}
+          {activeTab === "reports" && <ReportGenerator docs={selectedTenantId ? docs.filter(d => Number(d.companyId) === Number(selectedTenantId)) : docs} settings={reportSettings} /> }
           {activeTab === "users" && <UserManagement users={users} onUpdateUsers={async () => { const u = await apiClient.getUsers().catch(()=>[]); setUsers(u); }} currentUserEmail={currentUser?.username || ''} />}
           {activeTab === 'companies' && (
             <div className="space-y-8">
@@ -207,6 +231,7 @@ export default function DashboardPage() {
                         setNewTenant({name:'',slug:'',logo_url:''})
                       } catch (err) { console.error(err); alert('فشل الإنشاء') }
                     }}>إنشاء مؤسسة</button>
+                    <div className="text-xs text-slate-500 mt-2">ملاحظة: <strong>اختر المؤسسة من الأعلى</strong> لتقييد عرض وإنشاء المعاملات لتلك المؤسسة.</div>
                   </div>
                   <div>
                     <div className="space-y-3 max-h-64 overflow-auto">
@@ -237,6 +262,7 @@ export default function DashboardPage() {
                 <h3 className="text-xl font-black mb-4">تصدير البيانات</h3>
                 <p className="text-sm text-slate-500 mb-4">يمكنك تنزيل نسخة JSON من البيانات الحالية (المستندات، المؤسسات، المستخدمين).</p>
                 <div className="flex gap-3">
+                  <div className="flex gap-3">
                   <button className="bg-slate-900 text-white px-6 py-3 rounded" onClick={async () => {
                     try {
                       const [docsData, tenantsData, usersData] = await Promise.all([apiClient.getDocuments(), apiClient.getTenants(), apiClient.getUsers().catch(()=>[])]);
@@ -245,6 +271,24 @@ export default function DashboardPage() {
                       const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `backup-${new Date().toISOString().replace(/:/g,'-')}.json`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
                     } catch (err) { console.error(err); alert('فشل التصدير') }
                   }}>تحميل JSON</button>
+
+                  <input type="file" id="importBackupFile" className="hidden" accept=".json" onChange={async (e) => {
+                    const file = (e.target as HTMLInputElement).files?.[0]
+                    if (!file) return
+                    if (!confirm('تحذير: ستستبدل البيانات المحلية الحالية. تابع؟')) return
+                    try {
+                      const text = await file.text()
+                      const svc = await import('@/services/api')
+                      const ok = await svc.ApiService.importFullBackup(text)
+                      if (ok) { alert('تم الاستعادة محلياً. سيتم إعادة تحميل الصفحة'); window.location.reload() }
+                      else alert('فشل الاستعادة')
+                    } catch (err) { console.error(err); alert('فشل الاستعادة') }
+                  }} />
+                  <button className="bg-blue-600 text-white px-6 py-3 rounded" onClick={async () => {
+                    const el = document.getElementById('importBackupFile') as HTMLInputElement | null
+                    el?.click()
+                  }}>استعادة من ملف</button>
+                </div>
                 </div>
               </div>
             </div>

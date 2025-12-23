@@ -151,9 +151,9 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, c
               <tr key={u.id} className="hover:bg-slate-50/50 transition-all group">
                 <td className="px-8 py-6">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-black uppercase">{u.name.substring(0, 2)}</div>
+                    <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-black uppercase">{(u.name || u.full_name || u.username || '').substring(0, 2)}</div>
                     <div>
-                      <div className="font-black text-slate-900">{u.name}</div>
+                      <div className="font-black text-slate-900">{u.name || u.full_name || u.username || ''}</div>
                       <div className="text-xs text-slate-400">{u.email}</div>
                     </div>
                   </div>
