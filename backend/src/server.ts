@@ -51,16 +51,16 @@ app.get("/debug/db", async (req, res) => {
       // sample user row for debugging (truncate password for safety)
       let sampleUser: any = null
       try {
-        const u = await query("SELECT id, email, password, role, name FROM users LIMIT 1")
+        const u = await query("SELECT * FROM users LIMIT 5")
         if (u.rows.length > 0) {
-          const row = u.rows[0]
-          sampleUser = {
+          sampleUser = u.rows.map((row: any) => ({
             id: row.id,
-            email: row.email,
-            role: row.role,
-            name: row.name,
+            email: row.email || null,
+            name: row.name || null,
+            role: row.role || null,
+            // show hashed password prefix if exists
             passwordStartsWith: row.password ? String(row.password).slice(0, 10) : null,
-          }
+          }))
         }
       } catch (e) {
         console.error("Debug sample user error:", e)
