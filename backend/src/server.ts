@@ -141,6 +141,40 @@ app.get("/debug/routes", (req, res) => {
   }
 })
 
+// Debug: reset the entire public schema and re-run SQL migration + seed scripts
+app.post("/debug/reset-db", async (req, res) => {
+  const secret = req.query.secret
+  if (!(process.env.DEBUG === "true" || (typeof secret === "string" && secret === DEBUG_SECRET && DEBUG_SECRET !== ""))) {
+    return res.status(404).send("Not found")
+  }
+
+  try {
+    console.log("Reset DB: starting DROP/CREATE schema public")
+    await query("DROP SCHEMA public CASCADE")
+    await query("CREATE SCHEMA public")
+
+    const fs = await import("fs")
+    const path = await import("path")
+    const base = path.resolve(__dirname, "..", "scripts")
+
+    const createSql = fs.readFileSync(path.join(base, "01_create_tables.sql"), "utf8")
+    const seedSql = fs.readFileSync(path.join(base, "02_seed_data.sql"), "utf8")
+
+    console.log("Reset DB: running 01_create_tables.sql")
+    await query(createSql)
+    console.log("Reset DB: running 02_seed_data.sql")
+    await query(seedSql)
+
+    // quick verification
+    const usersCount = await query("SELECT COUNT(*)::int as cnt FROM users")
+
+    res.json({ status: "ok", users: usersCount.rows[0].cnt })
+  } catch (err: any) {
+    console.error("Reset DB error:", err)
+    res.status(500).json({ error: err.message || String(err) })
+  }
+})
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`)
 })
