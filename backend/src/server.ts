@@ -429,6 +429,23 @@ app.post("/debug/run-migration", async (req, res) => {
   }
 })
 
+// Debug: preview rows that would be affected by the backfill (read-only, safe)
+app.get('/debug/preview-backfill-doc-dates', async (req, res) => {
+  const secret = req.query.secret
+  if (!(process.env.DEBUG === 'true' || (typeof secret === 'string' && secret === DEBUG_SECRET && DEBUG_SECRET !== ''))) {
+    return res.status(403).json({ error: 'Forbidden' })
+  }
+
+  try {
+    const samples = await query("SELECT id, barcode, date, created_at FROM documents WHERE date::time = '00:00:00' ORDER BY id LIMIT 50")
+    const count = await query("SELECT COUNT(*)::int as cnt FROM documents WHERE date::time = '00:00:00'")
+    return res.json({ ok: true, count: count.rows[0].cnt, samples: samples.rows })
+  } catch (err: any) {
+    console.error('preview-backfill-doc-dates error:', err)
+    return res.status(500).json({ error: String(err.message || err) })
+  }
+})
+
 // Debug: backfill documents that have midnight-only dates to use created_at's time (safe, idempotent)
 app.post('/debug/backfill-doc-dates', async (req, res) => {
   const secret = req.query.secret
