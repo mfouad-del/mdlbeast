@@ -361,6 +361,71 @@ app.post("/debug/run-migration", async (req, res) => {
   }
 })
 
+// Optional: run allowed migrations automatically on startup when AUTO_RUN_MIGRATIONS=true
+async function runAllowedMigrationsOnStartup() {
+  try {
+    if (String(process.env.AUTO_RUN_MIGRATIONS || '').toLowerCase() !== 'true') return
+
+    const allowed = ["01_create_tables.sql", "02_seed_data.sql", "03_create_modules_tables.sql", "04_seed_modules.sql", "05_create_indexes.sql", "06_add_documents_tenant.sql"]
+
+    const fs = await import('fs')
+    const path = await import('path')
+
+    const candidates = [
+      path.resolve(__dirname, '..', 'scripts'),
+      path.resolve(__dirname, '..', '..', 'scripts'),
+      path.resolve(process.cwd(), 'scripts'),
+    ]
+
+    let base: string | null = null
+    for (const c of candidates) {
+      if (fs.existsSync(path.join(c, allowed[0]))) { base = c; break }
+    }
+
+    if (!base) {
+      // try walking up
+      let cur = path.resolve(process.cwd())
+      for (let i = 0; i < 6; i++) {
+        const candidate = path.join(cur, 'scripts')
+        if (fs.existsSync(path.join(candidate, allowed[0]))) { base = candidate; break }
+        const parent = path.dirname(cur)
+        if (parent === cur) break
+        cur = parent
+      }
+    }
+
+    if (!base) {
+      console.log('No scripts directory found; skipping startup migrations')
+      return
+    }
+
+    for (const filename of allowed) {
+      const filePath = path.join(base, filename)
+      if (!fs.existsSync(filePath)) { console.log('Skipping missing migration', filename); continue }
+      const sql = fs.readFileSync(filePath, 'utf8')
+      console.log('Applying startup migration:', filename)
+      try {
+        await query('BEGIN')
+        await query(sql)
+        await query('COMMIT')
+        console.log('Applied migration:', filename)
+      } catch (e: any) {
+        await query('ROLLBACK')
+        console.error('Failed to apply startup migration', filename, e.message || e)
+        // continue to next file (do not abort entire startup)
+      }
+    }
+  } catch (err: any) {
+    console.error('Startup migration runner failed:', err)
+  }
+}
+
+// Kick off startup migration runner (non-blocking)
+runAllowedMigrationsOnStartup().catch(err => console.error('Startup migrations error:', err))
+
+  }
+})
+
 // Debug: stream a pg_dump of the database for backup (protected)
 app.get("/debug/backup-db", async (req, res) => {
   const secret = req.query.secret

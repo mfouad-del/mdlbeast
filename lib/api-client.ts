@@ -87,7 +87,7 @@ class ApiClient {
   }
 
   // Documents
-  async getDocuments(params?: { status?: string; type?: string; search?: string }) {
+  async getDocuments(params?: { status?: string; type?: string; search?: string; tenant_id?: number }) {
     const queryParams = new URLSearchParams(params as any).toString()
     const res = await this.request<any[]>(`/documents${queryParams ? `?${queryParams}` : ""}`)
     return res || []
