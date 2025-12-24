@@ -150,7 +150,7 @@ export default function DocumentList({ docs, settings }: DocumentListProps) {
                       {doc.pdfFile ? (
                         <div className="flex gap-2 items-center">
                           <a
-                            href={doc.pdfFile.url}
+                            href={`/api/documents/${encodeURIComponent(doc.barcode || doc.barcodeId)}/preview`}
                             target="_blank"
                             rel="noreferrer"
                             className="flex items-center gap-2 px-4 py-2.5 bg-green-50 text-green-700 rounded-xl border border-green-200 hover:bg-green-100 transition-all text-[11px] font-black group"

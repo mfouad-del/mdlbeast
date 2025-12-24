@@ -100,6 +100,48 @@ router.get("/:barcode", async (req: Request, res: Response) => {
   }
 })
 
+// Open a preview URL for the document's first attachment (signed if possible, otherwise cache-busted public URL)
+router.get("/:barcode/preview", async (req: Request, res: Response) => {
+  try {
+    const { barcode } = req.params
+    const r = await query("SELECT attachments FROM documents WHERE lower(barcode) = lower($1) LIMIT 1", [barcode])
+    if (r.rows.length === 0) return res.status(404).send('Not found')
+    let attachments: any = r.rows[0].attachments
+    try { if (typeof attachments === 'string') attachments = JSON.parse(attachments || '[]') } catch (e) { attachments = Array.isArray(attachments) ? attachments : [] }
+    if (!attachments || !attachments.length) return res.status(404).send('No attachment')
+    const pdf = attachments[0]
+
+    const supabaseUrl = process.env.SUPABASE_URL
+    const supabaseKeyRaw = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+    const supabaseKey = String(supabaseKeyRaw).trim()
+
+    // If we have a bucket/key, return a signed URL (redirect) so the client sees the freshest content
+    if (pdf.key && supabaseUrl && supabaseKey && pdf.bucket) {
+      try {
+        const { createClient } = await import('@supabase/supabase-js')
+        const supabase = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } })
+        const { data: signedData, error: signedErr } = await supabase.storage.from(pdf.bucket).createSignedUrl(pdf.key, 60 * 5)
+        if (!signedErr && signedData?.signedUrl) {
+          return res.redirect(signedData.signedUrl)
+        }
+      } catch (e) {
+        console.error('Preview signed URL error:', e)
+      }
+    }
+
+    // Fallback: redirect to public URL with cache-busting query
+    if (pdf.url) {
+      const sep = pdf.url.includes('?') ? '&' : '?'
+      return res.redirect(`${pdf.url}${sep}t=${Date.now()}`)
+    }
+
+    res.status(404).send('No attachment')
+  } catch (err: any) {
+    console.error('Preview error:', err)
+    res.status(500).send('Preview failed')
+  }
+})
+
 // Create document
 router.post(
   "/",
