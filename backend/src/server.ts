@@ -437,8 +437,8 @@ app.get('/debug/preview-backfill-doc-dates', async (req, res) => {
   }
 
   try {
-    const samples = await query("SELECT id, barcode, date, created_at FROM documents WHERE date::timestamp::time = '00:00:00'::time ORDER BY id LIMIT 50")
-    const count = await query("SELECT COUNT(*)::int as cnt FROM documents WHERE date::timestamp::time = '00:00:00'::time")
+    const samples = await query("SELECT id, barcode, date, created_at FROM documents WHERE to_char(date, 'HH24:MI:SS') = '00:00:00' ORDER BY id LIMIT 50")
+    const count = await query("SELECT COUNT(*)::int as cnt FROM documents WHERE to_char(date, 'HH24:MI:SS') = '00:00:00'")
     return res.json({ ok: true, count: count.rows[0].cnt, samples: samples.rows })
   } catch (err: any) {
     console.error('preview-backfill-doc-dates error:', err)
@@ -455,7 +455,7 @@ app.post('/debug/backfill-doc-dates', async (req, res) => {
 
   try {
     // Update documents where date is midnight (00:00:00) to combine original date with created_at time
-    const affected = await query("UPDATE documents SET date = (date::date + (created_at::time)) WHERE date::timestamp::time = '00:00:00'::time RETURNING id, barcode, date, created_at")
+    const affected = await query("UPDATE documents SET date = (date::date + (created_at::time)) WHERE to_char(date, 'HH24:MI:SS') = '00:00:00' RETURNING id, barcode, date, created_at")
     return res.json({ ok: true, updatedCount: affected.rows.length, samples: affected.rows.slice(0,5) })
   } catch (err: any) {
     console.error('backfill-doc-dates error:', err)
