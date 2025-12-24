@@ -60,9 +60,9 @@ export default function PdfStamper({ doc, onClose }: PdfStamperProps) {
       if (res && (res.previewUrl || res.url)) {
         const openUrl = res.previewUrl || res.url
         window.open(openUrl, '_blank')
-        alert('تم دمغ الملصق بنجاح — تم فتح نسخة العرض المدموغة في تبويب جديد.')
+        alert('تم الدمغ وفتح نسخة العرض المدمغة — إذا لم ترى التغيّر، افتح المعاينة الموقعة أو امسح الكاش.')
       } else {
-        alert('تم دمغ الملصق بنجاح — يُرجى تحديث الصفحة لمشاهدة الملف.')
+        alert('تم الدمغ بنجاح — يُرجى تحديث الصفحة أو فتح المعاينة الموقعة إذا لم ترى التغيّر.')
       }
 
       // Refresh document list to pick up updated attachments (some caches may delay immediate visibility)

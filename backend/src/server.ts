@@ -371,7 +371,7 @@ app.post("/debug/run-migration", async (req, res) => {
 
   try {
     const filename = String(req.query.file || req.body?.file || "").trim()
-    const allowed = new Set(["01_create_tables.sql", "02_seed_data.sql", "03_create_modules_tables.sql", "04_seed_modules.sql", "05_create_indexes.sql", "06_add_documents_tenant.sql", "07_create_sequences.sql"])
+    const allowed = new Set(["01_create_tables.sql", "02_seed_data.sql", "03_create_modules_tables.sql", "04_seed_modules.sql", "05_create_indexes.sql", "06_add_documents_tenant.sql", "07_create_sequences.sql", "08_change_date_to_timestamp.sql"])
     if (!allowed.has(filename)) {
       return res.status(400).json({ error: "Invalid or unsupported migration file" })
     }
@@ -429,9 +429,25 @@ app.post("/debug/run-migration", async (req, res) => {
   }
 })
 
-// Debug: fix zeroed UUID timestamps by adding a uuid7_fixed column and populating it for affected rows
-app.post('/debug/fix-zero-uuid', async (req, res) => {
+// Debug: backfill documents that have midnight-only dates to use created_at's time (safe, idempotent)
+app.post('/debug/backfill-doc-dates', async (req, res) => {
   const secret = req.query.secret
+  if (!(process.env.DEBUG === 'true' || (typeof secret === 'string' && secret === DEBUG_SECRET && DEBUG_SECRET !== ''))) {
+    return res.status(403).json({ error: 'Forbidden' })
+  }
+
+  try {
+    // Update documents where date is midnight (00:00:00) to combine original date with created_at time
+    const affected = await query("UPDATE documents SET date = (date::date + (created_at::time)) WHERE date::time = '00:00:00' RETURNING id, barcode, date, created_at")
+    return res.json({ ok: true, updatedCount: affected.rows.length, samples: affected.rows.slice(0,5) })
+  } catch (err: any) {
+    console.error('backfill-doc-dates error:', err)
+    res.status(500).json({ error: 'Backfill failed' })
+  }
+})
+
+// Debug: fix zeroed UUID timestamps by adding a uuid7_fixed column and populating it for affected rows
+app.post('/debug/fix-zero-uuid', async (req, res) => {  const secret = req.query.secret
   if (!(process.env.DEBUG === 'true' || (typeof secret === 'string' && secret === DEBUG_SECRET && DEBUG_SECRET !== ''))) {
     return res.status(403).json({ error: 'Forbidden' })
   }

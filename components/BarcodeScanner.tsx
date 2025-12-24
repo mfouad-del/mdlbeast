@@ -251,10 +251,8 @@ const BarcodeScanner: React.FC = () => {
 
               <div className="flex gap-3">
                 <button className="w-full mt-6 bg-slate-900 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2" onClick={() => {
-                  const url = foundDoc.pdfFile?.url || (Array.isArray(foundDoc.attachments) && foundDoc.attachments[0]?.url) || foundDoc.pdf_file || null;
-                  if (!url) { alert('لا يوجد ملف لعرضه'); return; }
-                  const finalUrl = (typeof url === 'string' && url.startsWith('/') && !url.startsWith('//')) ? `${window.location.origin}${url}` : url;
-                  window.open(finalUrl, '_blank');
+                  const preview = `/api/documents/${encodeURIComponent(foundDoc.barcode || foundDoc.barcodeId)}/preview`;
+                  window.open(preview, '_blank');
                 }}>
                   <FileText size={20} /> فتح الملف الكامل
                 </button>

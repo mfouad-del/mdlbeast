@@ -157,9 +157,11 @@ router.post('/:barcode/stamp', async (req, res) => {
         let uploadErr: any = null
         const maxAttempts = 3
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-          const r = await supabase.storage.from(targetBucket).upload(targetKey, outBytes, { contentType: 'application/pdf', upsert: true })
-          uploadErr = r.error
-          if (!uploadErr) break
+          const uploadOptions: any = { contentType: 'application/pdf', upsert: true, cacheControl: '0' }
+        const r = await supabase.storage.from(targetBucket).upload(targetKey, outBytes, uploadOptions)
+        console.debug('Stamp: supabase.upload response attempt', attempt, r)
+        uploadErr = r.error
+        if (!uploadErr) break
           console.warn(`Stamp: supabase upload attempt ${attempt} failed:`, uploadErr?.message || uploadErr)
           await new Promise((res) => setTimeout(res, attempt * 300))
         }

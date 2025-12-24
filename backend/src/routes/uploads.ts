@@ -72,7 +72,10 @@ router.post('/', upload.single('file'), async (req: Request, res: Response) => {
       const key = `uploads/${safeBase}${ext}`
       console.log('Uploading to supabase with key=', key, 'originalName=', f.originalname)
       // use upsert=true so re-runs are idempotent
-      const { error: uploadError } = await supabase.storage.from(supabaseBucket).upload(key, body, { contentType: f.mimetype, upsert: true })
+      const uploadOptions: any = { contentType: f.mimetype, upsert: true, cacheControl: '0' }
+      const uploadRes = await supabase.storage.from(supabaseBucket).upload(key, body, uploadOptions)
+      console.debug('Uploads: supabase.upload response', uploadRes)
+      const uploadError = uploadRes?.error
       if (uploadError) throw uploadError
 
       // Prefer public URL if available, otherwise use signed URL
