@@ -628,6 +628,104 @@ app.get("/debug/backup-db", async (req, res) => {
   }
 })
 
+// Debug: list available font files on server (protected)
+app.get('/debug/list-fonts', async (req, res) => {
+  const secret = req.query.secret
+  if (!(process.env.DEBUG === 'true' || (typeof secret === 'string' && secret === DEBUG_SECRET && DEBUG_SECRET !== ''))) {
+    return res.status(403).json({ error: 'Forbidden' })
+  }
+
+  try {
+    const fontDirs = [
+      path.resolve(process.cwd(), 'backend', 'assets', 'fonts'),
+      path.resolve(process.cwd(), 'assets', 'fonts'),
+      path.resolve(process.cwd(), 'assets'),
+      path.resolve(process.cwd(), 'fonts'),
+      path.resolve(__dirname, '..', '..', 'assets', 'fonts'),
+      path.resolve(__dirname, '..', '..', 'assets'),
+      path.resolve(__dirname, '..', '..', '..', 'assets', 'fonts'),
+      path.resolve(__dirname, '..', '..', '..', 'backend', 'assets', 'fonts'),
+    ]
+
+    const results: any = {}
+    for (const d of fontDirs) {
+      try {
+        if (fs.existsSync(d)) {
+          const files = fs.readdirSync(d).filter((f) => /(\.ttf|\.otf)$/i.test(f)).map((f) => {
+            try {
+              const p = path.join(d, f)
+              const s = fs.statSync(p)
+              const head = fs.readFileSync(p, { encoding: null, start: 0, end: 15 })
+              const crypto = require('crypto')
+              const sha = crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex')
+              return { name: f, size: s.size, head: Buffer.from(head).toString('hex'), sha256: sha }
+            } catch (e) { return { name: f, error: String(e) } }
+          })
+          results[d] = files
+        } else {
+          results[d] = []
+        }
+      } catch (e) {
+        results[d] = { error: String(e) }
+      }
+    }
+
+    return res.json({ ok: true, results })
+  } catch (err: any) {
+    console.error('list-fonts error:', err)
+    return res.status(500).json({ error: String(err.message || err) })
+  }
+})
+
+// Debug: attempt to fix fonts by downloading latest Noto Sans Arabic into known font paths (protected)
+app.post('/debug/fix-fonts', async (req, res) => {
+  const secret = req.query.secret
+  if (!(process.env.DEBUG === 'true' || (typeof secret === 'string' && secret === DEBUG_SECRET && DEBUG_SECRET !== ''))) {
+    return res.status(403).json({ error: 'Forbidden' })
+  }
+  try {
+    const targets = [
+      path.resolve(process.cwd(), 'backend', 'assets', 'fonts', 'NotoSansArabic-Regular.ttf'),
+      path.resolve(process.cwd(), 'backend', 'assets', 'fonts', 'NotoSansArabic-Bold.ttf'),
+      path.resolve(__dirname, '..', '..', 'backend', 'assets', 'fonts', 'NotoSansArabic-Regular.ttf'),
+      path.resolve(__dirname, '..', '..', 'backend', 'assets', 'fonts', 'NotoSansArabic-Bold.ttf'),
+    ]
+    const urls: any = {
+      regular: 'https://github.com/googlefonts/noto-fonts/raw/main/phaseIII_only/unhinted/ttf/NotoSansArabic/NotoSansArabic-Regular.ttf',
+      bold: 'https://github.com/googlefonts/noto-fonts/raw/main/phaseIII_only/unhinted/ttf/NotoSansArabic/NotoSansArabic-Bold.ttf'
+    }
+
+    const written: any = []
+    for (const t of targets) {
+      try {
+        const dir = path.dirname(t)
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
+        const which = t.toLowerCase().includes('bold') ? 'bold' : 'regular'
+        const url = urls[which]
+        const r = await fetch(url)
+        if (!r.ok) { written.push({ target: t, ok: false, status: r.status }); continue }
+        const contentType = String(r.headers.get('content-type') || '')
+        if (!/font|octet|application\//i.test(contentType)) {
+          // still write but log warning
+          console.warn('fix-fonts: downloaded content-type', contentType)
+        }
+        const buf = Buffer.from(await r.arrayBuffer())
+        fs.writeFileSync(t, buf)
+        const crypto = require('crypto')
+        const sha = crypto.createHash('sha256').update(buf).digest('hex')
+        written.push({ target: t, ok: true, size: buf.length, sha256: sha, contentType })
+      } catch (e) {
+        written.push({ target: t, ok: false, error: String(e) })
+      }
+    }
+
+    return res.json({ ok: true, written })
+  } catch (err: any) {
+    console.error('fix-fonts error:', err)
+    return res.status(500).json({ error: String(err.message || err) })
+  }
+})
+
 // Debug: test Supabase storage upload using env vars (protected)
 app.get("/debug/test-supabase-upload", async (req, res) => {
   const secret = req.query.secret
