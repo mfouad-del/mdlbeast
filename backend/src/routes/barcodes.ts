@@ -7,10 +7,11 @@ const router = express.Router()
 router.get("/:barcode", async (req: Request, res: Response) => {
   try {
     const { barcode } = req.params
-    const q = await query("SELECT * FROM barcodes WHERE barcode = $1 LIMIT 1", [barcode])
+    // Use case-insensitive match for barcode lookups
+    const q = await query("SELECT * FROM barcodes WHERE lower(barcode) = lower($1) LIMIT 1", [barcode])
     if (q.rows.length === 0) {
       // fallback: check documents (existing older entries) and synthesize a response
-      const d = await query('SELECT * FROM documents WHERE barcode = $1 LIMIT 1', [barcode])
+      const d = await query('SELECT * FROM documents WHERE lower(barcode) = lower($1) LIMIT 1', [barcode])
       if (d.rows.length > 0) {
         const doc = d.rows[0]
         const synth = {
@@ -79,7 +80,7 @@ router.get("/", async (req: Request, res: Response) => {
 router.get("/:barcode/timeline", async (req: Request, res: Response) => {
   try {
     const { barcode } = req.params
-    const bc = await query("SELECT id FROM barcodes WHERE barcode = $1 LIMIT 1", [barcode])
+    const bc = await query("SELECT id FROM barcodes WHERE lower(barcode) = lower($1) LIMIT 1", [barcode])
     if (bc.rows.length === 0) return res.status(404).json({ error: "Not found" })
     const bcId = bc.rows[0].id
     const t = await query("SELECT id, actor_id, action, meta, created_at FROM barcode_timeline WHERE barcode_id = $1 ORDER BY created_at DESC", [bcId])
@@ -100,7 +101,7 @@ router.post("/:barcode/timeline", async (req: Request, res: Response) => {
     let bc = await query("SELECT id FROM barcodes WHERE barcode = $1 LIMIT 1", [barcode])
     if (bc.rows.length === 0) {
       console.warn('Barcode not found in barcodes table for timeline; attempting synth from documents for', barcode)
-      const d = await query('SELECT * FROM documents WHERE barcode = $1 LIMIT 1', [barcode])
+      const d = await query('SELECT * FROM documents WHERE lower(barcode) = lower($1) LIMIT 1', [barcode])
       if (d.rows.length > 0) {
         const doc = d.rows[0]
         try {
