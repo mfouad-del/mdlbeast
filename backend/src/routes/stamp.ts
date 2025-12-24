@@ -70,6 +70,22 @@ router.post('/:barcode/stamp', async (req, res) => {
     let helv: any
     let helvBold: any
     try {
+      // Ensure pdf-lib can use fontkit to embed custom fonts
+      let fontkitRegistered = false
+      try {
+        const fk = await import('@pdf-lib/fontkit')
+        pdfDoc.registerFontkit((fk as any).default || fk)
+        fontkitRegistered = true
+      } catch (e1) {
+        try {
+          const fk2 = await import('fontkit')
+          pdfDoc.registerFontkit((fk2 as any).default || fk2)
+          fontkitRegistered = true
+        } catch (e2) {
+          console.warn('Stamp: fontkit not available; custom font embedding may fail')
+        }
+      }
+
       const fontDirs = [
         path.resolve(process.cwd(), 'backend', 'assets', 'fonts'),
         path.resolve(process.cwd(), 'assets', 'fonts'),
@@ -102,6 +118,10 @@ router.post('/:barcode/stamp', async (req, res) => {
       }
 
       if (chosen) {
+        if (!fontkitRegistered) {
+          console.error('Stamp: cannot embed custom font because fontkit is not registered')
+          return res.status(500).json({ error: 'Server is missing the fontkit integration required to embed custom TTF/OTF fonts. Install and enable @pdf-lib/fontkit (or fontkit) on the server.' })
+        }
         const fontBuf = fs.readFileSync(chosen)
         helv = await pdfDoc.embedFont(fontBuf)
         // try to find a bold variant nearby
@@ -119,11 +139,11 @@ router.post('/:barcode/stamp', async (req, res) => {
           const notoBoldUrl = 'https://github.com/googlefonts/noto-fonts/raw/main/phaseIII_only/unhinted/ttf/NotoSansArabic/NotoSansArabic-Bold.ttf'
           const regResp = await fetch(notoRegUrl)
           const boldResp = await fetch(notoBoldUrl)
-          if (regResp.ok) {
+          if (regResp.ok && fontkitRegistered) {
             const buf = Buffer.from(await regResp.arrayBuffer())
             helv = await pdfDoc.embedFont(buf)
           }
-          if (boldResp.ok) {
+          if (boldResp.ok && fontkitRegistered) {
             const buf2 = Buffer.from(await boldResp.arrayBuffer())
             helvBold = await pdfDoc.embedFont(buf2)
           }
@@ -144,7 +164,6 @@ router.post('/:barcode/stamp', async (req, res) => {
       // If embedding fails (or no font present) return a helpful error so user/admin can add a UTF-8 font file
       return res.status(500).json({ error: 'Failed to embed font for stamping. Ensure a UTF-8 TTF/OTF font (e.g., NotoSansArabic, DejaVuSans, Amiri) is present in backend/assets/fonts.' })
     }
-
     const pages = pdfDoc.getPages()
     const page = pages[Math.max(0, Math.min(pageIndex, pages.length - 1))]
     const { width: pageWidth, height: pageHeight } = page.getSize()
