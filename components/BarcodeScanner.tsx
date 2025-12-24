@@ -248,9 +248,14 @@ const BarcodeScanner: React.FC = () => {
                 </div>
               </div>
 
-              <button className="w-full mt-6 bg-slate-900 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2">
-                <FileText size={20} /> فتح الملف الكامل
-              </button>
+              <div className="flex gap-3">
+                <button className="w-full mt-6 bg-slate-900 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2" onClick={() => window.open(foundDoc.pdfFile?.url || foundDoc.pdf_file || '#', '_blank')}>
+                  <FileText size={20} /> فتح الملف الكامل
+                </button>
+                <button className="mt-6 bg-red-500 text-white py-4 rounded-xl font-bold flex items-center gap-2 px-4" onClick={async () => { if (!confirm('حذف المستند؟')) return; try { await apiClient.deleteDocument(foundDoc.barcode || foundDoc.barcodeId); setFoundDoc(null); setTimeline([]); setStatusMessage('تم حذف المستند'); } catch (e) { console.error(e); alert('فشل حذف المستند') } }}>
+                  حذف
+                </button>
+              </div>
             </div>
           ) : (
             <div className="h-full bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center p-12 text-slate-400 text-center gap-4">

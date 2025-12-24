@@ -117,7 +117,6 @@ export default function DashboardPage() {
   const handleSaveDoc = async (data: any) => {
     try {
       const docToSave = {
-        barcode: data.barcodeId,
         type: data.type,
         sender: data.sender,
         receiver: data.recipient,

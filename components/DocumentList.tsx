@@ -148,7 +148,7 @@ export default function DocumentList({ docs, settings }: DocumentListProps) {
                     </td>
                     <td className="px-8 py-7">
                       {doc.pdfFile ? (
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 items-center">
                           <a
                             href={doc.pdfFile.url}
                             target="_blank"
@@ -163,11 +163,19 @@ export default function DocumentList({ docs, settings }: DocumentListProps) {
                           >
                             <ScanText size={16} /> دمغ الملصق
                           </button>
+                          <button className="text-red-500 px-4 py-2 rounded-xl border border-red-100" onClick={async () => { if (!confirm('حذف المستند؟')) return; try { await (await import('@/lib/api-client')).apiClient.deleteDocument(doc.barcode || doc.barcodeId); window.location.reload(); } catch(e){console.error(e); alert('فشل حذف المستند')} }}>
+                            حذف
+                          </button>
                         </div>
                       ) : (
-                        <span className="text-[11px] font-black text-slate-300 italic flex items-center gap-1.5">
-                          <AlertCircle size={14} /> لا يوجد مرفق
-                        </span>
+                        <div className="flex items-center gap-4">
+                          <span className="text-[11px] font-black text-slate-300 italic flex items-center gap-1.5">
+                            <AlertCircle size={14} /> لا يوجد مرفق
+                          </span>
+                          <button className="text-red-500 px-4 py-2 rounded-xl border border-red-100" onClick={async () => { if (!confirm('حذف المستند؟')) return; try { await (await import('@/lib/api-client')).apiClient.deleteDocument(doc.barcode || doc.barcodeId); window.location.reload(); } catch(e){console.error(e); alert('فشل حذف المستند')} }}>
+                            حذف
+                          </button>
+                        </div>
                       )}
                     </td>
                     <td className="px-8 py-7">

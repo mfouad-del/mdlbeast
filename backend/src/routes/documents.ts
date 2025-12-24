@@ -92,7 +92,7 @@ router.post(
 
     try {
       const authReq = req
-      const {
+      let {
         barcode,
         type,
         sender,
@@ -106,6 +106,16 @@ router.post(
         attachments = [],
         tenant_id = null,
       } = req.body
+
+      // If no barcode provided, generate a numeric sequential barcode server-side
+      if (!barcode) {
+        if (!type) return res.status(400).json({ error: 'Type is required to generate barcode' })
+        const seqName = type === 'INCOMING' ? 'doc_in_seq' : 'doc_out_seq'
+        const seqRes = await query(`SELECT nextval('${seqName}') as n`)
+        const n = seqRes.rows[0].n
+        const dirIndex = type === 'INCOMING' ? 0 : 1
+        barcode = `${type === 'INCOMING' ? 'In' : 'out'}-${dirIndex}-${String(n).padStart(7, '0')}`
+      }
 
       // Check if barcode exists
       const existing = await query("SELECT id FROM documents WHERE barcode = $1", [barcode])
@@ -150,6 +160,12 @@ router.post(
         console.warn('Failed to ensure barcode entry:', e)
       }
 
+      // include attachments array as JSONB and return pdfFile shortcut
+      const docRow = result.rows[0]
+      const pdfAttachment = (docRow.attachments && Array.isArray(docRow.attachments) && docRow.attachments[0]) ? docRow.attachments[0] : null
+      const responseDoc = { ...docRow, pdfFile: pdfAttachment }
+
+      res.status(201).json(responseDoc)
       res.status(201).json(result.rows[0])
     } catch (error) {
       console.error("Create document error:", error)
