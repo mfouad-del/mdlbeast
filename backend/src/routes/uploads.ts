@@ -47,17 +47,19 @@ router.post('/', upload.single('file'), async (req: Request, res: Response) => {
       return res.json({ url, name: f.originalname, size: f.size, storage: 'local' })
     }
 
-    // Validate service role key format quickly (trimmed)
+    // Validate service role key format quickly (trimmed). Accept jwt-like or sb_secret_ prefix.
     const jwtLike = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(supabaseKey)
-    if (!jwtLike) {
+    const sbPrefixed = supabaseKey.startsWith('sb_secret_')
+    if (!jwtLike && !sbPrefixed) {
       const snippet = String(supabaseKey).slice(0, 6) + '…' + String(supabaseKey).slice(-6)
       console.error('Supabase service key invalid format; aborting upload. keySnippet=', snippet, 'rawLen=', supabaseKeyRaw.length)
-      if (supabaseKey.startsWith('sb_secret_')) {
-        console.error('Detected key starting with sb_secret_ — this appears to be a different Supabase secret (not a Service Role JWT).')
-      }
-      if (inProd) return res.status(400).json({ error: 'SUPABASE_SERVICE_ROLE_KEY does not look like a Service Role JWT. Replace with the Service Role Key from Supabase settings.', keySnippet: snippet })
+      if (inProd) return res.status(400).json({ error: 'SUPABASE_SERVICE_ROLE_KEY does not look like a Service Role JWT or sb_secret_ key. Replace with the Service Role Key from Supabase settings.', keySnippet: snippet })
       const url = `/uploads/${f.filename}`
       return res.json({ url, name: f.originalname, size: f.size, storage: 'local' })
+    }
+
+    if (sbPrefixed && !jwtLike) {
+      console.warn('Warning: SUPABASE_SERVICE_ROLE_KEY starts with sb_secret_. Proceeding to attempt Supabase upload to verify acceptance at runtime.')
     }
 
     try {
