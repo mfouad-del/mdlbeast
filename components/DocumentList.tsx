@@ -8,6 +8,7 @@ import { exportToCSV } from "@/lib/barcode-service"
 import BarcodePrinter from "./BarcodePrinter"
 import OfficialReceipt from "./OfficialReceipt"
 import PdfStamper from "./PdfStamper"
+import { apiClient } from "@/lib/api-client"
 
 interface DocumentListProps {
   docs: Correspondence[]
@@ -150,14 +151,18 @@ export default function DocumentList({ docs, settings }: DocumentListProps) {
                     <td className="px-8 py-7">
                       {doc.pdfFile ? (
                         <div className="flex gap-2 items-center">
-                          <a
-                            href={`/api/documents/${encodeURIComponent(doc.barcode || doc.barcodeId)}/preview`}
-                            target="_blank"
-                            rel="noreferrer"
+                          <button
+                            onClick={async () => {
+                              try {
+                                const url = await apiClient.getPreviewUrl(doc.barcode || doc.barcodeId)
+                                if (!url) { alert('لا يوجد ملف لعرضه'); return }
+                                window.open(url, '_blank')
+                              } catch (e) { console.error(e); alert('فشل فتح الملف') }
+                            }}
                             className="flex items-center gap-2 px-4 py-2.5 bg-green-50 text-green-700 rounded-xl border border-green-200 hover:bg-green-100 transition-all text-[11px] font-black group"
                           >
                             <FileText size={16} /> فتح المرفق
-                          </a>
+                          </button>
                           <button
                             onClick={() => setStamperDoc(doc)}
                             className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white rounded-xl border border-slate-900 hover:bg-black transition-all text-[11px] font-black shadow-lg shadow-slate-200"

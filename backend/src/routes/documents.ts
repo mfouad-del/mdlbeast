@@ -22,24 +22,29 @@ router.get('/:barcode/preview', async (req: Request, res: Response) => {
     const supabaseKeyRaw = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
     const supabaseKey = String(supabaseKeyRaw).trim()
 
-    // If we have a bucket/key, return a signed URL (redirect) so the client sees the freshest content
+    // If we have a bucket/key, try to create a signed URL first
     if (pdf.key && supabaseUrl && supabaseKey && pdf.bucket) {
       try {
         const { createClient } = await import('@supabase/supabase-js')
         const supabase = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } })
         const { data: signedData, error: signedErr } = await supabase.storage.from(pdf.bucket).createSignedUrl(pdf.key, 60 * 5)
-        if (!signedErr && signedData?.signedUrl) {
-          return res.redirect(signedData.signedUrl)
+        const newUrl = (signedData && signedData.signedUrl) ? signedData.signedUrl : (supabase.storage.from(pdf.bucket).getPublicUrl(pdf.key) as any)?.data?.publicUrl
+        if (newUrl) {
+          // Provide JSON endpoint for clients that prefer to open the signed URL directly
+          if (req.path.endsWith('/preview-url')) return res.json({ previewUrl: newUrl })
+          return res.redirect(newUrl)
         }
       } catch (e) {
         console.warn('Public preview signed URL error (continuing to public url):', e)
       }
     }
 
-    // Fallback: redirect to public URL with cache-busting query
+    // Fallback: use public URL with cache-busting query
     if (pdf.url) {
       const sep = pdf.url.includes('?') ? '&' : '?'
-      return res.redirect(`${pdf.url}${sep}t=${Date.now()}`)
+      const final = `${pdf.url}${sep}t=${Date.now()}`
+      if (req.path.endsWith('/preview-url')) return res.json({ previewUrl: final })
+      return res.redirect(final)
     }
 
     res.status(404).send('No attachment')

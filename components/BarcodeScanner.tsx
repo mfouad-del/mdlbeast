@@ -250,9 +250,15 @@ const BarcodeScanner: React.FC = () => {
               </div>
 
               <div className="flex gap-3">
-                <button className="w-full mt-6 bg-slate-900 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2" onClick={() => {
-                  const preview = `/api/documents/${encodeURIComponent(foundDoc.barcode || foundDoc.barcodeId)}/preview`;
-                  window.open(preview, '_blank');
+                <button className="w-full mt-6 bg-slate-900 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2" onClick={async () => {
+                  try {
+                    const previewUrl = await apiClient.getPreviewUrl(foundDoc.barcode || foundDoc.barcodeId)
+                    if (!previewUrl) { alert('لم يتم العثور على ملف للمعاينة'); return }
+                    window.open(previewUrl, '_blank')
+                  } catch (e: any) {
+                    console.error('Failed to open preview', e)
+                    alert('فشل فتح الملف - حاول مرة أخرى')
+                  }
                 }}>
                   <FileText size={20} /> فتح الملف الكامل
                 </button>

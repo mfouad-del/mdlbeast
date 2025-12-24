@@ -151,6 +151,11 @@ class ApiClient {
     })
   }
 
+  async getPreviewUrl(barcode: string) {
+    const res = await this.request<any>(`/documents/${encodeURIComponent(barcode)}/preview-url`)
+    return res?.previewUrl || null
+  }
+
   async getStatistics() {
     return this.request<any>("/documents/stats/summary")
   }
