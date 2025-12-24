@@ -7,6 +7,46 @@ import type { AuthRequest } from "../types"
 
 const router = express.Router()
 
+// Public JSON preview URL endpoint (no auth) - returns { previewUrl }
+router.get('/:barcode/preview-url', async (req: Request, res: Response) => {
+  try {
+    const { barcode } = req.params
+    const r = await query("SELECT attachments FROM documents WHERE lower(barcode) = lower($1) LIMIT 1", [barcode])
+    if (r.rows.length === 0) return res.status(404).json({ error: 'Not found' })
+    let attachments: any = r.rows[0].attachments
+    try { if (typeof attachments === 'string') attachments = JSON.parse(attachments || '[]') } catch (e) { attachments = Array.isArray(attachments) ? attachments : [] }
+    if (!attachments || !attachments.length) return res.status(404).json({ error: 'No attachment' })
+    const pdf = attachments[0]
+
+    const supabaseUrl = process.env.SUPABASE_URL
+    const supabaseKeyRaw = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+    const supabaseKey = String(supabaseKeyRaw).trim()
+
+    // Prefer signed URL when possible
+    if (pdf.key && supabaseUrl && supabaseKey && pdf.bucket) {
+      try {
+        const { createClient } = await import('@supabase/supabase-js')
+        const supabase = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } })
+        const { data: signedData, error: signedErr } = await supabase.storage.from(pdf.bucket).createSignedUrl(pdf.key, 60 * 5)
+        if (!signedErr && signedData?.signedUrl) {
+          return res.json({ previewUrl: signedData.signedUrl })
+        }
+        const publicRes = supabase.storage.from(pdf.bucket).getPublicUrl(pdf.key) as any
+        if (publicRes && publicRes.data && publicRes.data.publicUrl) return res.json({ previewUrl: publicRes.data.publicUrl })
+      } catch (e) {
+        console.warn('Preview-url signed URL error:', e)
+      }
+    }
+
+    if (pdf.url) return res.json({ previewUrl: pdf.url })
+
+    res.status(404).json({ error: 'No attachment' })
+  } catch (err: any) {
+    console.error('Preview-url error:', err)
+    res.status(500).json({ error: 'Preview failed' })
+  }
+})
+
 // Public preview route (no auth) so browser can open attachment previews directly
 router.get('/:barcode/preview', async (req: Request, res: Response) => {
   try {
