@@ -655,9 +655,10 @@ app.get('/debug/list-fonts', async (req, res) => {
             try {
               const p = pathModule.join(d, f)
               const s = fsModule.statSync(p)
-              const head = fsModule.readFileSync(p, { encoding: null, start: 0, end: 15 })
+              const headBuf = fsModule.readFileSync(p)
+              const head = headBuf.slice(0, 16)
               const crypto = require('crypto')
-              const sha = crypto.createHash('sha256').update(fsModule.readFileSync(p)).digest('hex')
+              const sha = crypto.createHash('sha256').update(headBuf).digest('hex')
               return { name: f, size: s.size, head: Buffer.from(head).toString('hex'), sha256: sha }
             } catch (e) { return { name: f, error: String(e) } }
           })
@@ -710,7 +711,7 @@ app.post('/debug/fix-fonts', async (req, res) => {
           console.warn('fix-fonts: downloaded content-type', contentType)
         }
         const buf = Buffer.from(await r.arrayBuffer())
-        fs.writeFileSync(t, buf)
+        fsModule.writeFileSync(t, buf)
         const crypto = require('crypto')
         const sha = crypto.createHash('sha256').update(buf).digest('hex')
         written.push({ target: t, ok: true, size: buf.length, sha256: sha, contentType })
