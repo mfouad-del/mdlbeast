@@ -390,33 +390,41 @@ async function runAllowedMigrationsOnStartup() {
       path.resolve(process.cwd(), 'scripts'),
     ]
 
-    let base: string | null = null
+    // Collect existing script roots from candidates
+    const roots: string[] = []
     for (const c of candidates) {
-      if (fs.existsSync(path.join(c, allowed[0]))) { base = c; break }
+      if (fs.existsSync(c)) roots.push(c)
     }
 
-    if (!base) {
-      // try walking up
+    // If we didn't find any candidate directories, try walking up the tree to find any scripts dir
+    if (roots.length === 0) {
       let cur = path.resolve(process.cwd())
       for (let i = 0; i < 6; i++) {
         const candidate = path.join(cur, 'scripts')
-        if (fs.existsSync(path.join(candidate, allowed[0]))) { base = candidate; break }
+        if (fs.existsSync(candidate)) { roots.push(candidate); break }
         const parent = path.dirname(cur)
         if (parent === cur) break
         cur = parent
       }
     }
 
-    if (!base) {
+    if (roots.length === 0) {
       console.log('No scripts directory found; skipping startup migrations')
       return
     }
 
+    // For each allowed filename, check all roots and apply the first match found
     for (const filename of allowed) {
-      const filePath = path.join(base, filename)
-      if (!fs.existsSync(filePath)) { console.log('Skipping missing migration', filename); continue }
+      let filePath: string | null = null
+      for (const root of roots) {
+        const candidate = path.join(root, filename)
+        if (fs.existsSync(candidate)) { filePath = candidate; break }
+      }
+
+      if (!filePath) { console.log('Skipping missing migration', filename); continue }
+
       const sql = fs.readFileSync(filePath, 'utf8')
-      console.log('Applying startup migration:', filename)
+      console.log('Applying startup migration:', filename, 'from', filePath)
       try {
         await query('BEGIN')
         await query(sql)
@@ -470,6 +478,42 @@ app.get("/debug/backup-db", async (req, res) => {
   } catch (err: any) {
     console.error("Backup DB error:", err)
     res.status(500).json({ error: err.message || String(err) })
+  }
+})
+
+// Debug: test Supabase storage upload using env vars (protected)
+app.get("/debug/test-supabase-upload", async (req, res) => {
+  const secret = req.query.secret
+  if (!(process.env.DEBUG === "true" || (typeof secret === "string" && secret === DEBUG_SECRET && DEBUG_SECRET !== ""))) {
+    return res.status(404).send("Not found")
+  }
+
+  const SUPABASE_URL = process.env.SUPABASE_URL || ''
+  const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+  const BUCKET = process.env.SUPABASE_BUCKET || process.env.S3_BUCKET || ''
+
+  if (!SUPABASE_URL || !SUPABASE_KEY || !BUCKET) {
+    return res.status(500).json({ error: 'Missing SUPABASE env vars', SUPABASE_URL: !!SUPABASE_URL, SUPABASE_KEY: !!SUPABASE_KEY, BUCKET })
+  }
+
+  try {
+    const { createClient } = await import('@supabase/supabase-js')
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } })
+    const key = `debug/test-${Date.now()}.txt`
+    const body = Buffer.from('debug upload')
+    const { data, error } = await supabase.storage.from(BUCKET).upload(key, body, { contentType: 'text/plain' })
+    if (error) {
+      // try listing to get more context
+      let listInfo
+      try { listInfo = await supabase.storage.from(BUCKET).list('debug') } catch (e) { listInfo = String(e) }
+      return res.status(500).json({ error, listInfo })
+    }
+
+    const pub = supabase.storage.from(BUCKET).getPublicUrl(key)
+    return res.json({ data, publicUrl: (pub as any)?.data || null })
+  } catch (err: any) {
+    console.error('Debug Supabase upload error:', err)
+    return res.status(500).json({ error: err.message || String(err) })
   }
 })
 
