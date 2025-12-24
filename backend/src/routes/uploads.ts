@@ -51,7 +51,7 @@ router.post('/', upload.single('file'), async (req: Request, res: Response) => {
         }
 
         try { fs.unlinkSync(f.path) } catch (e) {}
-        return res.json({ url, name: f.originalname, size: f.size })
+        return res.json({ url, name: f.originalname, size: f.size, storage: 'supabase' })
       } catch (e: any) {
         console.error('Supabase upload failed, falling back to S3/local', e)
       }
@@ -74,15 +74,15 @@ router.post('/', upload.single('file'), async (req: Request, res: Response) => {
         const url = `${s3Endpoint}/${s3Bucket}/${key}`
         // remove local file
         try { fs.unlinkSync(f.path) } catch (e) {}
-        return res.json({ url, name: f.originalname, size: f.size })
+        return res.json({ url, name: f.originalname, size: f.size, storage: 's3' })
       } catch (e: any) {
-        console.error('S3 upload failed, falling back to local', e)
+        console.error('S3 upload failed, falling back to local:', e?.message || e)
       }
     }
 
     // default local behavior
     const url = `/uploads/${f.filename}`
-    res.json({ url, name: f.originalname, size: f.size })
+    res.json({ url, name: f.originalname, size: f.size, storage: 'local' })
   } catch (err: any) {
     console.error('Upload error:', err)
     res.status(500).json({ error: err.message || 'Upload failed' })
