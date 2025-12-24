@@ -176,30 +176,52 @@ class ApiClient {
     })
   }
 
-  // File upload (multipart/form-data)
-  async uploadFile(file: File) {
+  // File upload (multipart/form-data) with retry and longer timeout for flaky networks
+  async uploadFile(file: File, maxAttempts = 3) {
     const form = new FormData()
     form.append('file', file)
     const headers: any = {}
     if (this.token) headers['Authorization'] = `Bearer ${this.token}`
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 20000)
-    try {
-      const res = await fetch(`${API_BASE_URL}/uploads`, { method: 'POST', body: form, headers, signal: controller.signal })
-      const body = await res.json().catch(() => null)
-      if (!res.ok) {
-        let msg = 'Upload failed'
-        if (body) {
-          if (Array.isArray(body.errors)) msg = body.errors.map((e: any) => e.msg || e.message || JSON.stringify(e)).join('; ')
-          else if (body.error || body.message) msg = body.error || body.message
-          else msg = JSON.stringify(body)
+
+    const attemptUpload = async (attempt: number): Promise<any> => {
+      const controller = new AbortController()
+      // longer timeout to account for slow connections; will retry on network failures
+      const timeoutMs = 60_000
+      const timeout = setTimeout(() => controller.abort(), timeoutMs)
+      try {
+        const res = await fetch(`${API_BASE_URL}/uploads`, { method: 'POST', body: form, headers, signal: controller.signal })
+        const body = await res.json().catch(() => null)
+        if (!res.ok) {
+          let msg = 'Upload failed'
+          if (body) {
+            if (Array.isArray(body.errors)) msg = body.errors.map((e: any) => e.msg || e.message || JSON.stringify(e)).join('; ')
+            else if (body.error || body.message) msg = body.error || body.message
+            else msg = JSON.stringify(body)
+          }
+          throw new Error(msg)
         }
-        throw new Error(msg)
+        return body
+      } catch (err: any) {
+        const isAbort = err && err.name === 'AbortError'
+        const isNetwork = String(err?.message || '').includes('Failed to fetch') || String(err?.message || '').includes('NetworkError') || String(err?.message || '').includes('ERR_') || isAbort
+        // Retry on network-related failures
+        if (attempt < maxAttempts && isNetwork) {
+          const backoff = attempt * 500
+          await new Promise((r) => setTimeout(r, backoff))
+          return attemptUpload(attempt + 1)
+        }
+
+        // Build friendly message
+        let friendly = 'Upload failed'
+        if (err?.message) friendly = err.message
+        if (isAbort) friendly = 'Upload timed out or was aborted. Check your connection and try again.'
+        throw new Error(friendly)
+      } finally {
+        clearTimeout(timeout)
       }
-      return body
-    } finally {
-      clearTimeout(timeout)
     }
+
+    return attemptUpload(1)
   }
 
   // Tenants
