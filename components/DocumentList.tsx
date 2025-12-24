@@ -3,6 +3,7 @@
 import { useState } from "react"
 import type { Correspondence, SystemSettings } from "@/types"
 import { Search, ArrowRightLeft, FileSpreadsheet, AlertCircle, FileText, Calendar, ScanText } from "lucide-react"
+import AsyncButton from "./ui/async-button"
 import { exportToCSV } from "@/lib/barcode-service"
 import BarcodePrinter from "./BarcodePrinter"
 import OfficialReceipt from "./OfficialReceipt"
@@ -163,18 +164,36 @@ export default function DocumentList({ docs, settings }: DocumentListProps) {
                           >
                             <ScanText size={16} /> دمغ الملصق
                           </button>
-                          <button className="text-red-500 px-4 py-2 rounded-xl border border-red-100" onClick={async () => { if (!confirm('حذف المستند؟')) return; try { await (await import('@/lib/api-client')).apiClient.deleteDocument(doc.barcode || doc.barcodeId); window.location.reload(); } catch(e){console.error(e); alert('فشل حذف المستند')} }}>
+                          <AsyncButton
+                            variant="outline"
+                            size="sm"
+                            className="text-red-500 border-red-100"
+                            onClickAsync={async () => {
+                              if (!confirm('حذف المستند؟')) return
+                              await (await import('@/lib/api-client')).apiClient.deleteDocument(doc.barcode || doc.barcodeId)
+                              window.location.reload()
+                            }}
+                          >
                             حذف
-                          </button>
+                          </AsyncButton>
                         </div>
                       ) : (
                         <div className="flex items-center gap-4">
                           <span className="text-[11px] font-black text-slate-300 italic flex items-center gap-1.5">
                             <AlertCircle size={14} /> لا يوجد مرفق
                           </span>
-                          <button className="text-red-500 px-4 py-2 rounded-xl border border-red-100" onClick={async () => { if (!confirm('حذف المستند؟')) return; try { await (await import('@/lib/api-client')).apiClient.deleteDocument(doc.barcode || doc.barcodeId); window.location.reload(); } catch(e){console.error(e); alert('فشل حذف المستند')} }}>
+                          <AsyncButton
+                            variant="outline"
+                            size="sm"
+                            className="text-red-500 border-red-100"
+                            onClickAsync={async () => {
+                              if (!confirm('حذف المستند؟')) return
+                              await (await import('@/lib/api-client')).apiClient.deleteDocument(doc.barcode || doc.barcodeId)
+                              window.location.reload()
+                            }}
+                          >
                             حذف
-                          </button>
+                          </AsyncButton>
                         </div>
                       )}
                     </td>

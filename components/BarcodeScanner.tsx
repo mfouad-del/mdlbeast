@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Scan, Search, FileText, X, AlertCircle } from 'lucide-react';
 import { apiClient } from '../lib/api-client';
+import AsyncButton from './ui/async-button'
 
 const BarcodeScanner: React.FC = () => {
   const [isScanning, setIsScanning] = useState(false);
@@ -257,9 +258,9 @@ const BarcodeScanner: React.FC = () => {
                 }}>
                   <FileText size={20} /> فتح الملف الكامل
                 </button>
-                <button className="mt-6 bg-red-500 text-white py-4 rounded-xl font-bold flex items-center gap-2 px-4" onClick={async () => { if (!confirm('حذف المستند؟')) return; try { await apiClient.deleteDocument(foundDoc.barcode || foundDoc.barcodeId); setFoundDoc(null); setTimeline([]); setStatusMessage('تم حذف المستند'); } catch (e) { console.error(e); alert('فشل حذف المستند') } }}>
+                <AsyncButton className="mt-6 bg-red-500 text-white py-4 rounded-xl font-bold flex items-center gap-2 px-4" onClickAsync={async () => { if (!confirm('حذف المستند؟')) return; await apiClient.deleteDocument(foundDoc.barcode || foundDoc.barcodeId); setFoundDoc(null); setTimeline([]); setStatusMessage('تم حذف المستند'); }}>
                   حذف
-                </button>
+                </AsyncButton>
               </div>
             </div>
           ) : (

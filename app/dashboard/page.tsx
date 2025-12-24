@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { LayoutDashboard, FilePlus, FileMinus, Search, Users, LogOut, Scan, FileText, Briefcase, Database } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
+import AsyncButton from '@/components/ui/async-button'
 import type { Correspondence, User, SystemSettings } from "@/types"
 import { DocType } from '@/types'
 import Dashboard from "@/components/Dashboard"
@@ -39,6 +40,15 @@ export default function DashboardPage() {
   const reportSettings = {
     orgName: currentTenant?.name || (settings.orgName || ''),
     logoUrl: currentTenant?.logo_url || currentTenant?.logoUrl || (settings.logoUrl || '')
+  }
+
+  const handleExport = async () => {
+    try {
+      const [docsData, tenantsData, usersData] = await Promise.all([apiClient.getDocuments(), apiClient.getTenants(), apiClient.getUsers().catch(()=>[])]);
+      const payload = { docs: docsData, tenants: tenantsData, users: usersData, generated_at: new Date().toISOString() }
+      const blob = new Blob([JSON.stringify(payload,null,2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `backup-${new Date().toISOString().replace(/:/g,'-')}.json`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    } catch (err) { console.error(err); alert('فشل التصدير') }
   }
 
   useEffect(() => {
@@ -251,14 +261,14 @@ export default function DashboardPage() {
                   <div className="space-y-3">
                     <input value={newTenant.name} onChange={e => setNewTenant({...newTenant, name: e.target.value})} placeholder="اسم المؤسسة" className="w-full p-3 border rounded" />
                     <input value={newTenant.logo_url} onChange={e => setNewTenant({...newTenant, logo_url: e.target.value})} placeholder="رابط الشعار" className="w-full p-3 border rounded" />
-                    <button className="bg-slate-900 text-white px-6 py-3 rounded" onClick={async () => {
+                    <AsyncButton className="bg-slate-900 text-white px-6 py-3 rounded" onClickAsync={async () => {
                       try {
                         const slug = (newTenant.name || '').toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, '-').replace(/--+/g,'-')
                         await apiClient.createTenant({ name: newTenant.name, slug, logo_url: newTenant.logo_url })
                         const t = await apiClient.getTenants(); setTenants(t)
                         setNewTenant({name:'',slug:'',logo_url:''})
                       } catch (err) { console.error(err); alert('فشل الإنشاء') }
-                    }}>إنشاء مؤسسة</button>
+                    }}>إنشاء مؤسسة</AsyncButton>
                     <div className="text-xs text-slate-500 mt-2">ملاحظة: <strong>اختر المؤسسة من الأعلى</strong> لتقييد عرض وإنشاء المعاملات لتلك المؤسسة.</div>
                   </div>
                   <div>
@@ -273,7 +283,7 @@ export default function DashboardPage() {
                             </div>
                           </div>
                           <div>
-                            <button className="text-red-500" onClick={async () => { if (!confirm('حذف؟')) return; try { await apiClient.deleteTenant(t.id); setTenants(await apiClient.getTenants()); } catch(e){alert('فشل حذف')} }}>حذف</button>
+                            <AsyncButton className="text-red-500" variant="ghost" size="sm" onClickAsync={async () => { if (!confirm('حذف؟')) return; await apiClient.deleteTenant(t.id); setTenants(await apiClient.getTenants()); }}>حذف</AsyncButton>
                           </div>
                         </div>
                       ))}
@@ -291,14 +301,7 @@ export default function DashboardPage() {
                 <p className="text-sm text-slate-500 mb-4">يمكنك تنزيل نسخة JSON من البيانات الحالية (المستندات، المؤسسات، المستخدمين).</p>
                 <div className="flex gap-3">
                   <div className="flex gap-3">
-                  <button className="bg-slate-900 text-white px-6 py-3 rounded" onClick={async () => {
-                    try {
-                      const [docsData, tenantsData, usersData] = await Promise.all([apiClient.getDocuments(), apiClient.getTenants(), apiClient.getUsers().catch(()=>[])]);
-                      const payload = { docs: docsData, tenants: tenantsData, users: usersData, generated_at: new Date().toISOString() }
-                      const blob = new Blob([JSON.stringify(payload,null,2)], { type: 'application/json' });
-                      const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `backup-${new Date().toISOString().replace(/:/g,'-')}.json`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-                    } catch (err) { console.error(err); alert('فشل التصدير') }
-                  }}>تحميل JSON</button>
+                  <AsyncButton className="bg-slate-900 text-white px-6 py-3 rounded" onClickAsync={handleExport}>تحميل JSON</AsyncButton>
 
                   <input type="file" id="importBackupFile" className="hidden" accept=".json" onChange={async (e) => {
                     const file = (e.target as HTMLInputElement).files?.[0]

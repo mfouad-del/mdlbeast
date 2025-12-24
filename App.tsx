@@ -13,6 +13,7 @@ import BarcodeScanner from './components/BarcodeScanner';
 import ReportGenerator from './components/ReportGenerator';
 import Login from './components/Login';
 import UserManagement from './components/UserManagement';
+import AsyncButton from './components/ui/async-button'
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -321,24 +322,18 @@ const App: React.FC = () => {
                                   <button onClick={() => startEditCompany(c)} className="text-slate-300 opacity-0 group-hover:opacity-100 hover:text-blue-500 transition-all p-2 hover:bg-blue-50 rounded-full" title="تعديل">
                                     <Edit3 size={18} />
                                   </button>
-                                  <button 
-                                    onClick={async () => {
+                                  <AsyncButton 
+                                    onClickAsync={async () => {
                                       if (companies.length <= 1) return;
-                                      if (confirm("هل تود حذف هذه المؤسسة نهائياً؟")) { 
-                                        try {
-                                          await apiClient.deleteTenant(c.id)
-                                          alert('تم حذف المؤسسة')
-                                          loadInitialData()
-                                        } catch (err) {
-                                          console.error(err)
-                                          alert('فشل حذف المؤسسة')
-                                        }
-                                      }
+                                      if (!confirm("هل تود حذف هذه المؤسسة نهائياً؟")) return;
+                                      await apiClient.deleteTenant(c.id)
+                                      alert('تم حذف المؤسسة')
+                                      loadInitialData()
                                     }} 
                                     className="text-red-300 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all p-2 hover:bg-red-50 rounded-full" title="حذف"
                                   >
                                     <Trash2 size={18} />
-                                  </button>
+                                  </AsyncButton>
                                 </div>
                              </div>
                            ))}
