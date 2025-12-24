@@ -429,6 +429,56 @@ app.post("/debug/run-migration", async (req, res) => {
   }
 })
 
+// Debug: fix zeroed UUID timestamps by adding a uuid7_fixed column and populating it for affected rows
+app.post('/debug/fix-zero-uuid', async (req, res) => {
+  const secret = req.query.secret
+  if (!(process.env.DEBUG === 'true' || (typeof secret === 'string' && secret === DEBUG_SECRET && DEBUG_SECRET !== ''))) {
+    return res.status(403).json({ error: 'Forbidden' })
+  }
+
+  try {
+    // add columns if missing
+    await query("ALTER TABLE IF NOT EXISTS documents ADD COLUMN IF NOT EXISTS uuid7_fixed TEXT")
+    await query("ALTER TABLE IF NOT EXISTS barcodes ADD COLUMN IF NOT EXISTS uuid7_fixed TEXT")
+
+    // find affected documents and barcodes (heuristic: contain large zero-segments)
+    const docs = await query("SELECT id, barcode FROM documents WHERE barcode LIKE $1", ["%0000000%"])
+    const bcs = await query("SELECT id, barcode FROM barcodes WHERE barcode LIKE $1", ["%0000000%"])
+
+    // local uuidv7 generator (avoid cross-import issues during build)
+    const generateUUIDv7 = (): string => {
+      const timestamp = Date.now() || (new Date()).getTime();
+      let hexTimestamp = Math.floor(timestamp).toString(16).padStart(12, '0');
+      if (!hexTimestamp || /^0+$/.test(hexTimestamp)) hexTimestamp = Math.floor(Date.now() / 1).toString(16).padStart(12, '0');
+      const crypto = (() => {
+        try { return require('crypto') } catch(e){ return null }
+      })()
+      const rand = crypto ? Array.from((crypto as any).randomBytes(10)) : Array.from({length:10}, () => Math.floor(Math.random()*256))
+      const randomPart = (rand as number[]).map((b: number) => b.toString(16).padStart(2,'0')).join('')
+      return `${hexTimestamp.slice(0,8)}-${hexTimestamp.slice(8,12)}-7${randomPart.slice(0,3)}-${(parseInt(randomPart.slice(3,4),16) & 0x3 | 0x8).toString(16)}${randomPart.slice(4,7)}-${randomPart.slice(7,19)}`
+    }
+
+    const updatedDocs: any[] = []
+    for (const row of docs.rows) {
+      const newUuid = generateUUIDv7()
+      await query("UPDATE documents SET uuid7_fixed = $1 WHERE id = $2", [newUuid, row.id])
+      updatedDocs.push({ id: row.id, old: row.barcode, uuid7_fixed: newUuid })
+    }
+
+    const updatedBcs: any[] = []
+    for (const row of bcs.rows) {
+      const newUuid = generateUUIDv7()
+      await query("UPDATE barcodes SET uuid7_fixed = $1 WHERE id = $2", [newUuid, row.id])
+      updatedBcs.push({ id: row.id, old: row.barcode, uuid7_fixed: newUuid })
+    }
+
+    res.json({ ok: true, updatedDocs, updatedBcs })
+  } catch (err: any) {
+    console.error('fix-zero-uuid error:', err)
+    res.status(500).json({ error: 'Failed to run fix-zero-uuid' })
+  }
+})
+
 // Optional: run allowed migrations automatically on startup when AUTO_RUN_MIGRATIONS=true
 async function runAllowedMigrationsOnStartup() {
   try {

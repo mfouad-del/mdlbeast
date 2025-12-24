@@ -1,7 +1,7 @@
 import express from 'express'
 import { query } from '../config/database'
 import fetch from 'node-fetch'
-import { PDFDocument } from 'pdf-lib'
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
 import fs from 'fs'
 import path from 'path'
 import { authenticateToken } from '../middleware/auth'
@@ -63,9 +63,11 @@ router.post('/:barcode/stamp', async (req, res) => {
     if (!imgResp.ok) return res.status(500).json({ error: 'Failed to generate barcode image' })
     const imgBytes = Buffer.from(await imgResp.arrayBuffer())
 
-    // embed image into PDF
+    // embed image and text into PDF
     const pdfDoc = await PDFDocument.load(pdfBytes)
     const pngImage = await pdfDoc.embedPng(imgBytes)
+    // embed a readable font for annotations
+    const helv = await pdfDoc.embedFont((await import('pdf-lib')).StandardFonts.Helvetica)
 
     const pages = pdfDoc.getPages()
     const page = pages[Math.max(0, Math.min(pageIndex, pages.length - 1))]
@@ -103,12 +105,23 @@ router.post('/:barcode/stamp', async (req, res) => {
     xPdf = Math.max(0, Math.min(xPdf, pageWidth - 1))
     yPdf = Math.max(0, Math.min(yPdf, pageHeight - 1))
 
+    // draw barcode image
     page.drawImage(pngImage, {
       x: xPdf,
       y: yPdf,
       width: widthPdf,
       height: heightPdf,
     })
+
+    // draw textual annotation (barcode text + sender/company) below the barcode
+    const textX = xPdf
+    const textY = yPdf - 12
+    const lineHeight = 10
+    const barcodeText = String(barcode || '')
+    const senderText = String(doc.sender || doc.user || '')
+    // primary: barcode, secondary: sender/company
+    page.drawText(barcodeText, { x: textX, y: textY, size: 10, font: helv, color: rgb(0,0,0) })
+    page.drawText(senderText, { x: textX, y: textY - lineHeight, size: 9, font: helv, color: rgb(0,0,0) })
 
     const outBytes = await pdfDoc.save()
 
@@ -140,9 +153,18 @@ router.post('/:barcode/stamp', async (req, res) => {
       if (targetKey && targetBucket && supabaseUrl && supabaseKey) {
         const { createClient } = await import('@supabase/supabase-js')
         const supabase = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } })
-        const { error: uploadErr } = await supabase.storage.from(targetBucket).upload(targetKey, outBytes, { contentType: 'application/pdf', upsert: true })
+        // attempt upload with retries (helps transient network errors)
+        let uploadErr: any = null
+        const maxAttempts = 3
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          const r = await supabase.storage.from(targetBucket).upload(targetKey, outBytes, { contentType: 'application/pdf', upsert: true })
+          uploadErr = r.error
+          if (!uploadErr) break
+          console.warn(`Stamp: supabase upload attempt ${attempt} failed:`, uploadErr?.message || uploadErr)
+          await new Promise((res) => setTimeout(res, attempt * 300))
+        }
         if (uploadErr) {
-          console.error('Stamp: supabase upload error:', { message: uploadErr.message || uploadErr, details: uploadErr })
+          console.error('Stamp: supabase upload final failure:', { message: uploadErr.message || uploadErr, details: uploadErr })
           throw uploadErr
         }
         // refresh public URL
