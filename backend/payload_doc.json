@@ -1,0 +1,10 @@
+{
+  "type": "INCOMING",
+  "sender": "QA",
+  "receiver": "Dept",
+  "date": "2025-12-24",
+  "subject": "Smoke test doc",
+  "priority": "عادي",
+  "status": "وارد",
+  "attachments": [{ "name": "test_upload.pdf", "url": "https://gomnynxfdmxoirmccqjf.supabase.co/storage/v1/object/public/zaco/uploads/1766581067075-1766581067074-test_upload.pdf", "size": 121 }]
+}

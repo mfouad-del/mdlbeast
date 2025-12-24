@@ -5,7 +5,6 @@ import {
   AlertCircle, DownloadCloud, UploadCloud, Database, RefreshCcw, ShieldCheck, Edit3, X, Check 
 } from 'lucide-react';
 import { DocType, Correspondence, DocStatus, SystemSettings, Company, User } from './types';
-import { generateBusinessBarcode } from './services/barcodeService';
 import { apiClient } from './lib/api-client';
 import Dashboard from './components/Dashboard';
 import DocumentForm from './components/DocumentForm';
@@ -144,26 +143,25 @@ const App: React.FC = () => {
   const currentCompany = companies.find(c => c.id === selectedCompanyId) || companies[0];
 
   const handleSaveDoc = async (data: Partial<Correspondence>) => {
-    const barcode = generateBusinessBarcode(data.type === DocType.INCOMING ? 'IN' : 'OUT');
+    // Do not set barcode client-side; backend will generate numeric sequence.
     const docToSave = {
       ...data,
-      barcode,
       type: data.type,
       sender: data.sender,
       receiver: data.recipient || data.receiver,
       date: new Date().toISOString().split('T')[0],
       subject: data.title || data.subject,
       priority: data.priority || 'عادي',
-      status: data.status || 'محفوظ',
+      status: data.status || (data.type === DocType.INCOMING ? 'وارد' : 'صادر'),
     };
 
     try {
       const savedDoc = await apiClient.createDocument(docToSave as any);
       setDocs(prev => [savedDoc, ...prev]);
       setActiveTab('list');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to save document', err);
-      alert('فشل حفظ المعاملة إلى الخادم. تأكد من تسجيل الدخول وصلاحيات المستخدم.');
+      alert('فشل حفظ المعاملة: ' + (err?.message || 'تحقق من الاتصال والصلاحيات.'));
     }
   };
 

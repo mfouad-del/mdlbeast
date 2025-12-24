@@ -201,7 +201,7 @@ const BarcodeScanner: React.FC = () => {
                 </div>
                 <div className="flex justify-between p-3 bg-slate-50 rounded-xl">
                   <span className="text-slate-500 text-sm">تاريخ التسجيل:</span>
-                  <span className="font-bold text-slate-800">{foundDoc.date || foundDoc.created_at || '—'}</span>
+                  <span className="font-bold text-slate-800">{foundDoc.date || (foundDoc.created_at ? new Date(foundDoc.created_at).toLocaleString() : '—')}</span>
                 </div>
                 <div className="p-3 bg-slate-50 rounded-xl">
                   <span className="text-slate-500 text-sm block mb-1">الوصف:</span>
@@ -249,7 +249,12 @@ const BarcodeScanner: React.FC = () => {
               </div>
 
               <div className="flex gap-3">
-                <button className="w-full mt-6 bg-slate-900 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2" onClick={() => window.open(foundDoc.pdfFile?.url || foundDoc.pdf_file || '#', '_blank')}>
+                <button className="w-full mt-6 bg-slate-900 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2" onClick={() => {
+                  const url = foundDoc.pdfFile?.url || (Array.isArray(foundDoc.attachments) && foundDoc.attachments[0]?.url) || foundDoc.pdf_file || null;
+                  if (!url) { alert('لا يوجد ملف لعرضه'); return; }
+                  const finalUrl = (typeof url === 'string' && url.startsWith('/') && !url.startsWith('//')) ? `${window.location.origin}${url}` : url;
+                  window.open(finalUrl, '_blank');
+                }}>
                   <FileText size={20} /> فتح الملف الكامل
                 </button>
                 <button className="mt-6 bg-red-500 text-white py-4 rounded-xl font-bold flex items-center gap-2 px-4" onClick={async () => { if (!confirm('حذف المستند؟')) return; try { await apiClient.deleteDocument(foundDoc.barcode || foundDoc.barcodeId); setFoundDoc(null); setTimeline([]); setStatusMessage('تم حذف المستند'); } catch (e) { console.error(e); alert('فشل حذف المستند') } }}>

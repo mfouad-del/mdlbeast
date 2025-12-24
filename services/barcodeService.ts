@@ -6,11 +6,33 @@
  * توليد UUID v7 مرتب زمنياً لضمان كفاءة الفهرسة (Indexing)
  */
 export const generateUUIDv7 = (): string => {
-  const timestamp = Date.now();
-  const hexTimestamp = timestamp.toString(16).padStart(12, '0');
-  const randomPart = Array.from(crypto.getRandomValues(new Uint8Array(10)))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
+  // Ensure this works in both browser and Node (fallbacks included)
+  const timestamp = Date.now() || (new Date()).getTime();
+  let hexTimestamp = timestamp.toString(16).padStart(12, '0');
+
+  // Fallback if hexTimestamp somehow all zeros
+  if (/^0+$/.test(hexTimestamp)) {
+    hexTimestamp = Math.floor(Date.now() / 1000).toString(16).padStart(12, '0');
+  }
+
+  // Get 10 random bytes; prefer Web Crypto, fallback to Node crypto, fallback to Math.random
+  const getRandomBytes = (n: number): number[] => {
+    if (typeof (globalThis as any).crypto !== 'undefined' && typeof (globalThis as any).crypto.getRandomValues === 'function') {
+      return Array.from((globalThis as any).crypto.getRandomValues(new Uint8Array(n))) as number[];
+    }
+    try {
+      // Node.js environment
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const nodeCrypto = require('crypto');
+      return Array.from(nodeCrypto.randomBytes(n)) as number[];
+    } catch (e) {
+      // Last resort: Math.random — not cryptographically secure but acceptable fallback
+      return Array.from({ length: n }, () => Math.floor(Math.random() * 256));
+    }
+  };
+
+  const rand = getRandomBytes(10);
+  const randomPart = rand.map(b => b.toString(16).padStart(2, '0')).join('');
 
   return `${hexTimestamp.slice(0, 8)}-${hexTimestamp.slice(8, 12)}-7${randomPart.slice(0, 3)}-${(parseInt(randomPart.slice(3, 4), 16) & 0x3 | 0x8).toString(16)}${randomPart.slice(4, 7)}-${randomPart.slice(7, 19)}`;
 };

@@ -75,19 +75,26 @@ router.get("/:barcode", async (req: Request, res: Response) => {
 router.post(
   "/",
   [
-    body("barcode").trim().notEmpty().withMessage("Barcode is required"),
-    body("type").trim().notEmpty().withMessage("Type is required"),
+    // Accept both server-side 'type' (document type) and client-side direction flag (INCOMING/OUTGOING) as optional
+    body("type").optional().trim(),
+    // Accept aliases from the client form (title -> subject, recipient -> receiver, documentDate -> date)
     body("sender").trim().notEmpty().withMessage("Sender is required"),
-    body("receiver").trim().notEmpty().withMessage("Receiver is required"),
-    body("date").isISO8601().withMessage("Valid date is required"),
-    body("subject").trim().notEmpty().withMessage("Subject is required"),
-    body("priority").isIn(["عادي", "عاجل", "عاجل جداً"]).withMessage("Invalid priority"),
-    body("status").isIn(["وارد", "صادر", "محفوظ"]).withMessage("Invalid status"),
+    body("receiver").optional().trim(),
+    body("recipient").optional().trim(),
+    body("documentDate").optional().isISO8601().withMessage("Valid documentDate is required"),
+    body("date").optional().isISO8601().withMessage("Valid date is required"),
+    body("subject").optional().trim(),
+    body("title").optional().trim(),
+    body("priority").optional().isIn(["عادي", "عاجل", "عاجل جداً"]).withMessage("Invalid priority"),
+    body("status").optional().isIn(["وارد", "صادر", "محفوظ"]).withMessage("Invalid status"),
   ],
   async (req: AuthRequest, res: Response) => {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() })
+      // Log request body and validation errors to help debugging
+      try { console.warn('Create document request body:', JSON.stringify(req.body).slice(0, 1000)) } catch(e) {}
+      console.warn('Create document validation failed:', errors.array())
+      return res.status(400).json({ errors: errors.array(), message: 'Validation failed' })
     }
 
     try {
@@ -97,7 +104,10 @@ router.post(
         type,
         sender,
         receiver,
+        recipient,
         date,
+        documentDate,
+        title,
         subject,
         priority,
         status,
@@ -107,14 +117,38 @@ router.post(
         tenant_id = null,
       } = req.body
 
+      // Accept pdfFile as a shortcut from client (if provided during create)
+      if ((!attachments || !Array.isArray(attachments) || attachments.length === 0) && req.body.pdfFile) {
+        attachments = [req.body.pdfFile]
+      }
+
+      // Normalize aliases sent by the client
+      const finalReceiver = receiver || recipient || ''
+      const finalSubject = subject || title || ''
+      const finalDate = date || documentDate || new Date().toISOString().split('T')[0]
+
+      // Determine direction from provided 'type' or barcode prefix (flexible)
+      let direction: 'INCOMING' | 'OUTGOING' | null = null
+      if (typeof type === 'string') {
+        if (String(type).toUpperCase() === 'INCOMING' || String(type).toLowerCase().includes('in')) direction = 'INCOMING'
+        else if (String(type).toUpperCase() === 'OUTGOING' || String(type).toLowerCase().includes('out')) direction = 'OUTGOING'
+      }
+      if (!direction && barcode && typeof barcode === 'string') {
+        if (barcode.toUpperCase().startsWith('IN')) direction = 'INCOMING'
+        else if (barcode.toUpperCase().startsWith('OUT')) direction = 'OUTGOING'
+      }
+
+      // Default status based on direction if not provided
+      const finalStatus = status || (direction === 'INCOMING' ? 'وارد' : (direction === 'OUTGOING' ? 'صادر' : 'محفوظ'))
+
       // If no barcode provided, generate a numeric sequential barcode server-side
       if (!barcode) {
-        if (!type) return res.status(400).json({ error: 'Type is required to generate barcode' })
-        const seqName = type === 'INCOMING' ? 'doc_in_seq' : 'doc_out_seq'
+        if (!direction) return res.status(400).json({ error: 'Direction (type) is required to generate barcode' })
+        const seqName = direction === 'INCOMING' ? 'doc_in_seq' : 'doc_out_seq'
         const seqRes = await query(`SELECT nextval('${seqName}') as n`)
         const n = seqRes.rows[0].n
-        const dirIndex = type === 'INCOMING' ? 0 : 1
-        barcode = `${type === 'INCOMING' ? 'In' : 'out'}-${dirIndex}-${String(n).padStart(7, '0')}`
+        const dirIndex = direction === 'INCOMING' ? 0 : 1
+        barcode = `${direction === 'INCOMING' ? 'In' : 'out'}-${dirIndex}-${String(n).padStart(7, '0')}`
       }
 
       // Check if barcode exists
@@ -125,22 +159,23 @@ router.post(
       }
 
       // Insert document with optional tenant_id
+      const dbType = (typeof type === 'string' && type) ? type : (direction || 'UNKNOWN')
       const result = await query(
         `INSERT INTO documents (barcode, type, sender, receiver, date, subject, priority, status, classification, notes, attachments, user_id, tenant_id)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
          RETURNING *`,
         [
           barcode,
-          type,
+          dbType,
           sender,
-          receiver,
-          date,
-          subject,
-          priority,
-          status,
+          finalReceiver,
+          finalDate,
+          finalSubject,
+          priority || 'عادي',
+          finalStatus,
           classification,
           notes,
-          JSON.stringify(attachments),
+          JSON.stringify(attachments || []),
           authReq.user?.id,
           tenant_id,
         ],
@@ -153,7 +188,7 @@ router.post(
           await query(
             `INSERT INTO barcodes (barcode, type, status, priority, subject, attachments, user_id, tenant_id)
              VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-            [barcode, type, status || null, priority || null, subject || null, JSON.stringify(attachments || []), authReq.user?.id, tenant_id || null],
+            [barcode, dbType, finalStatus || null, priority || null, finalSubject || null, JSON.stringify(attachments || []), authReq.user?.id, tenant_id || null],
           )
         }
       } catch (e) {
@@ -166,7 +201,6 @@ router.post(
       const responseDoc = { ...docRow, pdfFile: pdfAttachment }
 
       res.status(201).json(responseDoc)
-      res.status(201).json(result.rows[0])
     } catch (error) {
       console.error("Create document error:", error)
       res.status(500).json({ error: "Failed to create document" })
@@ -235,8 +269,8 @@ router.get("/stats/summary", async (req: Request, res: Response) => {
     const result = await query(`
       SELECT 
         COUNT(*) as total,
-        COUNT(*) FILTER (WHERE status = 'وارد') as incoming,
-        COUNT(*) FILTER (WHERE status = 'صادر') as outgoing,
+        COUNT(*) FILTER (WHERE status = 'وارد' OR type ILIKE '%IN%' OR barcode ILIKE 'IN-%') as incoming,
+        COUNT(*) FILTER (WHERE status = 'صادر' OR type ILIKE '%OUT%' OR barcode ILIKE 'OUT-%') as outgoing,
         COUNT(*) FILTER (WHERE status = 'محفوظ') as archived,
         COUNT(*) FILTER (WHERE priority = 'عاجل جداً') as urgent
       FROM documents

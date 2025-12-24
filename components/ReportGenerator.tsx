@@ -14,8 +14,12 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
   const [startDate, setStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
 
+  const [scope, setScope] = useState<'ALL'|'INCOMING'|'OUTGOING'>('ALL')
+
   const filteredDocs = docs.filter(doc => {
-    return doc.date >= startDate && doc.date <= endDate;
+    const inRange = doc.date >= startDate && doc.date <= endDate;
+    const inScope = scope === 'ALL' || (scope === 'INCOMING' && doc.type === DocType.INCOMING) || (scope === 'OUTGOING' && doc.type === DocType.OUTGOING);
+    return inRange && inScope;
   });
 
   const [serverStats, setServerStats] = useState<{ total?: number; incoming?: number; outgoing?: number; archived?: number; urgent?: number }>({})
@@ -25,9 +29,9 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
   }, [])
 
   const stats = {
-    total: serverStats.total ?? filteredDocs.length,
-    incoming: serverStats.incoming ?? filteredDocs.filter(d => d.type === DocType.INCOMING).length,
-    outgoing: serverStats.outgoing ?? filteredDocs.filter(d => d.type === DocType.OUTGOING).length,
+    total: filteredDocs.length,
+    incoming: filteredDocs.filter(d => d.type === DocType.INCOMING).length,
+    outgoing: filteredDocs.filter(d => d.type === DocType.OUTGOING).length,
   };
 
   const handlePrintReport = () => {
@@ -40,7 +44,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
     const tableRows = filteredDocs.map(doc => {
       const barcode = doc.barcode || doc.barcodeId || (doc.referenceNumber || '')
       const title = doc.subject || doc.title || doc.description || '—'
-      const typeStr = (String(doc.type || '').toLowerCase().includes('in') || String(doc.type) === DocType.INCOMING) ? 'وارد' : 'صادر'
+      const typeStr = (String(doc.type) === DocType.INCOMING) ? 'وارد' : 'صادر'
       const sender = doc.sender || doc.from || doc.createdBy || doc.user_id || '—'
       const receiver = doc.receiver || doc.recipient || doc.to || '—'
       const dateStr = doc.date || doc.documentDate || (doc.created_at ? new Date(doc.created_at).toISOString().split('T')[0] : '—')
@@ -143,6 +147,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
           <div class="report-title">
             <h2>تقرير حركة الصادر والوارد</h2>
             <p>الفترة من ${startDate} إلى ${endDate}</p>
+            <p style="margin-top:8px;">نطاق التقرير: ${scope === 'ALL' ? 'الوارد + الصادر' : (scope === 'INCOMING' ? 'الوارد' : 'الصادر')}</p>
           </div>
 
           <div class="stats-grid">
@@ -203,7 +208,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10 p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10 p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100">
           <div className="space-y-3">
             <label className="flex items-center gap-2 text-xs font-black text-slate-400 uppercase tracking-widest">
               <Calendar size={14} /> تاريخ البداية
@@ -225,6 +230,15 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
             />
+          </div>
+
+          <div className="space-y-3">
+            <label className="flex items-center gap-2 text-xs font-black text-slate-400 uppercase tracking-widest">نطاق التقرير</label>
+            <select value={scope} onChange={(e) => setScope(e.target.value as any)} className="w-full p-4 bg-white border border-slate-200 rounded-2xl font-bold">
+              <option value="ALL">الوارد + الصادر</option>
+              <option value="INCOMING">الوارد فقط</option>
+              <option value="OUTGOING">الصادر فقط</option>
+            </select>
           </div>
         </div>
 

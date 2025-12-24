@@ -206,6 +206,45 @@ app.get("/debug/routes-full", (req, res) => {
   }
 })
 
+// Debug: set sequence start value (protected). Body: { name: 'doc_in_seq'|'doc_out_seq', value: number }
+app.post('/debug/set-sequence', async (req, res) => {
+  const secret = req.query.secret as string | undefined
+  if (!(process.env.DEBUG === "true" || (typeof secret === "string" && secret === DEBUG_SECRET && DEBUG_SECRET !== ""))) {
+    return res.status(403).json({ error: 'Forbidden' })
+  }
+  try {
+    const { name, value } = req.body || {}
+    if (!name || !value) return res.status(400).json({ error: 'name and value are required' })
+    if (!['doc_in_seq','doc_out_seq'].includes(name)) return res.status(400).json({ error: 'unsupported sequence' })
+    const v = Number(value)
+    if (!Number.isFinite(v) || v < 1) return res.status(400).json({ error: 'invalid value' })
+    // set sequence so nextval yields 'value' by setting current value to value-1
+    await query(`SELECT setval('${name}', $1)`, [v - 1])
+    const next = await query(`SELECT nextval('${name}') as n`)
+    return res.json({ ok: true, next: next.rows[0].n })
+  } catch (err: any) {
+    console.error('Set sequence error:', err)
+    res.status(500).json({ error: 'Failed to set sequence' })
+  }
+})
+
+// Debug: backfill document statuses based on barcode prefixes
+app.post('/debug/backfill-document-status', async (req, res) => {
+  const secret = req.query.secret
+  if (!(process.env.DEBUG === "true" || (typeof secret === "string" && secret === DEBUG_SECRET && DEBUG_SECRET !== ""))) {
+    return res.status(403).json({ error: 'Forbidden' })
+  }
+  try {
+    const outUpdated = await query("UPDATE documents SET status = 'صادر' WHERE barcode ILIKE 'OUT-%' AND status != 'صادر' RETURNING id, barcode, status")
+    const inUpdated = await query("UPDATE documents SET status = 'وارد' WHERE barcode ILIKE 'IN-%' AND status != 'وارد' RETURNING id, barcode, status")
+
+    return res.json({ ok: true, outUpdated: outUpdated.rows.length, inUpdated: inUpdated.rows.length, outSamples: outUpdated.rows.slice(0,5), inSamples: inUpdated.rows.slice(0,5) })
+  } catch (err: any) {
+    console.error('Backfill status error:', err)
+    res.status(500).json({ error: 'Backfill failed' })
+  }
+})
+
 // Debug: reset the entire public schema and re-run SQL migration + seed scripts
 app.post("/debug/reset-db", async (req, res) => {
   const secret = req.query.secret

@@ -62,8 +62,34 @@ class ApiClient {
     }
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: "Network error" }))
-      throw new Error(error.error || "Request failed")
+      // Try to parse JSON error body, otherwise fallback to plain text
+      let errorObj: any = null
+      try {
+        errorObj = await response.json()
+      } catch (jsonErr) {
+        try {
+          const txt = await response.text()
+          errorObj = { error: txt }
+        } catch (txtErr) {
+          // ignore
+        }
+      }
+
+      // Build a friendly message from common error shapes
+      let message = 'Request failed'
+      if (errorObj) {
+        if (Array.isArray(errorObj.errors) && errorObj.errors.length) {
+          message = errorObj.errors.map((e: any) => e.msg || e.message || JSON.stringify(e)).join('; ')
+        } else if (errorObj.error || errorObj.message) {
+          message = String(errorObj.error || errorObj.message)
+        } else if (typeof errorObj === 'string') {
+          message = errorObj
+        } else {
+          message = JSON.stringify(errorObj)
+        }
+      }
+
+      throw new Error(message)
     }
 
     return response.json()
@@ -152,8 +178,17 @@ class ApiClient {
     const timeout = setTimeout(() => controller.abort(), 20000)
     try {
       const res = await fetch(`${API_BASE_URL}/uploads`, { method: 'POST', body: form, headers, signal: controller.signal })
-      if (!res.ok) throw new Error('Upload failed')
-      return res.json()
+      const body = await res.json().catch(() => null)
+      if (!res.ok) {
+        let msg = 'Upload failed'
+        if (body) {
+          if (Array.isArray(body.errors)) msg = body.errors.map((e: any) => e.msg || e.message || JSON.stringify(e)).join('; ')
+          else if (body.error || body.message) msg = body.error || body.message
+          else msg = JSON.stringify(body)
+        }
+        throw new Error(msg)
+      }
+      return body
     } finally {
       clearTimeout(timeout)
     }

@@ -82,7 +82,6 @@ export default function DocumentForm({ type, onSave }: DocumentFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const barcode = generateBusinessBarcode(type === "INCOMING" ? "IN" : "OUT")
 
     let pdfFile = undefined
     try {
@@ -99,7 +98,8 @@ export default function DocumentForm({ type, onSave }: DocumentFormProps) {
       return
     }
 
-    onSave({ ...formData, type, pdfFile, barcodeId: barcode })
+    // Do not pre-generate barcode on client; backend will assign numeric sequence (In/0/0000001 or out/1/0000001)
+    onSave({ ...formData, type, pdfFile })
   }
 
   return (
@@ -118,6 +118,7 @@ export default function DocumentForm({ type, onSave }: DocumentFormProps) {
             <p className="text-slate-400 font-bold text-[11px] uppercase tracking-[0.2em] mt-1">
               المؤسسة المستقلة: زوايا البناء
             </p>
+            <p className="text-xs text-slate-500 mt-2">ملاحظة: سيُولد رقم المعاملة تلقائياً عند الحفظ بشكل رقمي متسلسل (مثال: In-0-0000001 او out-1-0000001).</p>
           </div>
         </header>
 
