@@ -66,9 +66,62 @@ router.post('/:barcode/stamp', async (req, res) => {
     // embed image and text into PDF
     const pdfDoc = await PDFDocument.load(pdfBytes)
     const pngImage = await pdfDoc.embedPng(imgBytes)
-    // embed readable fonts for annotations (regular + bold)
-    const helv = await pdfDoc.embedFont(StandardFonts.Helvetica)
-    const helvBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
+    // embed readable fonts for annotations (prefer a local TTF/OTF that supports Arabic)
+    let helv: any
+    let helvBold: any
+    try {
+      const fontDirs = [
+        path.resolve(process.cwd(), 'backend', 'assets', 'fonts'),
+        path.resolve(process.cwd(), 'assets', 'fonts'),
+        path.resolve(process.cwd(), 'assets'),
+        path.resolve(process.cwd(), 'fonts'),
+      ]
+      let fontFiles: string[] = []
+      for (const d of fontDirs) {
+        try {
+          if (fs.existsSync(d)) {
+            const list = fs.readdirSync(d).filter((f) => /(\.ttf|\.otf)$/i.test(f)).map((f) => path.join(d, f))
+            if (list.length) {
+              fontFiles = fontFiles.concat(list)
+            }
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      // Prefer named Arabic-support fonts if present
+      let chosen: string | null = null
+      const preferRe = /(noto|arab|dejavu|arial|amiri|tajawal|uthman|scheherazade|sukar)/i
+      const boldRe = /(bold|bld|-b|bd)/i
+      if (fontFiles.length) {
+        // try to find an Arabic-looking font first
+        const prefer = fontFiles.find(f => preferRe.test(path.basename(f)))
+        if (prefer) chosen = prefer
+        else chosen = fontFiles[0]
+      }
+
+      if (chosen) {
+        const fontBuf = fs.readFileSync(chosen)
+        helv = await pdfDoc.embedFont(fontBuf)
+        // try to find a bold variant nearby
+        const boldCandidate = fontFiles.find(f => boldRe.test(path.basename(f)))
+        if (boldCandidate) {
+          try { helvBold = await pdfDoc.embedFont(fs.readFileSync(boldCandidate)) } catch(e) { helvBold = helv }
+        } else {
+          helvBold = helv
+        }
+      } else {
+        // no local font found, fall back to standard fonts (may not support Arabic)
+        console.warn('Stamp: no local TTF/OTF font found in assets; Arabic characters may not be renderable.')
+        helv = await pdfDoc.embedFont(StandardFonts.Helvetica)
+        helvBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
+      }
+    } catch (e) {
+      console.error('Stamp: failed to embed custom font:', e)
+      // If embedding fails (or no font present) return a helpful error so user/admin can add a UTF-8 font file
+      return res.status(500).json({ error: 'Failed to embed font for stamping. Ensure a UTF-8 TTF/OTF font (e.g., NotoSansArabic, DejaVuSans, Amiri) is present in backend/assets/fonts.' })
+    }
 
     const pages = pdfDoc.getPages()
     const page = pages[Math.max(0, Math.min(pageIndex, pages.length - 1))]
