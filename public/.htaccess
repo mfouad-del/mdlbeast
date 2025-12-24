@@ -10,11 +10,10 @@ RewriteCond %{REQUEST_URI} ^/(archive/)?_next/ [NC]
 RewriteRule .* - [L]
 </IfModule>
 
-# Quick block for the WP emoji loader (fast mitigation)
-<IfModule mod_rewrite.c>
-  RewriteEngine On
-  RewriteRule ^wp-includes/js/wp-emoji-loader.min.js$ - [F,L]
-</IfModule>
+# Note: Previously blocked wp-emoji-loader which caused JS parse errors when the file was requested.
+# Allow the file so local stub can be served if present. (Avoids Unexpected token '<' errors)
+# Removed the explicit block to prevent returning HTML error pages for JS requests.
+
 
 # Force canonical host: redirect www to non-www (preserve path)
 <IfModule mod_rewrite.c>

@@ -257,6 +257,15 @@ app.post("/debug/reset-db", async (req, res) => {
     await query("DROP SCHEMA public CASCADE")
     await query("CREATE SCHEMA public")
 
+    // Ensure doc sequences exist after migrations (safe to run multiple times)
+    try {
+      await query("CREATE SEQUENCE IF NOT EXISTS doc_in_seq START 1")
+      await query("CREATE SEQUENCE IF NOT EXISTS doc_out_seq START 1")
+      console.log('Ensured doc_in_seq and doc_out_seq exist')
+    } catch (seqErr) {
+      console.warn('Failed to ensure document sequences during reset:', seqErr)
+    }
+
     const fs = await import("fs")
     const path = await import("path")
     // Support multiple possible locations for the SQL scripts depending on build/runtime layout
@@ -425,7 +434,7 @@ async function runAllowedMigrationsOnStartup() {
   try {
     if (String(process.env.AUTO_RUN_MIGRATIONS || '').toLowerCase() !== 'true') return
 
-    const allowed = ["01_create_tables.sql", "02_seed_data.sql", "03_create_modules_tables.sql", "04_seed_modules.sql", "05_create_indexes.sql", "06_add_documents_tenant.sql"]
+    const allowed = ["01_create_tables.sql", "02_seed_data.sql", "03_create_modules_tables.sql", "04_seed_modules.sql", "05_create_indexes.sql", "06_add_documents_tenant.sql", "07_create_sequences.sql"]
 
     const fs = await import('fs')
     const path = await import('path')
@@ -481,6 +490,15 @@ async function runAllowedMigrationsOnStartup() {
         console.error('Failed to apply startup migration', filename, e.message || e)
         // continue to next file (do not abort entire startup)
       }
+    }
+
+    // After attempting migrations, ensure sequences exist
+    try {
+      await query("CREATE SEQUENCE IF NOT EXISTS doc_in_seq START 1")
+      await query("CREATE SEQUENCE IF NOT EXISTS doc_out_seq START 1")
+      console.log('Ensured document sequences exist on startup')
+    } catch (errSeq: any) {
+      console.warn('Failed to ensure document sequences on startup:', errSeq)
     }
   } catch (err: any) {
     console.error('Startup migration runner failed:', err)
