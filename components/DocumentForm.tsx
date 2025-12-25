@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef, useCallback, memo } from "react"
+import { useState, useRef, useCallback, memo, useEffect } from "react"
 import {
   FilePlus,
   Send,
@@ -47,6 +47,7 @@ export default function DocumentForm({ type, onSave }: DocumentFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [file, setFile] = useState<any>(undefined)
   const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null)
+  const [users, setUsers] = useState<any[]>([])
   const [formData, setFormData] = useState<any>({
     title: "",
     sender: "",
@@ -57,8 +58,6 @@ export default function DocumentForm({ type, onSave }: DocumentFormProps) {
     description: "",
     security: "عام",
     priority: "عادي",
-    physicalLocation: "",
-    attachmentCount: 0,
     signatory: "",
     internalRef: "",
   })
@@ -68,10 +67,6 @@ export default function DocumentForm({ type, onSave }: DocumentFormProps) {
     setFormData((prev: any) => ({ ...prev, [name]: value }))
   }, [])
 
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev: any) => ({ ...prev, [name]: value }))
-  }
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
     if (selectedFile && selectedFile.type === "application/pdf") {
@@ -80,6 +75,24 @@ export default function DocumentForm({ type, onSave }: DocumentFormProps) {
       setFilePreviewUrl(preview)
     }
   }
+
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData((prev: any) => ({ ...prev, [name]: value }))
+  }
+
+  // load users for signatory select
+  useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      try {
+        const u = await (await import('@/lib/api-client')).apiClient.getUsers().catch(() => [])
+        if (mounted) setUsers(u || [])
+      } catch (e) {
+        console.warn('DocumentForm: failed to load users', e)
+      }
+    })()
+    return () => { mounted = false }
+  }, [])
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e && typeof e.preventDefault === 'function') e.preventDefault()
@@ -91,7 +104,8 @@ export default function DocumentForm({ type, onSave }: DocumentFormProps) {
         // import apiClient dynamically to avoid circular import issues in some builds
         const { apiClient } = await import("../lib/api-client")
         const uploaded = await apiClient.uploadFile(file as File)
-        pdfFile = { name: uploaded.name, size: uploaded.size, url: uploaded.url }
+        // Include key/bucket/storage when available so server can access the object directly (R2/Supabase)
+        pdfFile = { name: uploaded.name, size: uploaded.size, url: uploaded.url, key: uploaded.key, bucket: uploaded.bucket, storage: uploaded.storage }
       }
     } catch (err) {
       console.error('Upload failed', err)
@@ -183,28 +197,21 @@ export default function DocumentForm({ type, onSave }: DocumentFormProps) {
               type="date"
               required
             />
-            <FormInput
-              label="الموقّع المعتمد"
-              icon={UserCheck}
-              name="signatory"
-              value={formData.signatory}
-              onChange={handleInputChange}
-            />
-            <FormInput
-              label="موقع الأرشفة الفيزيائي"
-              icon={MapPin}
-              name="physicalLocation"
-              value={formData.physicalLocation}
-              onChange={handleInputChange}
-            />
-            <FormInput
-              label="إجمالي المرفقات"
-              icon={FilePlus}
-              name="attachmentCount"
-              value={formData.attachmentCount}
-              onChange={handleInputChange}
-              type="number"
-            />
+            <div className="space-y-2">
+              <label className="text-[11px] font-black text-slate-500 uppercase mr-1 tracking-widest">
+                الموقّع المعتمد
+              </label>
+              <select
+                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-black text-slate-900 text-sm outline-none focus:border-slate-900 transition-all cursor-pointer"
+                value={formData.signatory}
+                onChange={(e) => handleSelectChange('signatory', e.target.value)}
+              >
+                <option value="">اختر موقّعاً</option>
+                {users.map((u: any) => (
+                  <option key={u.id} value={u.id}>{u.full_name || u.username || u.email}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

@@ -81,20 +81,37 @@ router.get('/:barcode/preview', async (req: Request, res: Response) => {
 
     // Prefer Cloudflare R2 signed URLs when using R2
     const useR2 = String(process.env.STORAGE_PROVIDER || '').toLowerCase() === 'r2' || Boolean(process.env.CF_R2_ENDPOINT)
-    if (useR2 && pdf.key && (process.env.CF_R2_BUCKET || '')) {
+    if (useR2) {
       try {
         const { getSignedDownloadUrl, getPublicUrl } = await import('../lib/r2-storage')
-        try {
-          const signed = await getSignedDownloadUrl(pdf.key, 60 * 5)
-          if (req.path.endsWith('/preview-url')) return res.json({ previewUrl: signed })
-          return res.redirect(signed)
-        } catch (err) {
-          // fallback to public URL
+        // If we have explicit key, use it. Otherwise attempt to derive key from pdf.url
+        let key = pdf.key
+        if (!key && pdf.url) {
           try {
-            const publicUrl = getPublicUrl(pdf.key)
-            if (req.path.endsWith('/preview-url')) return res.json({ previewUrl: publicUrl })
-            return res.redirect(publicUrl)
-          } catch (err2) {}
+            const u = new URL(String(pdf.url))
+            const pathname = u.pathname.replace(/^\//, '')
+            const bucket = (process.env.CF_R2_BUCKET || pdf.bucket || '').replace(/\/$/, '')
+            if (bucket && pathname.startsWith(bucket + '/')) key = decodeURIComponent(pathname.slice(bucket.length + 1))
+            else {
+              const parts = pathname.split('/')
+              if (parts.length > 1) key = decodeURIComponent(parts.slice(1).join('/'))
+            }
+          } catch (e) { /* ignore */ }
+        }
+
+        if (key) {
+          try {
+            const signed = await getSignedDownloadUrl(key, 60 * 5)
+            if (req.path.endsWith('/preview-url')) return res.json({ previewUrl: signed })
+            return res.redirect(signed)
+          } catch (err) {
+            // fallback to public URL
+            try {
+              const publicUrl = getPublicUrl(key)
+              if (req.path.endsWith('/preview-url')) return res.json({ previewUrl: publicUrl })
+              return res.redirect(publicUrl)
+            } catch (err2) {}
+          }
         }
       } catch (e) {
         console.warn('R2 preview redirect error:', e)

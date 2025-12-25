@@ -167,7 +167,7 @@ export default function DashboardPage() {
         type: data.type,
         sender: data.sender,
         receiver: data.recipient,
-        date: data.documentDate || new Date().toISOString().split("T")[0],
+        date: data.date || data.documentDate || new Date().toISOString(),
         subject: data.title,
         priority: data.priority,
         status: data.type === "INCOMING" ? "وارد" : "صادر",

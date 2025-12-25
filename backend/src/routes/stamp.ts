@@ -41,10 +41,42 @@ router.post('/:barcode/stamp', async (req, res) => {
     try {
       const useR2 = String(process.env.STORAGE_PROVIDER || '').toLowerCase() === 'r2' || Boolean(process.env.CF_R2_ENDPOINT)
 
-      if (useR2 && pdf.key && (process.env.CF_R2_BUCKET || pdf.bucket)) {
+      if (useR2 && (pdf.key || (pdf.url && String(pdf.url).startsWith((process.env.CF_R2_ENDPOINT || '').replace(/\/$/, ''))))) {
         try {
-          const { downloadToBuffer } = await import('../lib/r2-storage')
-          pdfBytes = await downloadToBuffer(pdf.key)
+          const { downloadToBuffer, getPublicUrl } = await import('../lib/r2-storage')
+          // Derive key from pdf.url when key not present
+          let key = pdf.key
+          if (!key && pdf.url) {
+            try {
+              const u = new URL(String(pdf.url))
+              const endpoint = (process.env.CF_R2_ENDPOINT || '').replace(/\/$/, '')
+              // If url matches endpoint pattern, extract path segments after /<bucket>/
+              const pathname = u.pathname.replace(/^\//, '')
+              const bucket = (process.env.CF_R2_BUCKET || pdf.bucket || '').replace(/\/$/, '')
+              if (bucket && pathname.startsWith(bucket + '/')) {
+                key = decodeURIComponent(pathname.slice(bucket.length + 1))
+              } else {
+                // fallback: if endpoint includes the bucket in path (/bucket/key)
+                const ep = endpoint.replace(/^https?:\/\//, '')
+                if (u.href.indexOf(endpoint) === 0) {
+                  const parts = pathname.split('/')
+                  if (parts.length > 1) {
+                    // assume first part is bucket
+                    key = decodeURIComponent(parts.slice(1).join('/'))
+                  }
+                }
+              }
+            } catch (e) {
+              // ignore
+            }
+          }
+
+          if (!key) throw new Error('Missing R2 key for object')
+
+          pdfBytes = await downloadToBuffer(key)
+          // ensure we keep key for later upload/verification
+          pdf.key = pdf.key || key
+          pdf.bucket = pdf.bucket || process.env.CF_R2_BUCKET || ''
         } catch (e) {
           console.error('Stamp: failed to download object from R2:', e)
           throw e
