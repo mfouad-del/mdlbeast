@@ -38,6 +38,27 @@ router.post('/', upload.single('file'), async (req: Request, res: Response) => {
 
     console.log('DEBUG: /api/uploads supabase key rawLen=', supabaseKeyRaw.length, 'trimmedLen=', supabaseKey.length, 'startsWith=', supabaseKey.slice(0,8))
 
+    // If STORAGE_PROVIDER=r2 (or CF_R2_* env present) use R2
+    const useR2 = String(process.env.STORAGE_PROVIDER || '').toLowerCase() === 'r2' || Boolean(process.env.CF_R2_ENDPOINT)
+    if (useR2) {
+      try {
+        const { uploadBuffer, getPublicUrl } = await import('../lib/r2-storage')
+        const body = fs.readFileSync(f.path)
+        const ext = path.extname(f.originalname || f.filename || '') || ''
+        const safeBase = `${Date.now()}-${Math.random().toString(36).slice(2,9)}`
+        const key = `uploads/${safeBase}${ext}`
+        console.log('Uploading to R2 with key=', key, 'originalName=', f.originalname)
+        const url = await uploadBuffer(key, body, f.mimetype, 'public, max-age=0')
+        try { fs.unlinkSync(f.path) } catch (e) {}
+        return res.json({ url, name: f.originalname, size: f.size, storage: 'r2', key, bucket: process.env.CF_R2_BUCKET || null })
+      } catch (e: any) {
+        console.error('R2 upload failed:', e)
+        if (inProd) return res.status(500).json({ error: 'R2 upload failed; check CF_R2_* settings' })
+        const url = `/uploads/${f.filename}`
+        return res.json({ url, name: f.originalname, size: f.size, storage: 'local' })
+      }
+    }
+
     if (!supabaseUrl || !supabaseKey || !supabaseBucket) {
       const msg = 'Supabase storage not configured. Set SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY and SUPABASE_BUCKET.'
       console.error(msg, { supabaseUrl: !!supabaseUrl, supabaseKey: !!supabaseKey, supabaseBucket: !!supabaseBucket })

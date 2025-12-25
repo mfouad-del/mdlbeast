@@ -3,9 +3,10 @@ import type { Request } from 'express'
 export interface User {
   id: number
   username: string
-  password: string
-  full_name: string
-  role: "admin" | "user"
+  password?: string
+  full_name?: string
+  role: "admin" | "manager" | "supervisor" | "member" | "user"
+  tenant_id?: number | null
   created_at: Date
   updated_at: Date
 }
@@ -38,7 +39,8 @@ export interface Attachment {
 export interface AuthRequest extends Request {
   user?: {
     id: number
-    username: string
-    role: string
+    username?: string
+    role?: string
+    tenant_id?: number | null
   }
 }

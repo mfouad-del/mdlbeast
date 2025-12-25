@@ -23,6 +23,23 @@ router.get('/:barcode/preview-url', async (req: Request, res: Response) => {
     const supabaseKey = String(supabaseKeyRaw).trim()
 
     // Prefer signed URL when possible
+    const useR2 = String(process.env.STORAGE_PROVIDER || '').toLowerCase() === 'r2' || Boolean(process.env.CF_R2_ENDPOINT)
+
+    if (useR2 && pdf.key && (process.env.CF_R2_BUCKET || '')) {
+      try {
+        const { getSignedDownloadUrl, getPublicUrl } = await import('../lib/r2-storage')
+        try {
+          const signed = await getSignedDownloadUrl(pdf.key, 60 * 5)
+          return res.json({ previewUrl: signed })
+        } catch (e) {
+          // fallback to public URL
+          try { return res.json({ previewUrl: getPublicUrl(pdf.key) }) } catch (err) {}
+        }
+      } catch (e) {
+        console.warn('R2 preview-url error:', e)
+      }
+    }
+
     if (pdf.key && supabaseUrl && supabaseKey && pdf.bucket) {
       try {
         const { createClient } = await import('@supabase/supabase-js')
@@ -100,7 +117,9 @@ router.use(authenticateToken)
 // Get all documents
 router.get("/", async (req: AuthRequest, res: Response) => {
   try {
-    const { status, type, search, limit = 100, offset = 0, tenant_id } = req.query
+    const { status, type, search, limit = 100, offset = 0 } = req.query
+
+    const user = (req as any).user
 
     let queryText = "SELECT * FROM documents WHERE 1=1"
     const queryParams: any[] = []
@@ -118,9 +137,15 @@ router.get("/", async (req: AuthRequest, res: Response) => {
       paramCount++
     }
 
-    if (tenant_id) {
+    // Scope results according to role: members see only their own docs; supervisors/managers see tenant docs; admin sees all
+    if (!user) return res.status(401).json({ error: 'Not authenticated' })
+    if (user.role === 'member') {
+      queryText += ` AND user_id = $${paramCount}`
+      queryParams.push(user.id)
+      paramCount++
+    } else if (user.role === 'supervisor' || user.role === 'manager') {
       queryText += ` AND tenant_id = $${paramCount}`
-      queryParams.push(Number(tenant_id))
+      queryParams.push(user.tenant_id)
       paramCount++
     }
 
@@ -174,6 +199,12 @@ router.get("/:barcode", async (req: Request, res: Response) => {
     }
 
     const row = result.rows[0]
+
+    // enforce read access on returned single doc
+    const user = (req as any).user
+    const { canAccessDocument } = await import('../lib/rbac')
+    if (!canAccessDocument(user, row)) return res.status(403).json({ error: 'Forbidden' })
+
     let attachments = row.attachments
     try {
       if (typeof attachments === 'string') attachments = JSON.parse(attachments || '[]')
@@ -207,6 +238,10 @@ router.post(
     body("status").optional().isIn(["وارد", "صادر", "محفوظ"]).withMessage("Invalid status"),
   ],
   async (req: AuthRequest, res: Response) => {
+    // Ensure only allowed roles can create
+    const allowed = ['member','supervisor','manager','admin']
+    const user = req.user
+    if (!user || !allowed.includes(String(user.role))) return res.status(403).json({ error: 'Insufficient role to create documents' })
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
       // Log request body and validation errors to help debugging
@@ -293,12 +328,21 @@ router.post(
         barcode = String(n).padStart(7, '0')
       }
 
+      // Enforce tenant/user scoping for created document: assign tenant_id and user_id from authenticated user
+      const user = (req as any).user
+      if (!user) return res.status(401).json({ error: 'Not authenticated' })
+      tenant_id = user.tenant_id || null
+      const creatorId = user.id
+
       // Check if barcode exists
       const existing = await query("SELECT id FROM documents WHERE barcode = $1", [barcode])
 
       if (existing.rows.length > 0) {
         return res.status(400).json({ error: "Barcode already exists" })
       }
+
+      // Ticket: ensure members cannot set tenant/user manually; tenant_id and user_id are set from authenticated user
+      // (already enforced above by using creatorId and tenant_id variables)
 
       // Insert document with optional tenant_id
       const dbType = (typeof type === 'string' && type) ? type : (direction || 'UNKNOWN')
@@ -318,7 +362,7 @@ router.post(
           classification,
           notes,
           JSON.stringify(attachments || []),
-          authReq.user?.id,
+          creatorId,
           tenant_id,
         ],
       )
@@ -356,6 +400,16 @@ router.put("/:barcode", async (req: Request, res: Response) => {
     const { barcode } = req.params
     const { type, sender, receiver, date, subject, priority, status, classification, notes, attachments: incomingAttachments } = req.body
 
+    // Fetch existing to enforce access
+    const existing = await query("SELECT * FROM documents WHERE lower(barcode) = lower($1) LIMIT 1", [barcode])
+    if (existing.rows.length === 0) return res.status(404).json({ error: 'Document not found' })
+    const doc = existing.rows[0]
+    const authReq = req as any
+    const user = authReq.user
+    const { canAccessDocument } = await import('../lib/rbac')
+    if (!canAccessDocument(user, doc)) return res.status(403).json({ error: 'Forbidden' })
+
+    // Prevent changing tenant via update
     const result = await query(
       `UPDATE documents 
        SET type = $1, sender = $2, receiver = $3, date = $4, subject = $5, 
@@ -399,7 +453,15 @@ router.put("/:barcode", async (req: Request, res: Response) => {
 router.delete("/:barcode", async (req: Request, res: Response) => {
   try {
     const { barcode } = req.params
-    const result = await query("DELETE FROM documents WHERE barcode = $1 RETURNING *", [barcode])
+    const existing = await query("SELECT * FROM documents WHERE lower(barcode) = lower($1) LIMIT 1", [barcode])
+    if (existing.rows.length === 0) return res.status(404).json({ error: 'Document not found' })
+    const doc = existing.rows[0]
+    const authReq = req as any
+    const user = authReq.user
+    const { canAccessDocument } = await import('../lib/rbac')
+    if (!canAccessDocument(user, doc)) return res.status(403).json({ error: 'Forbidden' })
+
+    const result = await query("DELETE FROM documents WHERE lower(barcode) = lower($1) RETURNING *", [barcode])
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Document not found" })

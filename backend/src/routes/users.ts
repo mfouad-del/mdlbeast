@@ -1,7 +1,7 @@
 import express from "express"
 import type { Request, Response } from "express"
 import { query } from "../config/database"
-import { authenticateToken, isAdmin } from "../middleware/auth"
+import { authenticateToken, isAdmin, isManager } from "../middleware/auth"
 import type { AuthRequest } from "../types"
 
 const router = express.Router()
@@ -9,8 +9,8 @@ const router = express.Router()
 // All routes require authentication
 router.use(authenticateToken)
 
-// Get all users (admin only)
-router.get("/", isAdmin, async (req: AuthRequest, res: Response) => {
+// Get all users (manager or admin only)
+router.get("/", isManager, async (req: AuthRequest, res: Response) => {
   try {
     // detect schema columns and pick safe select
     const hasEmail = (await query("SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'email' LIMIT 1")).rows.length > 0
@@ -29,8 +29,8 @@ router.get("/", isAdmin, async (req: AuthRequest, res: Response) => {
   }
 })
 
-// Create user (admin only)
-router.post("/", isAdmin, async (req: AuthRequest, res: Response) => {
+// Create user (manager or admin only)
+router.post("/", isManager, async (req: AuthRequest, res: Response) => {
   try {
     const { username, password, full_name, role } = req.body
     if (!username || !password || !full_name || !role) return res.status(400).json({ error: 'Missing fields' })
@@ -47,8 +47,8 @@ router.post("/", isAdmin, async (req: AuthRequest, res: Response) => {
   }
 })
 
-// Update user (admin only)
-router.put('/:id', isAdmin, async (req: AuthRequest, res: Response) => {
+// Update user (manager or admin only)
+router.put('/:id', isManager, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params
     const { full_name, role, password } = req.body
@@ -70,8 +70,8 @@ router.put('/:id', isAdmin, async (req: AuthRequest, res: Response) => {
   }
 })
 
-// Delete user (admin only)
-router.delete('/:id', isAdmin, async (req: AuthRequest, res: Response) => {
+// Delete user (manager or admin only)
+router.delete('/:id', isManager, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params
     const r = await query('DELETE FROM users WHERE id = $1 RETURNING id', [id])

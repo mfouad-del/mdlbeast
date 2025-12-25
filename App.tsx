@@ -14,6 +14,7 @@ import ReportGenerator from './components/ReportGenerator';
 import Login from './components/Login';
 import UserManagement from './components/UserManagement';
 import AsyncButton from './components/ui/async-button'
+import { LoadingProvider } from './components/ui/loading-context'
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -259,7 +260,8 @@ const App: React.FC = () => {
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col overflow-hidden relative">
+      <LoadingProvider>
+        <main className="flex-1 flex flex-col overflow-hidden relative">
         <div className="flex-1 overflow-y-auto p-8 lg:p-14 max-w-7xl mx-auto w-full">
           {globalError && (
             <div className="mb-6 p-3 bg-red-50 text-red-700 rounded-xl font-bold">{globalError}</div>
@@ -415,6 +417,7 @@ const App: React.FC = () => {
            <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">{settings.footerText}</p>
         </footer>
       </main>
+      </LoadingProvider>
     </div>
   );
 };

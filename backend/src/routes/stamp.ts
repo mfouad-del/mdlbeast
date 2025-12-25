@@ -19,6 +19,11 @@ router.post('/:barcode/stamp', async (req, res) => {
     if (d.rows.length === 0) return res.status(404).json({ error: 'Document not found' })
     const doc = d.rows[0]
 
+    // Enforce RBAC for stamping (stamp is an edit)
+    const user = (req as any).user
+    const { canAccessDocument } = await import('../lib/rbac')
+    if (!canAccessDocument(user, doc)) return res.status(403).json({ error: 'Forbidden' })
+
     // find pdf url in attachments (first attachment)
     const attachments = doc.attachments || []
     const pdf = Array.isArray(attachments) && attachments.length ? attachments[0] : null
@@ -34,7 +39,17 @@ router.post('/:barcode/stamp', async (req, res) => {
     console.debug('Stamp request start:', { barcode, pdfUrl: pdf?.url, pdfKey: pdf?.key, supabaseUrl: !!supabaseUrl, supabaseKey: !!supabaseKey, supabaseBucket })
 
     try {
-      if (pdf.key && supabaseUrl && supabaseKey && supabaseBucket) {
+      const useR2 = String(process.env.STORAGE_PROVIDER || '').toLowerCase() === 'r2' || Boolean(process.env.CF_R2_ENDPOINT)
+
+      if (useR2 && pdf.key && (process.env.CF_R2_BUCKET || pdf.bucket)) {
+        try {
+          const { downloadToBuffer } = await import('../lib/r2-storage')
+          pdfBytes = await downloadToBuffer(pdf.key)
+        } catch (e) {
+          console.error('Stamp: failed to download object from R2:', e)
+          throw e
+        }
+      } else if (pdf.key && supabaseUrl && supabaseKey && supabaseBucket) {
         const { createClient } = await import('@supabase/supabase-js')
         const supabase = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } })
         const { data: downloadData, error: downloadErr } = await supabase.storage.from(supabaseBucket).download(pdf.key)
@@ -420,6 +435,8 @@ router.post('/:barcode/stamp', async (req, res) => {
     page.drawText(displayDate, { x: dateX, y: dateY, size: dateSize, font: helv, color: rgb(0,0,0) })
 
     const outBytes = await pdfDoc.save()
+    // normalize to Buffer for consistency when uploading/verifying
+    const outBuf = Buffer.from(outBytes)
 
     // Overwrite original file when possible (Supabase key or local file), otherwise create a new local file and replace the first attachment
     try {
@@ -446,6 +463,69 @@ router.post('/:barcode/stamp', async (req, res) => {
       }
 
       // If we have a Supabase key/bucket, attempt to overwrite the same object
+      const useR2 = String(process.env.STORAGE_PROVIDER || '').toLowerCase() === 'r2' || Boolean(process.env.CF_R2_ENDPOINT)
+
+      if (useR2 && targetKey && (process.env.CF_R2_BUCKET || targetBucket)) {
+        try {
+          const { uploadBuffer, getSignedDownloadUrl, downloadToBuffer, getPublicUrl } = await import('../lib/r2-storage')
+          const finalKey = targetKey
+          // attempt upload with retries
+          let uploadErr: any = null
+          const maxAttempts = 3
+          let newUrl = ''
+          for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+              newUrl = await uploadBuffer(finalKey, outBuf, 'application/pdf', '0')
+              uploadErr = null
+              break
+            } catch (e: any) {
+              uploadErr = e
+              console.warn(`Stamp: R2 upload attempt ${attempt} failed:`, String(e?.message || e))
+              await new Promise((res) => setTimeout(res, attempt * 300))
+            }
+          }
+          if (uploadErr) {
+            console.error('Stamp: R2 upload final failure:', uploadErr)
+            throw uploadErr
+          }
+
+          // try to create signed URL
+          let signedUrl: string | null = null
+          try {
+            signedUrl = await getSignedDownloadUrl(finalKey, 60 * 60)
+          } catch (e) {
+            console.warn('Stamp: failed to create signed URL for R2 object:', e)
+          }
+
+          // verify uploaded content
+          try {
+            const downloadedBuf = await downloadToBuffer(finalKey)
+            const crypto = require('crypto')
+            const outHash = crypto.createHash('sha256').update(outBuf).digest('hex')
+            const downHash = crypto.createHash('sha256').update(downloadedBuf).digest('hex')
+            if (outHash !== downHash) {
+              console.error('Stamp: verification mismatch after R2 upload', { outHash, downHash })
+              throw new Error('Uploaded file verification failed (hash mismatch)')
+            }
+          } catch (verErr) {
+            console.error('Stamp: R2 verification error:', verErr)
+            return res.status(500).json({ error: 'Stamped file failed verification after upload. Try again or contact support.' })
+          }
+
+          const stampedAt = new Date().toISOString()
+          attachments[0] = { ...(attachments[0] || {}), url: signedUrl || (getPublicUrl(finalKey) || ''), size: outBuf.length, key: finalKey, bucket: process.env.CF_R2_BUCKET || targetBucket, stampedAt }
+          const upd = await query('UPDATE documents SET attachments = $1 WHERE id = $2 RETURNING *', [JSON.stringify(attachments), doc.id])
+          const updatedDoc = upd.rows[0]
+          const parsedAttachments = Array.isArray(updatedDoc.attachments) ? updatedDoc.attachments : JSON.parse(String(updatedDoc.attachments || '[]'))
+          const pdfFile = parsedAttachments && parsedAttachments.length ? parsedAttachments[0] : null
+          const previewUrl = signedUrl || `${attachments[0].url}?t=${Date.now()}`
+          return res.json({ ...updatedDoc, attachments: parsedAttachments, pdfFile, previewUrl })
+        } catch (e: any) {
+          console.error('Stamp: R2 upload path failed:', e)
+          return res.status(500).json({ error: 'R2 upload failed; check CF_R2 settings and try again.' })
+        }
+      }
+
       if (targetKey && targetBucket && supabaseUrl && supabaseKey) {
         const { createClient } = await import('@supabase/supabase-js')
         const supabase = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } })
@@ -500,7 +580,7 @@ router.post('/:barcode/stamp', async (req, res) => {
 
         // update attachments[0] url, size, key and mark stamp time
         const stampedAt = new Date().toISOString()
-        attachments[0] = { ...(attachments[0] || {}), url: newUrl, size: outBytes.length, key: targetKey, bucket: targetBucket, stampedAt }
+        attachments[0] = { ...(attachments[0] || {}), url: newUrl, size: outBuf.length, key: targetKey, bucket: targetBucket, stampedAt }
         const upd = await query('UPDATE documents SET attachments = $1 WHERE id = $2 RETURNING *', [JSON.stringify(attachments), doc.id])
         const updatedDoc = upd.rows[0]
         // attach pdfFile convenience property
@@ -515,7 +595,7 @@ router.post('/:barcode/stamp', async (req, res) => {
       if (pdf.url && String(pdf.url).startsWith('/uploads/')) {
         const uploadsDir = path.resolve(process.cwd(), 'uploads')
         const fp = path.join(uploadsDir, pdf.url.replace('/uploads/', ''))
-        fs.writeFileSync(fp, outBytes)
+        fs.writeFileSync(fp, outBuf)
         // update size and mark stamp time
         attachments[0] = { ...(attachments[0] || {}), size: outBytes.length, stampedAt: new Date().toISOString() }
         const upd = await query('UPDATE documents SET attachments = $1 WHERE id = $2 RETURNING *', [JSON.stringify(attachments), doc.id])
@@ -531,9 +611,9 @@ router.post('/:barcode/stamp', async (req, res) => {
       if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true })
       const filename = `stamped-${Date.now()}-${encodeURIComponent(barcode)}.pdf`
       const outPath = path.join(uploadsDir, filename)
-      fs.writeFileSync(outPath, outBytes)
+      fs.writeFileSync(outPath, outBuf)
       const url = `/uploads/${filename}`
-      attachments[0] = { name: filename, url, size: outBytes.length, stampedAt: new Date().toISOString() }
+      attachments[0] = { name: filename, url, size: outBuf.length, stampedAt: new Date().toISOString() }
       const upd = await query('UPDATE documents SET attachments = $1 WHERE id = $2 RETURNING *', [JSON.stringify(attachments), doc.id])
       const updatedDoc = upd.rows[0]
       const parsedAttachments = Array.isArray(updatedDoc.attachments) ? updatedDoc.attachments : JSON.parse(String(updatedDoc.attachments || '[]'))
