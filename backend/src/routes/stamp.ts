@@ -309,26 +309,29 @@ router.post('/:barcode/stamp', async (req, res) => {
           helvBold = helv
         }
       } else {
-        // no local font found: attempt runtime download of Noto Sans Arabic as a fallback
-        console.warn('Stamp: no local TTF/OTF font found in assets; attempting runtime download of Noto Sans Arabic')
+        // No local TTF/OTF font found. By default we require local fonts to avoid flaky runtime downloads.
+        const allowRuntime = String(process.env.ALLOW_RUNTIME_FONT_DOWNLOAD || '').toLowerCase() === 'true'
+        if (!allowRuntime) {
+          console.error('Stamp: no local TTF fonts found and runtime font download is disabled')
+          return res.status(500).json({ error: 'Missing local fonts. Place NotoSansArabic-Regular.ttf and NotoSansArabic-Bold.ttf in backend/assets/fonts or enable runtime download by setting ALLOW_RUNTIME_FONT_DOWNLOAD=true' })
+        }
+
+        console.warn('Stamp: no local TTF/OTF font found in assets; ALLOW_RUNTIME_FONT_DOWNLOAD=true so attempting runtime TTF fetch')
         try {
           const notoCandidates = [
             { url: 'https://github.com/googlefonts/noto-fonts/raw/main/phaseIII_only/unhinted/ttf/NotoSansArabic/NotoSansArabic-Regular.ttf' , name: 'regular.ttf' },
-            { url: 'https://github.com/googlefonts/noto-fonts/raw/main/phaseIII_only/unhinted/ttf/NotoSansArabic/NotoSansArabic-Bold.ttf' , name: 'bold.ttf' },
-            // fallback to packaged woff2 on unpkg (reliable CDN)
-            { url: 'https://unpkg.com/@fontsource/noto-sans-arabic/files/noto-sans-arabic-arabic-400-normal.woff2', name: 'regular.woff2' },
-            { url: 'https://unpkg.com/@fontsource/noto-sans-arabic/files/noto-sans-arabic-arabic-700-normal.woff2', name: 'bold.woff2' }
+            { url: 'https://github.com/googlefonts/noto-fonts/raw/main/phaseIII_only/unhinted/ttf/NotoSansArabic/NotoSansArabic-Bold.ttf' , name: 'bold.ttf' }
           ]
           try {
             for (const cand of notoCandidates) {
               try {
                 const r = await fetch(cand.url)
                 const ct = String(r.headers.get('content-type') || '')
-                if (r.ok && /font|octet|application|woff/i.test(ct)) {
+                if (r.ok && /font|octet|application/i.test(ct)) {
                   const buf = Buffer.from(await r.arrayBuffer())
                   try {
-                    helv = helv || (fontkitRegistered ? await pdfDoc.embedFont(buf) : undefined)
-                    if (cand.name.includes('bold')) helvBold = helvBold || (fontkitRegistered ? await pdfDoc.embedFont(buf) : undefined)
+                    if (!helv && fontkitRegistered) helv = await pdfDoc.embedFont(buf)
+                    if (cand.name.toLowerCase().includes('bold') && fontkitRegistered) helvBold = helvBold || await pdfDoc.embedFont(buf)
                     if (helv && helvBold) break
                   } catch (e) {
                     console.warn('Stamp: downloaded font candidate not embedable:', cand.url, String(e))
@@ -343,22 +346,15 @@ router.post('/:barcode/stamp', async (req, res) => {
           } catch (e) {
             console.warn('Stamp: runtime font candidate loop failed', e)
           }
-          // if download didn't produce fonts, fall back
+
+          // If we still don't have fonts, fail loudly so operator can add local files
           if (!helv) {
-            console.warn('Stamp: runtime download failed or fonts not embedable; falling back to standard fonts')
-            helv = await pdfDoc.embedFont(StandardFonts.Helvetica)
-            helvBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
-          }
-          // if download didn't produce fonts, fall back
-          if (!helv) {
-            console.warn('Stamp: runtime download failed or fonts not embedable; falling back to standard fonts')
-            helv = await pdfDoc.embedFont(StandardFonts.Helvetica)
-            helvBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
+            console.error('Stamp: runtime font download did not produce embedable fonts')
+            return res.status(500).json({ error: 'Failed to fetch usable font files at runtime. Place NotoSansArabic TTFs in backend/assets/fonts manually.' })
           }
         } catch (e) {
           console.warn('Stamp: runtime font download failed:', e)
-          helv = await pdfDoc.embedFont(StandardFonts.Helvetica)
-          helvBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
+          return res.status(500).json({ error: 'Runtime font download failed and no local fonts available.' })
         }
       }
     } catch (e) {
