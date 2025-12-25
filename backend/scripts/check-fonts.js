@@ -31,12 +31,14 @@ for (const p of candidates) {
   try {
     const buf = fs.readFileSync(p)
     const head = buf.slice(0, 8)
+    const head4 = buf.slice(0,4)
     const headHex = head.toString('hex')
-    const isTTF = head.equals(Buffer.from([0x00,0x01,0x00,0x00]))
-    const isOTF = head.toString('ascii') === 'OTTO'
-    const isTTC = head.toString('ascii') === 'ttcf'
+    const headAscii = head.toString('ascii')
+    const isTTF = head4.equals(Buffer.from([0x00,0x01,0x00,0x00]))
+    const isOTF = headAscii === 'OTTO'
+    const isTTC = headAscii === 'ttcf'
     const isWOFF2 = headHex.startsWith('774f4632')
-    const isWOFF = head.toString('ascii').toLowerCase().startsWith('wof') || headHex.startsWith('774f4630')
+    const isWOFF = headAscii.toLowerCase().startsWith('wof') || headHex.startsWith('774f4630')
     console.log(`${p}  size=${buf.length} head=${headHex}  TTF=${isTTF} OTF=${isOTF} TTC=${isTTC} WOFF2=${isWOFF2} WOFF=${isWOFF}`)
     if (isTTF || isOTF || isTTC) ok = true
   } catch (e) {
