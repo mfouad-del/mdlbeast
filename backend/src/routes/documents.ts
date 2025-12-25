@@ -346,8 +346,12 @@ router.post(
       const finalSubject = subject || title || ''
       // Ensure date includes a timestamp (avoid midnight-only dates). If client sent only YYYY-MM-DD, append current time portion.
       let finalDate: string
-      if (date) finalDate = date
-      else if (documentDate) {
+      if (date) {
+        // If client sent a date-only string (YYYY-MM-DD), append current time so timestamp is not midnight
+        finalDate = typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)
+          ? `${date}T${new Date().toISOString().split('T')[1]}`
+          : date
+      } else if (documentDate) {
         finalDate = typeof documentDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(documentDate)
           ? `${documentDate}T${new Date().toISOString().split('T')[1]}`
           : documentDate

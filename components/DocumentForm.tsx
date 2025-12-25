@@ -99,8 +99,13 @@ export default function DocumentForm({ type, onSave }: DocumentFormProps) {
       return
     }
 
+    // Ensure 'date' sent to server includes a time portion to avoid midnight-only timestamps
+    const dateWithTime = (formData.documentDate && /^\d{4}-\d{2}-\d{2}$/.test(formData.documentDate))
+      ? `${formData.documentDate}T${new Date().toISOString().split('T')[1]}`
+      : formData.documentDate || new Date().toISOString()
+
     // Do not pre-generate barcode on client; backend will assign numeric sequence
-    onSave({ ...formData, type, pdfFile })
+    onSave({ ...formData, type, pdfFile, date: dateWithTime })
   }
 
   return (
