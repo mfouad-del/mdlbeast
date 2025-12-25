@@ -69,6 +69,8 @@ export interface Correspondence {
   documentDate: string;
   archiveDate: string;
   date: string;
+  dateHijri?: string;
+  dateGregorian?: string;
   subject: string;
   description: string;
   status: string;

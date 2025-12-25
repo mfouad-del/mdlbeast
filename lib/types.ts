@@ -30,6 +30,8 @@ export interface Correspondence {
   receiver: string
   recipient: string
   date: string
+  dateHijri?: string
+  dateGregorian?: string
   documentDate: string
   archiveDate?: string
   subject: string

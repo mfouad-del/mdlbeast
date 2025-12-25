@@ -13,9 +13,11 @@ import { apiClient } from "@/lib/api-client"
 interface DocumentListProps {
   docs: Correspondence[]
   settings: SystemSettings
+  currentUser?: any
+  users?: any[]
 }
 
-export default function DocumentList({ docs, settings }: DocumentListProps) {
+export default function DocumentList({ docs, settings, currentUser, users }: DocumentListProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
@@ -142,6 +144,19 @@ export default function DocumentList({ docs, settings }: DocumentListProps) {
                           <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
                             📂 أرشفة: {doc.archiveDate || doc.date}
                           </span>
+
+                          {/* Show creator to admin/supervisor */}
+                          {(currentUser && (String(currentUser.role || '').toLowerCase() === 'admin' || String(currentUser.role || '').toLowerCase() === 'supervisor')) && (
+                            <span className="text-[10px] font-bold text-slate-500">أصدر: {(() => {
+                              // Resolve createdBy: prefer lookup via users list
+                              const cb = (doc as any).createdBy || (doc as any).created_by || (doc as any).user_id || ''
+                              if (!cb) return '—'
+                              const cbStr = String(cb)
+                              const u = (users || []).find((x: any) => String(x.id) === cbStr || String(x.username || x.email || '') === cbStr)
+                              if (u) return (u.full_name || u.name || u.username || u.email || cbStr)
+                              return cbStr
+                            })()}</span>
+                          )}
                           <span
                             className={`text-[9px] font-black px-2 py-0.5 rounded-full ${
                               doc.priority === "عادي" ? "bg-slate-100 text-slate-500" : "bg-red-50 text-red-600"
