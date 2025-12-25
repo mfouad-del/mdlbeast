@@ -250,7 +250,7 @@ const BarcodeScanner: React.FC = () => {
               </div>
 
               <div className="flex gap-3">
-                <button className="w-full mt-6 bg-slate-900 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2" onClick={async () => {
+                <AsyncButton className="w-full mt-6 bg-slate-900 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2" onClickAsync={async () => {
                   try {
                     const previewUrl = await apiClient.getPreviewUrl(foundDoc.barcode || foundDoc.barcodeId)
                     if (!previewUrl) { alert('لم يتم العثور على ملف للمعاينة'); return }
@@ -261,7 +261,7 @@ const BarcodeScanner: React.FC = () => {
                   }
                 }}>
                   <FileText size={20} /> فتح الملف الكامل
-                </button>
+                </AsyncButton>
                 <AsyncButton className="mt-6 bg-red-500 text-white py-4 rounded-xl font-bold flex items-center gap-2 px-4" onClickAsync={async () => { if (!confirm('حذف المستند؟')) return; await apiClient.deleteDocument(foundDoc.barcode || foundDoc.barcodeId); setFoundDoc(null); setTimeline([]); setStatusMessage('تم حذف المستند'); }}>
                   حذف
                 </AsyncButton>

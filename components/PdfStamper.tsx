@@ -5,6 +5,7 @@ import type React from "react"
 import { useState, useRef } from "react"
 import type { Correspondence } from "@/types"
 import { Save, X, MousePointer2, Scan, Layers, FileSearch, Eye } from "lucide-react"
+import { useLoading } from './ui/loading-context'
 
 interface PdfStamperProps {
   doc: Correspondence
@@ -38,8 +39,11 @@ export default function PdfStamper({ doc, onClose }: PdfStamperProps) {
 
   const handleMouseUp = () => setIsDragging(false)
 
+  const loading = useLoading()
+
   const handleFinalize = async () => {
     setIsSaving(true)
+    loading.show()
     try {
       const container = containerRef.current
       const rect = container?.getBoundingClientRect()
@@ -74,6 +78,7 @@ export default function PdfStamper({ doc, onClose }: PdfStamperProps) {
       alert('فشل دمغ الملصق: ' + (e?.message || e))
     } finally {
       setIsSaving(false)
+      loading.hide()
     }
   }
 

@@ -151,8 +151,8 @@ export default function DocumentList({ docs, settings }: DocumentListProps) {
                     <td className="px-8 py-7">
                       {doc.pdfFile ? (
                         <div className="flex gap-2 items-center">
-                          <button
-                            onClick={async () => {
+                          <AsyncButton
+                            onClickAsync={async () => {
                               try {
                                 const url = await apiClient.getPreviewUrl(doc.barcode || doc.barcodeId)
                                 if (!url) { alert('لا يوجد ملف لعرضه'); return }
@@ -162,7 +162,7 @@ export default function DocumentList({ docs, settings }: DocumentListProps) {
                             className="flex items-center gap-2 px-4 py-2.5 bg-green-50 text-green-700 rounded-xl border border-green-200 hover:bg-green-100 transition-all text-[11px] font-black group"
                           >
                             <FileText size={16} /> فتح المرفق
-                          </button>
+                          </AsyncButton>
                           <button
                             onClick={() => setStamperDoc(doc)}
                             className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white rounded-xl border border-slate-900 hover:bg-black transition-all text-[11px] font-black shadow-lg shadow-slate-200"
