@@ -73,6 +73,12 @@ Server سيعمل على: `https://zaco-backend.onrender.com` (production)
 - `GET /api/users` - جميع المستخدمين (admin فقط)
 - `GET /api/users/me` - المستخدم الحالي
 
+## Storage migration note
+
+This project has migrated storage to Cloudflare R2 and runs in **R2-only** mode by default. The code no longer uses Supabase storage for uploads/previews/stamping. If you previously used Supabase, do not remove SUPABASE_* env vars from your host immediately — rotate those secrets only when you are ready to decommission the Supabase project.
+
+If you need to temporarily re-enable Supabase paths for rollback, set `USE_R2_ONLY=false` (not recommended for long-term usage).
+
 ## 🔐 بيانات الدخول الافتراضية
 
 **Admin:**

@@ -1,14 +1,7 @@
-const fs = require('fs')
-const { createClient } = require('@supabase/supabase-js')
-
-const url = process.env.SUPABASE_URL || ''
-const key = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-const bucket = process.env.SUPABASE_BUCKET || process.env.S3_BUCKET || 'documents'
-
-if (!url || !key) {
-  console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')
-  process.exit(1)
-}
+// Supabase test upload script — DEPRECATED
+// Project has migrated to Cloudflare R2-only. Do not run this script.
+console.error('Supabase tests deprecated: project is R2-only')
+process.exit(1)
 
 ;(async () => {
   try {

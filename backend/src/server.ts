@@ -15,25 +15,22 @@ import { query } from "./config/database"
 
 dotenv.config()
 
-// Fail fast on critical secrets/config
-const JWT_SECRET = process.env.JWT_SECRET
-if (!JWT_SECRET || String(JWT_SECRET).trim().length < 16) {
-  console.error('FATAL: JWT_SECRET is not configured or too short. Set a strong JWT_SECRET and restart the server.')
-  process.exit(1)
+// Validate required environment variables (fail fast for critical secrets)
+try {
+  // throws if missing or weak
+  require('./config/validateEnv').validateEnv()
+} catch (err: any) {
+  // do not log secret values; log only the problem and exit in non-test environments
+  console.error('ENV error: JWT_SECRET missing/weak')
+  if (process.env.NODE_ENV !== 'test') process.exit(1)
 }
 
-// Validate storage configuration when a provider is selected
-const STORAGE_PROVIDER = String(process.env.STORAGE_PROVIDER || '').toLowerCase()
-if (STORAGE_PROVIDER === 'r2' || !!process.env.CF_R2_ENDPOINT) {
-  if (!process.env.CF_R2_ACCESS_KEY_ID || !process.env.CF_R2_SECRET_ACCESS_KEY || !process.env.CF_R2_BUCKET) {
-    console.error('FATAL: R2 storage selected but CF_R2_ACCESS_KEY_ID, CF_R2_SECRET_ACCESS_KEY or CF_R2_BUCKET is missing. Set them and restart.')
-    process.exit(1)
-  }
-}
-if (process.env.SUPABASE_URL && process.env.SUPABASE_BUCKET && !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  console.error('FATAL: SUPABASE storage configured but SUPABASE_SERVICE_ROLE_KEY is missing. Set it and restart.')
-  process.exit(1)
-}
+// Show only presence/absence of optional sensitive configs (do NOT print lengths or snippets)
+import { USE_R2_ONLY } from './config/storage'
+const SUPABASE_CONFIGURED = USE_R2_ONLY ? false : (!!process.env.SUPABASE_SERVICE_ROLE_KEY && !!process.env.SUPABASE_URL && !!process.env.SUPABASE_BUCKET)
+console.info('CONFIG: supabase configured=', Boolean(SUPABASE_CONFIGURED))
+const R2_CONFIGURED = !!process.env.CF_R2_ACCESS_KEY_ID && !!process.env.CF_R2_SECRET_ACCESS_KEY && !!process.env.CF_R2_ENDPOINT && !!process.env.CF_R2_BUCKET
+console.info('CONFIG: r2 configured=', Boolean(R2_CONFIGURED))
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -50,16 +47,7 @@ app.use(morgan("dev"))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
-// Rate limiting utilities
-import rateLimit from 'express-rate-limit'
-
-// Apply some basic global rate limits for sensitive endpoints
-const loginLimiter = rateLimit({ windowMs: 60 * 1000, max: 10, message: 'Too many login attempts, please try again later.' })
-const uploadLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, message: 'Too many uploads, slow down.' })
-const stampLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, message: 'Too many stamping requests, slow down.' })
-
 // Mount API routes
-// Note: login route gets a limiter applied inside authRoutes (loginLimiter passed via req.app.locals)
 app.use('/api/auth', authRoutes)
 app.use('/api/documents', documentRoutes)
 app.use('/api/users', userRoutes)
@@ -76,17 +64,11 @@ import * as pathModule from 'path'
 import * as fsModule from 'fs'
 const uploadsDirStartup = pathModule.resolve(process.cwd(), 'uploads')
 if (!fsModule.existsSync(uploadsDirStartup)) fsModule.mkdirSync(uploadsDirStartup, { recursive: true })
-// apply upload limiter per route, uploadRoutes expects req.user via authenticateToken
-app.use('/api/uploads', uploadLimiter, uploadRoutes)
+app.use('/api/uploads', uploadRoutes)
 app.use('/uploads', express.static(uploadsDirStartup))
 
-// Stamp endpoint (rate-limited)
-app.use('/api/documents', stampLimiter, stampRoutes)
-
-// Expose limiters to routers (so login route and others can use them)
-app.locals.loginLimiter = loginLimiter
-app.locals.uploadLimiter = uploadLimiter
-app.locals.stampLimiter = stampLimiter
+// Stamp endpoint
+app.use('/api/documents', stampRoutes)
 
 // Serve a small wp-emoji loader stub to avoid JS parse errors when clients request /wp-includes/js/wp-emoji-loader.min.js
 app.get('/wp-includes/js/wp-emoji-loader.min.js', (_req, res) => {
@@ -112,31 +94,31 @@ app.get("/health", (_req, res) => {
   res.send("ok")
 })
 
-// Debug DB check (enabled with DEBUG=true or with a secret via DEBUG_SECRET)
+// Debug DB check (restricted: ENABLE_DEBUG_ENDPOINTS=true or localhost or admin with auth)
 const DEBUG_SECRET = process.env.DEBUG_SECRET || ""
 app.get("/debug/db", async (req, res) => {
-  const secret = req.query.secret
-  if (process.env.DEBUG === "true" || (typeof secret === "string" && secret === DEBUG_SECRET && DEBUG_SECRET !== "")) {
+  const { allowDebugAccess } = await import('./config/validateEnv')
+  if (allowDebugAccess(req)) {
     try {
       const result = await query("SELECT COUNT(*)::int as cnt FROM users")
       const cols = await query("SELECT column_name FROM information_schema.columns WHERE table_name='users'")
-      // sample user row for debugging (truncate password for safety)
+      // sample user row for debugging — DO NOT include secrets
       let sampleUser: any = null
       try {
-        const u = await query("SELECT * FROM users LIMIT 5")
+        const u = await query("SELECT id, username, full_name, role, created_at FROM users LIMIT 5")
         if (u.rows.length > 0) {
           sampleUser = u.rows.map((row: any) => ({
             id: row.id,
-            email: row.email || null,
-            name: row.name || null,
+            username: row.username || null,
+            full_name: row.full_name || null,
             role: row.role || null,
-            // show hashed password prefix if exists
-            passwordStartsWith: row.password ? String(row.password).slice(0, 10) : null,
           }))
         }
       } catch (e) {
         console.error("Debug sample user error:", e)
       }
+      // audit log of access
+      console.info('[debug] /debug/db accessed', { ip: req.ip, byUser: (req as any).user?.id || null })
       res.json({ users: result.rows[0].cnt, columns: cols.rows.map((r: any) => r.column_name), sampleUser })
     } catch (err: any) {
       console.error("Debug DB error:", err)
@@ -149,9 +131,9 @@ app.get("/debug/db", async (req, res) => {
 
 // Debug: hash plaintext passwords for users that are not bcrypt hashes
 app.post("/debug/hash-passwords", async (req, res) => {
-  const secret = req.query.secret
-  if (!(process.env.DEBUG === "true" || (typeof secret === "string" && secret === DEBUG_SECRET && DEBUG_SECRET !== ""))) {
-    return res.status(404).send("Not found")
+  const { allowDebugAccess } = await import('./config/validateEnv')
+  if (!allowDebugAccess(req, true)) {
+    return res.status(404).send('Not found')
   }
 
   try {
@@ -181,9 +163,9 @@ app.post("/debug/hash-passwords", async (req, res) => {
 
 // Debug: list registered routes (protected)
 app.get("/debug/routes", (req, res) => {
-  const secret = req.query.secret
-  if (!(process.env.DEBUG === "true" || (typeof secret === "string" && secret === DEBUG_SECRET && DEBUG_SECRET !== ""))) {
-    return res.status(404).send("Not found")
+  const { allowDebugAccess } = require('./config/validateEnv')
+  if (!allowDebugAccess(req, true)) {
+    return res.status(404).send('Not found')
   }
 
   try {
@@ -215,9 +197,9 @@ app.get("/debug/routes", (req, res) => {
 
 // Debug: verbose route stack (shows mount regexp and handler names)
 app.get("/debug/routes-full", (req, res) => {
-  const secret = req.query.secret
-  if (!(process.env.DEBUG === "true" || (typeof secret === "string" && secret === DEBUG_SECRET && DEBUG_SECRET !== ""))) {
-    return res.status(404).send("Not found")
+  const { allowDebugAccess } = require('./config/validateEnv')
+  if (!allowDebugAccess(req, true)) {
+    return res.status(404).send('Not found')
   }
 
   try {
@@ -246,8 +228,8 @@ app.get("/debug/routes-full", (req, res) => {
 
 // Debug: set sequence start value (protected). Body: { name: 'doc_in_seq'|'doc_out_seq', value: number }
 app.post('/debug/set-sequence', async (req, res) => {
-  const secret = req.query.secret as string | undefined
-  if (!(process.env.DEBUG === "true" || (typeof secret === "string" && secret === DEBUG_SECRET && DEBUG_SECRET !== ""))) {
+  const { allowDebugAccess } = await import('./config/validateEnv')
+  if (!allowDebugAccess(req, true)) {
     return res.status(403).json({ error: 'Forbidden' })
   }
   try {
@@ -268,8 +250,8 @@ app.post('/debug/set-sequence', async (req, res) => {
 
 // Debug: backfill document statuses based on barcode prefixes
 app.post('/debug/backfill-document-status', async (req, res) => {
-  const secret = req.query.secret
-  if (!(process.env.DEBUG === "true" || (typeof secret === "string" && secret === DEBUG_SECRET && DEBUG_SECRET !== ""))) {
+  const { allowDebugAccess } = await import('./config/validateEnv')
+  if (!allowDebugAccess(req, true)) {
     return res.status(403).json({ error: 'Forbidden' })
   }
   try {
@@ -285,9 +267,9 @@ app.post('/debug/backfill-document-status', async (req, res) => {
 
 // Debug: reset the entire public schema and re-run SQL migration + seed scripts
 app.post("/debug/reset-db", async (req, res) => {
-  const secret = req.query.secret
-  if (!(process.env.DEBUG === "true" || (typeof secret === "string" && secret === DEBUG_SECRET && DEBUG_SECRET !== ""))) {
-    return res.status(404).send("Not found")
+  const { allowDebugAccess } = await import('./config/validateEnv')
+  if (!allowDebugAccess(req, true)) {
+    return res.status(404).send('Not found')
   }
 
   try {
@@ -372,9 +354,9 @@ app.post("/debug/reset-db", async (req, res) => {
 
 // Debug: set admin password to known value (admin123) - protected
 app.post("/debug/set-admin-password", async (req, res) => {
-  const secret = req.query.secret
-  if (!(process.env.DEBUG === "true" || (typeof secret === "string" && secret === DEBUG_SECRET && DEBUG_SECRET !== ""))) {
-    return res.status(404).send("Not found")
+  const { allowDebugAccess } = await import('./config/validateEnv')
+  if (!allowDebugAccess(req, true)) {
+    return res.status(404).send('Not found')
   }
 
   try {
@@ -402,9 +384,9 @@ app.post("/debug/set-admin-password", async (req, res) => {
 
 // Debug: run a single migration SQL file (protected). Accepts file param (filename) limited to known scripts.
 app.post("/debug/run-migration", async (req, res) => {
-  const secret = req.query.secret
-  if (!(process.env.DEBUG === "true" || (typeof secret === "string" && secret === DEBUG_SECRET && DEBUG_SECRET !== ""))) {
-    return res.status(404).send("Not found")
+  const { allowDebugAccess } = await import('./config/validateEnv')
+  if (!allowDebugAccess(req, true)) {
+    return res.status(404).send('Not found')
   }
 
   try {
@@ -469,8 +451,8 @@ app.post("/debug/run-migration", async (req, res) => {
 
 // Debug: preview rows that would be affected by the backfill (read-only, safe)
 app.get('/debug/preview-backfill-doc-dates', async (req, res) => {
-  const secret = req.query.secret
-  if (!(process.env.DEBUG === 'true' || (typeof secret === 'string' && secret === DEBUG_SECRET && DEBUG_SECRET !== ''))) {
+  const { allowDebugAccess } = await import('./config/validateEnv')
+  if (!allowDebugAccess(req, false)) {
     return res.status(403).json({ error: 'Forbidden' })
   }
 
@@ -486,8 +468,8 @@ app.get('/debug/preview-backfill-doc-dates', async (req, res) => {
 
 // Debug: backfill documents that have midnight-only dates to use created_at's time (safe, idempotent)
 app.post('/debug/backfill-doc-dates', async (req, res) => {
-  const secret = req.query.secret
-  if (!(process.env.DEBUG === 'true' || (typeof secret === 'string' && secret === DEBUG_SECRET && DEBUG_SECRET !== ''))) {
+  const { allowDebugAccess } = await import('./config/validateEnv')
+  if (!allowDebugAccess(req, false)) {
     return res.status(403).json({ error: 'Forbidden' })
   }
 
@@ -502,8 +484,9 @@ app.post('/debug/backfill-doc-dates', async (req, res) => {
 })
 
 // Debug: fix zeroed UUID timestamps by adding a uuid7_fixed column and populating it for affected rows
-app.post('/debug/fix-zero-uuid', async (req, res) => {  const secret = req.query.secret
-  if (!(process.env.DEBUG === 'true' || (typeof secret === 'string' && secret === DEBUG_SECRET && DEBUG_SECRET !== ''))) {
+app.post('/debug/fix-zero-uuid', async (req, res) => {
+  const { allowDebugAccess } = await import('./config/validateEnv')
+  if (!allowDebugAccess(req, false)) {
     return res.status(403).json({ error: 'Forbidden' })
   }
 
@@ -552,8 +535,8 @@ app.post('/debug/fix-zero-uuid', async (req, res) => {  const secret = req.query
 
 // Debug: ensure doc_seq exists (safe, idempotent)
 app.post('/debug/apply-doc-seq', async (req, res) => {
-  const secret = req.query.secret
-  if (!(process.env.DEBUG === 'true' || (typeof secret === 'string' && secret === DEBUG_SECRET && DEBUG_SECRET !== ''))) {
+  const { allowDebugAccess } = await import('./config/validateEnv')
+  if (!allowDebugAccess(req, false)) {
     return res.status(403).json({ error: 'Forbidden' })
   }
 
@@ -570,8 +553,8 @@ app.post('/debug/apply-doc-seq', async (req, res) => {
 
 // Debug: list sequences that look like document sequences
 app.get('/debug/list-sequences', async (req, res) => {
-  const secret = req.query.secret
-  if (!(process.env.DEBUG === 'true' || (typeof secret === 'string' && secret === DEBUG_SECRET && DEBUG_SECRET !== ''))) {
+  const { allowDebugAccess } = await import('./config/validateEnv')
+  if (!allowDebugAccess(req, false)) {
     return res.status(403).json({ error: 'Forbidden' })
   }
 
@@ -587,8 +570,8 @@ app.get('/debug/list-sequences', async (req, res) => {
 
 // Debug: verify a JWT token (protected) - returns decoded payload or verification error
 app.post('/debug/verify-token', async (req, res) => {
-  const secret = req.query.secret
-  if (!(process.env.DEBUG === 'true' || (typeof secret === 'string' && secret === DEBUG_SECRET && DEBUG_SECRET !== ''))) {
+  const { allowDebugAccess } = await import('./config/validateEnv')
+  if (!allowDebugAccess(req, false)) {
     return res.status(403).json({ error: 'Forbidden' })
   }
 
@@ -695,9 +678,9 @@ runAllowedMigrationsOnStartup().catch(err => console.error('Startup migrations e
 
 // Debug: stream a pg_dump of the database for backup (protected)
 app.get("/debug/backup-db", async (req, res) => {
-  const secret = req.query.secret
-  if (!(process.env.DEBUG === "true" || (typeof secret === "string" && secret === DEBUG_SECRET && DEBUG_SECRET !== ""))) {
-    return res.status(404).send("Not found")
+  const { allowDebugAccess } = await import('./config/validateEnv')
+  if (!allowDebugAccess(req, true)) {
+    return res.status(404).send('Not found')
   }
 
   try {
@@ -732,8 +715,8 @@ app.get("/debug/backup-db", async (req, res) => {
 
 // Debug: list available font files on server (protected)
 app.get('/debug/list-fonts', async (req, res) => {
-  const secret = req.query.secret
-  if (!(process.env.DEBUG === 'true' || (typeof secret === 'string' && secret === DEBUG_SECRET && DEBUG_SECRET !== ''))) {
+  const { allowDebugAccess } = await import('./config/validateEnv')
+  if (!allowDebugAccess(req, true)) {
     return res.status(403).json({ error: 'Forbidden' })
   }
 
@@ -782,8 +765,8 @@ app.get('/debug/list-fonts', async (req, res) => {
 
 // Debug: attempt to fix fonts by downloading latest Noto Sans Arabic into known font paths (protected)
 app.post('/debug/fix-fonts', async (req, res) => {
-  const secret = req.query.secret
-  if (!(process.env.DEBUG === 'true' || (typeof secret === 'string' && secret === DEBUG_SECRET && DEBUG_SECRET !== ''))) {
+  const { allowDebugAccess } = await import('./config/validateEnv')
+  if (!allowDebugAccess(req, true)) {
     return res.status(403).json({ error: 'Forbidden' })
   }
   try {
@@ -842,17 +825,22 @@ app.post('/debug/fix-fonts', async (req, res) => {
 
 // Debug: test Supabase storage upload using env vars (protected)
 app.get("/debug/test-supabase-upload", async (req, res) => {
-  const secret = req.query.secret
-  if (!(process.env.DEBUG === "true" || (typeof secret === "string" && secret === DEBUG_SECRET && DEBUG_SECRET !== ""))) {
-    return res.status(404).send("Not found")
+  const { allowDebugAccess } = await import('./config/validateEnv')
+  if (!allowDebugAccess(req, true)) {
+    return res.status(404).send('Not found')
   }
+
+  const { USE_R2_ONLY } = await import('./config/storage')
+  // This debug endpoint is disabled when the server is running in R2-only mode
+  if (USE_R2_ONLY) return res.status(404).send('Not found')
 
   const SUPABASE_URL = process.env.SUPABASE_URL || ''
   const SUPABASE_KEY_RAW = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
   const SUPABASE_KEY = String(SUPABASE_KEY_RAW).trim()
   const BUCKET = process.env.SUPABASE_BUCKET || process.env.S3_BUCKET || ''
 
-  // Basic env sanity checks (do not log secrets)
+  console.debug('DEBUG: /debug/test-supabase-upload supabase configured=', !!SUPABASE_URL && !!SUPABASE_KEY && !!BUCKET)
+
   if (!SUPABASE_URL || !SUPABASE_KEY || !BUCKET) {
     return res.status(500).json({ error: 'Missing SUPABASE env vars', SUPABASE_URL: !!SUPABASE_URL, SUPABASE_KEY: !!SUPABASE_KEY, BUCKET })
   }
@@ -861,32 +849,16 @@ app.get("/debug/test-supabase-upload", async (req, res) => {
   const jwtLike = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(SUPABASE_KEY)
   const sbPrefixed = SUPABASE_KEY.startsWith('sb_secret_')
   if (!jwtLike && !sbPrefixed) {
-    return res.status(400).json({ error: 'SUPABASE_SERVICE_ROLE_KEY does not look like a valid Service Role JWT or sb_secret_ key. Please confirm you copied the Service Role Key for the same Supabase project.' })
+    const snippet = String(SUPABASE_KEY).slice(0, 6) + '…' + String(SUPABASE_KEY).slice(-6)
+    return res.status(400).json({ error: 'SUPABASE_SERVICE_ROLE_KEY does not look like a valid Service Role JWT or sb_secret_ key. Please confirm you copied the Service Role Key (Settings → API → Service Role Key) for the same Supabase project.', keySnippet: snippet })
   }
 
   if (sbPrefixed && !jwtLike) {
     console.warn('Warning: SUPABASE_SERVICE_ROLE_KEY appears to start with sb_secret_. Proceeding to test upload — server will attempt an upload to verify if this key is accepted at runtime.')
   }
 
-  try {
-    const { createClient } = await import('@supabase/supabase-js')
-    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } })
-    const key = `debug/test-${Date.now()}.txt`
-    const body = Buffer.from('debug upload')
-    const { data, error } = await supabase.storage.from(BUCKET).upload(key, body, { contentType: 'text/plain' })
-    if (error) {
-      // try listing to get more context
-      let listInfo
-      try { listInfo = await supabase.storage.from(BUCKET).list('debug') } catch (e) { listInfo = String(e) }
-      return res.status(500).json({ error, listInfo })
-    }
-
-    const pub = supabase.storage.from(BUCKET).getPublicUrl(key)
-    return res.json({ data, publicUrl: (pub as any)?.data || null })
-  } catch (err: any) {
-    console.error('Debug Supabase upload error:', err)
-    return res.status(500).json({ error: err.message || String(err) })
-  }
+  // Supabase debug upload disabled — project migrated to R2-only
+  return res.status(501).json({ error: 'Supabase debug upload disabled: project is R2-only' })
 })
 
 

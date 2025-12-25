@@ -1,0 +1,33 @@
+name: Backend CI
+
+on:
+  push:
+    paths:
+      - 'backend/**'
+  pull_request:
+    paths:
+      - 'backend/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install Dependencies
+        working-directory: backend
+        run: npm ci
+      - name: Run tests
+        working-directory: backend
+        run: npm test --silent
+      - name: Check package.json for supabase dep
+        working-directory: backend
+        run: |
+          if grep -q "@supabase" package.json; then
+            echo "Found @supabase in package.json — please remove the dependency when migrating to R2-only"; exit 1
+          else
+            echo "No supabase dependency in package.json"
+          fi

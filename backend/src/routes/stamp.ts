@@ -29,17 +29,20 @@ router.post('/:barcode/stamp', async (req, res) => {
     const pdf = Array.isArray(attachments) && attachments.length ? attachments[0] : null
     if (!pdf || !pdf.url) return res.status(400).json({ error: 'No PDF attached to stamp' })
 
-    // fetch pdf bytes (support Supabase key, local uploads, or external URL)
+    // fetch pdf bytes (support R2, local uploads, or external URL)
     let pdfBytes: Buffer
-    const supabaseUrl = process.env.SUPABASE_URL
-    const supabaseKeyRaw = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+    const supabaseUrl = (await import('../config/storage')).USE_R2_ONLY ? '' : process.env.SUPABASE_URL
+    const supabaseKeyRaw = (await import('../config/storage')).USE_R2_ONLY ? '' : (process.env.SUPABASE_SERVICE_ROLE_KEY || '')
     const supabaseKey = String(supabaseKeyRaw).trim()
-    const supabaseBucket = process.env.SUPABASE_BUCKET || ''
+    const supabaseBucket = (await import('../config/storage')).USE_R2_ONLY ? '' : (process.env.SUPABASE_BUCKET || '')
 
-    console.debug('Stamp request start:', { barcode, pdfUrl: pdf?.url, pdfKey: pdf?.key, supabaseUrl: !!supabaseUrl, supabaseKey: !!supabaseKey, supabaseBucket })
+    // Load storage config: USE_R2_ONLY defaults to true for one-step migration
+    const { USE_R2_ONLY, preferR2, R2_CONFIGURED } = await import('../config/storage')
+
+    console.debug('Stamp request start:', { barcode, pdfUrl: pdf?.url, pdfKey: pdf?.key, USE_R2_ONLY, R2_CONFIGURED })
 
     try {
-      const useR2 = String(process.env.STORAGE_PROVIDER || '').toLowerCase() === 'r2' || Boolean(process.env.CF_R2_ENDPOINT)
+      const useR2 = preferR2()
 
       if (useR2 && (pdf.key || (pdf.url && String(pdf.url).startsWith((process.env.CF_R2_ENDPOINT || '').replace(/\/$/, ''))))) {
         try {
@@ -81,20 +84,21 @@ router.post('/:barcode/stamp', async (req, res) => {
           console.error('Stamp: failed to download object from R2:', e)
           throw e
         }
-      } else if (pdf.key && supabaseUrl && supabaseKey && supabaseBucket) {
-        const { createClient } = await import('@supabase/supabase-js')
-        const supabase = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } })
-        const { data: downloadData, error: downloadErr } = await supabase.storage.from(supabaseBucket).download(pdf.key)
-        if (downloadErr) {
-          console.error('Stamp: failed to download object from Supabase:', downloadErr)
-          throw downloadErr
-        }
-        pdfBytes = Buffer.from(await (downloadData as any).arrayBuffer())
+      } else if (!USE_R2_ONLY && pdf.key && supabaseUrl && supabaseKey && supabaseBucket) {
+        // Supabase download path removed: project migrated to R2-only.
+        console.error('Stamp: Supabase download requested but Supabase support has been removed')
+        return res.status(500).json({ error: 'Supabase storage support has been removed. Use R2-hosted objects or contact the administrator.' })
       } else if (pdf.url && String(pdf.url).startsWith('/uploads/')) {
         const uploadsDir = path.resolve(process.cwd(), 'uploads')
         const fp = path.join(uploadsDir, pdf.url.replace('/uploads/', ''))
         pdfBytes = fs.readFileSync(fp)
       } else {
+        // If we're in R2-only mode but no R2 match was found, return an error instead of silently fetching external content
+        if (USE_R2_ONLY && !useR2) {
+          console.error('Stamp: server is configured USE_R2_ONLY but R2 is not configured or URL does not match R2 endpoint')
+          return res.status(500).json({ error: 'R2 storage not configured. Contact the administrator.' })
+        }
+
         const r = await fetch(pdf.url)
         if (!r.ok) return res.status(500).json({ error: 'Failed to fetch PDF' })
         pdfBytes = Buffer.from(await r.arrayBuffer())
@@ -614,6 +618,12 @@ router.post('/:barcode/stamp', async (req, res) => {
         }
       }
 
+      const { USE_R2_ONLY } = await import('../config/storage')
+      if (USE_R2_ONLY) {
+        console.error('Stamp: server is configured for R2-only and will not attempt to overwrite non-R2 objects')
+        return res.status(500).json({ error: 'Server is configured for R2-only storage and cannot overwrite Supabase objects.' })
+      }
+
       if (targetKey && targetBucket && supabaseUrl && supabaseKey) {
         const { createClient } = await import('@supabase/supabase-js')
         const supabase = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } })
@@ -687,7 +697,7 @@ router.post('/:barcode/stamp', async (req, res) => {
         const parsedAttachments = Array.isArray(updatedDoc.attachments) ? updatedDoc.attachments : JSON.parse(String(updatedDoc.attachments || '[]'))
         const pdfFile = parsedAttachments && parsedAttachments.length ? parsedAttachments[0] : null
         // provide signedUrl and a short-lived preview URL to the client so they can open the fresh copy immediately
-        const previewUrl = signedUrl || `${newUrl}?t=${Date.now()}`
+        const previewUrl = signedUrl || `${newUrl}?t=${Date.now()}`}]}']
         return res.json({ ...updatedDoc, attachments: parsedAttachments, pdfFile, previewUrl })
       }
 

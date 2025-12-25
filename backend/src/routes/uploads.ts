@@ -27,19 +27,13 @@ router.post('/', upload.single('file'), async (req: Request, res: Response) => {
     const f: any = (req as any).file
     if (!f) return res.status(400).json({ error: 'No file' })
 
-    // Use Supabase Storage exclusively (preferred). In production fail fast if misconfigured.
-    const supabaseUrl = process.env.SUPABASE_URL
-    const supabaseKeyRaw = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-    const supabaseKey = String(supabaseKeyRaw).trim()
-    const supabaseBucket = process.env.SUPABASE_BUCKET || ''
-
-    // If in production, require Supabase configuration to be present
+    // Storage decision: prefer R2 when configured OR when USE_R2_ONLY is enabled
+    const { USE_R2_ONLY, R2_CONFIGURED, preferR2 } = await import('../config/storage')
     const inProd = String(process.env.NODE_ENV || '').toLowerCase() === 'production'
 
-    console.debug('UPLOADS: supabase configured=', !!supabaseUrl && !!supabaseKey && !!supabaseBucket)
+    const useR2 = preferR2()
 
-    // If STORAGE_PROVIDER=r2 (or CF_R2_* env present) use R2
-    const useR2 = String(process.env.STORAGE_PROVIDER || '').toLowerCase() === 'r2' || Boolean(process.env.CF_R2_ENDPOINT)
+    // R2 path (preferred and enforced when USE_R2_ONLY is true)
     if (useR2) {
       try {
         const { uploadBuffer, getPublicUrl } = await import('../lib/r2-storage')
@@ -59,6 +53,16 @@ router.post('/', upload.single('file'), async (req: Request, res: Response) => {
       }
     }
 
+    // If we reach here, R2 is not preferred/available and we're allowed to use Supabase (legacy path).
+    // NOTE: This legacy Supabase block is intentionally guarded so the default migration to R2 can be reverted by setting USE_R2_ONLY=false.
+    // Supabase usage remains behind a guard for rollback safety.
+    const supabaseUrl = USE_R2_ONLY ? '' : process.env.SUPABASE_URL
+    const supabaseKeyRaw = USE_R2_ONLY ? '' : (process.env.SUPABASE_SERVICE_ROLE_KEY || '')
+    const supabaseKey = String(supabaseKeyRaw).trim()
+    const supabaseBucket = USE_R2_ONLY ? '' : (process.env.SUPABASE_BUCKET || '')
+
+    console.debug('UPLOADS: supabase configured=', !!supabaseUrl && !!supabaseKey && !!supabaseBucket)
+
     if (!supabaseUrl || !supabaseKey || !supabaseBucket) {
       const msg = 'Supabase storage not configured. Set SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY and SUPABASE_BUCKET.'
       console.error(msg, { supabaseUrl: !!supabaseUrl, supabaseKey: !!supabaseKey, supabaseBucket: !!supabaseBucket })
@@ -68,7 +72,7 @@ router.post('/', upload.single('file'), async (req: Request, res: Response) => {
       return res.json({ url, name: f.originalname, size: f.size, storage: 'local' })
     }
 
-    // Validate service role key format quickly (trimmed). Accept jwt-like or sb_secret_ prefix.
+    // Validate service role key quickly (trimmed). Accept jwt-like or sb_secret_ prefix.
     const jwtLike = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(supabaseKey)
     const sbPrefixed = supabaseKey.startsWith('sb_secret_')
     if (!jwtLike && !sbPrefixed) {
@@ -83,55 +87,8 @@ router.post('/', upload.single('file'), async (req: Request, res: Response) => {
       console.warn('Warning: SUPABASE_SERVICE_ROLE_KEY starts with sb_secret_. Proceeding to attempt Supabase upload to verify acceptance at runtime.')
     }
 
-    try {
-      const { createClient } = await import('@supabase/supabase-js')
-      const supabase = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } })
-      const body = fs.readFileSync(f.path)
-      // Generate an ASCII-safe storage key: keep original name in response but avoid non-ASCII in object key
-      const ext = path.extname(f.originalname || f.filename || '') || ''
-      const safeBase = `${Date.now()}-${Math.random().toString(36).slice(2,9)}`
-      const key = `uploads/${safeBase}${ext}`
-      console.log('Uploading to supabase with key=', key, 'originalName=', f.originalname)
-      // use upsert=true so re-runs are idempotent
-      const uploadOptions: any = { contentType: f.mimetype, upsert: true, cacheControl: '0' }
-      const uploadRes = await supabase.storage.from(supabaseBucket).upload(key, body, uploadOptions)
-      console.debug('Uploads: supabase.upload response', uploadRes)
-      const uploadError = uploadRes?.error
-      if (uploadError) throw uploadError
-
-      // Prefer public URL if available, otherwise use signed URL
-      const publicRes = supabase.storage.from(supabaseBucket).getPublicUrl(key) as any
-      let url = publicRes?.data?.publicUrl
-      if (!url) {
-        const { data: signedData, error: signedErr } = await supabase.storage.from(supabaseBucket).createSignedUrl(key, 60 * 60)
-        if (signedErr) throw signedErr
-        url = (signedData as any)?.signedUrl || ''
-      }
-
-      // Clean up local temporary file
-      try { fs.unlinkSync(f.path) } catch (e) {}
-      return res.json({ url, name: f.originalname, size: f.size, storage: 'supabase', key })
-    } catch (e: any) {
-      console.error('Supabase upload failed:', e)
-      // If the storage API flagged an invalid key (filename), return a clear 400 for client to retry with sanitized name
-      const msg = String(e?.message || e)
-      if (msg.includes('Invalid key')) {
-        // Provide a helpful but non-sensitive message
-        return res.status(400).json({ error: 'Invalid file name for storage. Try renaming file to use basic Latin characters (a-z, 0-9, - and _). The server will attempt to sanitize next upload.' })
-      }
-
-      // In production return a generic message unless DEBUG=true (safe for staging)
-      if (inProd) {
-        if (process.env.DEBUG === 'true') {
-          return res.status(500).json({ error: 'Supabase upload failed; check SUPABASE_SERVICE_ROLE_KEY and SUPABASE_BUCKET settings.', details: String(e?.message || e) })
-        }
-        return res.status(500).json({ error: 'Supabase upload failed; check SUPABASE_SERVICE_ROLE_KEY and SUPABASE_BUCKET settings.' })
-      }
-
-      const url = `/uploads/${f.filename}`
-      return res.json({ url, name: f.originalname, size: f.size, storage: 'local' })
-    }
-
+    // Supabase upload path disabled — project migrated to R2. If you need to re-enable Supabase for rollback, set USE_R2_ONLY=false and restore the original code.
+    return res.status(500).json({ error: 'Supabase uploads are disabled: server is R2-only. Set USE_R2_ONLY=false to re-enable legacy path.' })
 
     // default local behavior
     const url = `/uploads/${f.filename}`
