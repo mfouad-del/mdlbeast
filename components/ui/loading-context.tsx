@@ -27,7 +27,12 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
 
 export function useLoading() {
   const ctx = React.useContext(LoadingContext)
-  if (!ctx) throw new Error('useLoading must be used within LoadingProvider')
+  if (!ctx) {
+    // Do not throw to avoid crashing when components are rendered outside layout during edge cases
+    // Provide no-op implementation so callers can still call show/hide safely
+    console.warn('useLoading used outside LoadingProvider - falling back to noop implementation')
+    return { show: () => {}, hide: () => {}, isLoading: false }
+  }
   return ctx
 }
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { LayoutDashboard, FilePlus, FileMinus, Search, Users, LogOut, Scan, FileText, Briefcase, Database } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
@@ -13,6 +13,7 @@ import DocumentList from "@/components/DocumentList"
 import BarcodeScanner from "@/components/BarcodeScanner"
 import ReportGenerator from "@/components/ReportGenerator"
 import UserManagement from "@/components/UserManagement"
+import { Spinner } from "@/components/ui/spinner"
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -23,6 +24,9 @@ export default function DashboardPage() {
   const [users, setUsers] = useState<User[]>([])
   const [selectedTenantId, setSelectedTenantId] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [loadingStep, setLoadingStep] = useState<string | null>(null)
+  const [loadingError, setLoadingError] = useState<string | null>(null)
+  const [loadStartedAt, setLoadStartedAt] = useState<number | null>(null)
   const [newTenant, setNewTenant] = useState({ name: '', slug: '', logo_url: '' })
 
   const [settings] = useState<SystemSettings>({
@@ -51,13 +55,30 @@ export default function DashboardPage() {
     } catch (err) { console.error(err); alert('فشل التصدير') }
   }
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const user = await apiClient.getCurrentUser()
-        setCurrentUser(user)
+  const loadData = React.useCallback(async () => {
+    setLoadingError(null)
+    setLoadStartedAt(Date.now())
+    try {
+      setIsLoading(true)
+      setLoadingStep('جارٍ التحقق من بيانات المستخدم…')
+      const user = await apiClient.getCurrentUser()
+      if (!user) throw new Error('Unauthorized')
+      setCurrentUser(user)
 
-        const documents = await apiClient.getDocuments()
+      // Fetch documents/tenants/users in parallel with per-call timeouts
+      setLoadingStep('جارٍ تحميل المستندات...')
+      const withTimeout = <T,>(p: Promise<T>, ms = 10_000) => {
+        return Promise.race([p, new Promise<T>((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))])
+      }
+
+      const docsP = withTimeout(apiClient.getDocuments(), 12_000)
+      const tenantsP = withTimeout(apiClient.getTenants(), 10_000)
+      const usersP = withTimeout(apiClient.getUsers(), 10_000)
+
+      const [docsRes, tenantsRes, usersRes] = await Promise.allSettled([docsP, tenantsP, usersP])
+
+      if (docsRes.status === 'fulfilled') {
+        const documents = docsRes.value
         const mappedDocs = (documents || []).map((doc: any) => ({
           ...doc,
           id: doc.id,
@@ -74,27 +95,35 @@ export default function DashboardPage() {
           companyId: doc.companyId || doc.tenant_id || null,
         }))
         setDocs(mappedDocs)
-
-        // tenants and users
-        try {
-          const t = await apiClient.getTenants().catch(() => [])
-          setTenants(t || [])
-
-            const u = await apiClient.getUsers().catch(() => [])
-          // Normalize users to ensure email field exists (some backends return username only)
-          setUsers((u || []).map((us: any) => ({ ...us, email: us.email || us.username || '' })))
-        } catch (e) {
-          console.warn('Failed to load tenants or users', e)
-        }
-      } catch (error) {
-        console.error("Failed to load data:", error)
-        router.push("/")
-      } finally {
-        setIsLoading(false)
+      } else {
+        console.warn('Documents load failed or timed out:', docsRes.reason || docsRes)
+        setLoadingError('فشل تحميل المستندات أو استغرق وقتاً طويلاً')
       }
+
+      setLoadingStep('جارٍ تحميل المؤسسات والمستخدمين…')
+      if (tenantsRes.status === 'fulfilled') setTenants(tenantsRes.value || [])
+      else console.warn('Tenants load failed:', tenantsRes.reason)
+
+      if (usersRes.status === 'fulfilled') setUsers((usersRes.value || []).map((us: any) => ({ ...us, email: us.email || us.username || '' })))
+      else console.warn('Users load failed:', usersRes.reason)
+
+    } catch (error: any) {
+      console.error("Failed to load data:", error)
+      setLoadingError(error?.message || 'فشل في تحميل البيانات')
+      // if authorization issue, go back to login
+      if (String(error?.message || '').toLowerCase().includes('unauthorized')) {
+        router.push('/')
+        return
+      }
+    } finally {
+      setIsLoading(false)
+      setLoadingStep(null)
     }
-    loadData()
   }, [router])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   // When tenant selection changes, re-fetch docs scoped to that tenant
   useEffect(() => {
@@ -166,9 +195,26 @@ export default function DashboardPage() {
   }
 
   if (isLoading) {
+    const elapsed = loadStartedAt ? Math.floor((Date.now() - loadStartedAt) / 1000) : 0
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
-        <div className="text-slate-900 font-black text-xl">جاري تحميل البيانات...</div>
+      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] px-4">
+        <div className="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center gap-4 max-w-md text-center">
+          <div className="flex items-center gap-4">
+            <Spinner className="h-8 w-8 text-slate-900" />
+            <div className="text-slate-900 font-extrabold text-lg">جارٍ تشغيل النظام</div>
+          </div>
+          <div className="text-slate-500 text-sm">{loadingStep || 'جاري تحميل البيانات...'}{loadingError ? ` — ${loadingError}` : ''}</div>
+          <div className="text-slate-400 text-xs">مر على المحاولة {elapsed} ثانية{elapsed !== 1 ? 'ً' : ''}</div>
+          {loadingError && (
+            <div className="flex gap-3">
+              <button onClick={() => { setIsLoading(true); loadData() }} className="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold">إعادة المحاولة</button>
+              <button onClick={() => window.location.reload()} className="bg-slate-100 text-slate-700 px-4 py-2 rounded-xl font-bold">تحديث الصفحة</button>
+            </div>
+          )}
+          {!loadingError && elapsed > 10 && (
+            <div className="text-orange-500 text-xs">العملية تستغرق وقتًا أطول من المتوقع. إذا استمرت، جرِّب إعادة المحاولة أو التواصل مع الدعم.</div>
+          )}
+        </div>
       </div>
     )
   }

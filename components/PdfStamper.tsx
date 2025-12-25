@@ -39,7 +39,12 @@ export default function PdfStamper({ doc, onClose }: PdfStamperProps) {
 
   const handleMouseUp = () => setIsDragging(false)
 
-  const loading = useLoading()
+  let loading: any = null
+  try {
+    loading = useLoading()
+  } catch (e) {
+    loading = { show: () => {}, hide: () => {} }
+  }
 
   const handleFinalize = async () => {
     setIsSaving(true)

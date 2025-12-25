@@ -79,7 +79,29 @@ router.get('/:barcode/preview', async (req: Request, res: Response) => {
     const supabaseKeyRaw = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
     const supabaseKey = String(supabaseKeyRaw).trim()
 
-    // If we have a bucket/key, try to create a signed URL first
+    // Prefer Cloudflare R2 signed URLs when using R2
+    const useR2 = String(process.env.STORAGE_PROVIDER || '').toLowerCase() === 'r2' || Boolean(process.env.CF_R2_ENDPOINT)
+    if (useR2 && pdf.key && (process.env.CF_R2_BUCKET || '')) {
+      try {
+        const { getSignedDownloadUrl, getPublicUrl } = await import('../lib/r2-storage')
+        try {
+          const signed = await getSignedDownloadUrl(pdf.key, 60 * 5)
+          if (req.path.endsWith('/preview-url')) return res.json({ previewUrl: signed })
+          return res.redirect(signed)
+        } catch (err) {
+          // fallback to public URL
+          try {
+            const publicUrl = getPublicUrl(pdf.key)
+            if (req.path.endsWith('/preview-url')) return res.json({ previewUrl: publicUrl })
+            return res.redirect(publicUrl)
+          } catch (err2) {}
+        }
+      } catch (e) {
+        console.warn('R2 preview redirect error:', e)
+      }
+    }
+
+    // If we have a bucket/key, try to create a signed URL first for supabase
     if (pdf.key && supabaseUrl && supabaseKey && pdf.bucket) {
       try {
         const { createClient } = await import('@supabase/supabase-js')

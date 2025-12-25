@@ -60,6 +60,16 @@ app.use('/uploads', express.static(uploadsDirStartup))
 // Stamp endpoint
 app.use('/api/documents', stampRoutes)
 
+// Serve a small wp-emoji loader stub to avoid JS parse errors when clients request /wp-includes/js/wp-emoji-loader.min.js
+app.get('/wp-includes/js/wp-emoji-loader.min.js', (_req, res) => {
+  res.set('Content-Type', 'application/javascript')
+  return res.send(`/* wp-emoji-loader stub - served by backend to avoid HTML 404 */
+;(function(){
+  if (typeof window === 'undefined') return;
+  window._wpemojiSettings = window._wpemojiSettings || {};
+})();`)
+})
+
 // Health check
 app.get("/", (req, res) => {
   res.status(200).json({
