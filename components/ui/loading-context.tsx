@@ -34,10 +34,11 @@ export function useLoading() {
 function LoadingOverlay({ isLoading }: { isLoading: boolean }) {
   if (!isLoading) return null
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white/90 px-8 py-6 rounded-2xl shadow-lg flex items-center gap-4">
-        <Spinner className="h-6 w-6 text-slate-700" />
-        <div className="text-slate-900 font-bold">جاري تحميل البيانات...</div>
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="bg-white/95 px-8 py-8 rounded-2xl shadow-2xl flex flex-col items-center gap-4 max-w-xs">
+        <Spinner className="h-10 w-10 text-slate-800" />
+        <div className="text-slate-900 font-extrabold text-lg">جاري التحميل</div>
+        <div className="text-slate-500 text-sm">يرجى الانتظار قليلاً، قد تستغرق بعض العمليات وقتًا</div>
       </div>
     </div>
   )
