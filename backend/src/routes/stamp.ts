@@ -523,24 +523,19 @@ router.post('/:barcode/stamp', async (req, res) => {
     // Ensure we have a Latin-digit barcode for machine-readability
     const displayBarcodeLatin = String(barcode || '')
 
-    // Decide text language and content, prefer Arabic company name when available
-    const hasArabicInCompany = ((companyName || '').match(/[\u0600-\u06FF]/g) || []).length > 0
-    let displayCompanyText = ''
-    if (hasArabicInCompany) {
-      displayCompanyText = shapeArabicText(companyName)
-    } else {
-      displayCompanyText = String(companyNameEnglish || companyName || '').toUpperCase()
-    }
+    // Force English company name (avoid Arabic font issues)
+    const displayCompanyText = String(companyNameEnglish || process.env.ORG_NAME_EN || 'Zawaya Albina Engineering Consultancy').toUpperCase()
 
-    // Determine incoming/outgoing label
+    // Do not render Arabic incoming/outgoing label to avoid font/shaping issues; keep empty or English if required
     let docTypeText = ''
-    try {
-      const t = String((doc.type || doc.direction || doc.kind || '').toLowerCase())
-      if (t === 'incoming' || t === 'in' || t === 'وارد') docTypeText = shapeArabicText('وارد')
-      else if (t === 'outgoing' || t === 'out' || t === 'صادر') docTypeText = shapeArabicText('صادر')
-    } catch (e) {
-      docTypeText = ''
-    }
+    // If you want an English direction label, enable the block below and adjust as needed
+    // try {
+    //   const t = String((doc.type || doc.direction || doc.kind || '').toLowerCase())
+    //   if (t === 'incoming' || t === 'in') docTypeText = 'IN'
+    //   else if (t === 'outgoing' || t === 'out') docTypeText = 'OUT'
+    // } catch (e) {
+    //   docTypeText = ''
+    // }
 
     // sizes
     const companySize = 11
@@ -549,7 +544,7 @@ router.post('/:barcode/stamp', async (req, res) => {
     const dateSize2 = 9
 
     // Recompute widths with chosen fonts
-    const companyWidth = (hasArabicInCompany ? helvBold.widthOfTextAtSize(displayCompanyText, companySize) : helvBold.widthOfTextAtSize(displayCompanyText, companySize))
+    const companyWidth = helvBold.widthOfTextAtSize(displayCompanyText, companySize)
     const typeWidth = helv.widthOfTextAtSize(docTypeText || '', typeSize)
     const barcodeWidth2 = helv.widthOfTextAtSize(displayBarcodeLatin, barcodeSize2)
     const dateWidth2 = helv.widthOfTextAtSize(displayEnglishDate, dateSize2)
