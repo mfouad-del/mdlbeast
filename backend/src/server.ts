@@ -651,7 +651,7 @@ app.get('/debug/list-fonts', async (req, res) => {
     for (const d of fontDirs) {
       try {
         if (fsModule.existsSync(d)) {
-          const files = fsModule.readdirSync(d).filter((f: string) => /(\.ttf|\.otf)$/i.test(f)).map((f: string) => {
+          const files = fsModule.readdirSync(d).filter((f: string) => /(\.ttf|\.otf|\.woff2?|\.woff)$/i.test(f)).map((f: string) => {
             try {
               const p = pathModule.join(d, f)
               const s = fsModule.statSync(p)
@@ -688,12 +688,19 @@ app.post('/debug/fix-fonts', async (req, res) => {
     const targets = [
       pathModule.resolve(process.cwd(), 'backend', 'assets', 'fonts', 'NotoSansArabic-Regular.ttf'),
       pathModule.resolve(process.cwd(), 'backend', 'assets', 'fonts', 'NotoSansArabic-Bold.ttf'),
+      pathModule.resolve(process.cwd(), 'backend', 'assets', 'fonts', 'NotoSansArabic-Regular.woff2'),
+      pathModule.resolve(process.cwd(), 'backend', 'assets', 'fonts', 'NotoSansArabic-Bold.woff2'),
       pathModule.resolve(__dirname, '..', '..', 'backend', 'assets', 'fonts', 'NotoSansArabic-Regular.ttf'),
       pathModule.resolve(__dirname, '..', '..', 'backend', 'assets', 'fonts', 'NotoSansArabic-Bold.ttf'),
+      pathModule.resolve(__dirname, '..', '..', 'backend', 'assets', 'fonts', 'NotoSansArabic-Regular.woff2'),
+      pathModule.resolve(__dirname, '..', '..', 'backend', 'assets', 'fonts', 'NotoSansArabic-Bold.woff2'),
     ]
     const urls: any = {
-      regular: 'https://github.com/googlefonts/noto-fonts/raw/main/phaseIII_only/unhinted/ttf/NotoSansArabic/NotoSansArabic-Regular.ttf',
-      bold: 'https://github.com/googlefonts/noto-fonts/raw/main/phaseIII_only/unhinted/ttf/NotoSansArabic/NotoSansArabic-Bold.ttf'
+      regular_ttf: 'https://github.com/googlefonts/noto-fonts/raw/main/phaseIII_only/unhinted/ttf/NotoSansArabic/NotoSansArabic-Regular.ttf',
+      bold_ttf: 'https://github.com/googlefonts/noto-fonts/raw/main/phaseIII_only/unhinted/ttf/NotoSansArabic/NotoSansArabic-Bold.ttf',
+      // reliable CDN sources (woff2)
+      regular_woff2: 'https://unpkg.com/@fontsource/noto-sans-arabic/files/noto-sans-arabic-arabic-400-normal.woff2',
+      bold_woff2: 'https://unpkg.com/@fontsource/noto-sans-arabic/files/noto-sans-arabic-arabic-700-normal.woff2'
     }
 
     const written: any = []
@@ -702,11 +709,15 @@ app.post('/debug/fix-fonts', async (req, res) => {
         const dir = pathModule.dirname(t)
         if (!fsModule.existsSync(dir)) fsModule.mkdirSync(dir, { recursive: true })
         const which = t.toLowerCase().includes('bold') ? 'bold' : 'regular'
-        const url = urls[which]
+        // pick URL for this target: prefer woff2 CDN when target ends with .woff2
+        let url = null
+        if (t.toLowerCase().endsWith('.woff2')) url = urls[which + '_woff2'] || urls[which]
+        else url = urls[which + '_ttf'] || urls[which]
+        if (!url) { written.push({ target: t, ok: false, error: 'no url' }); continue }
         const r = await fetch(url)
         if (!r.ok) { written.push({ target: t, ok: false, status: r.status }); continue }
         const contentType = String(r.headers.get('content-type') || '')
-        if (!/font|octet|application\//i.test(contentType)) {
+        if (!/font|octet|application|woff/i.test(contentType)) {
           // still write but log warning
           console.warn('fix-fonts: downloaded content-type', contentType)
         }

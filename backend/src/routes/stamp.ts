@@ -102,7 +102,7 @@ router.post('/:barcode/stamp', async (req, res) => {
       for (const d of fontDirs) {
         try {
           if (fs.existsSync(d)) {
-            const list = fs.readdirSync(d).filter((f) => /(\.ttf|\.otf)$/i.test(f)).map((f) => path.join(d, f))
+            const list = fs.readdirSync(d).filter((f) => /(\.ttf|\.otf|\.woff2?|\.woff)$/i.test(f)).map((f) => path.join(d, f))
             if (list.length) {
               fontFiles = fontFiles.concat(list)
             }
@@ -134,17 +134,52 @@ router.post('/:barcode/stamp', async (req, res) => {
         }
         try {
           const fontBuf = fs.readFileSync(chosen)
+          // basic sanity: check font magic bytes (TTF/OTF/ttcf)
+          const head = Buffer.from(fontBuf.slice(0,4))
+          const isTTF = head.equals(Buffer.from([0x00,0x01,0x00,0x00]))
+          const isOTF = head.toString('ascii') === 'OTTO'
+          const isTTC = head.toString('ascii') === 'ttcf'
+          const isWOFF = head.toString('ascii') === 'wOFF'
+          const isWOFF2 = head.toString('ascii') === 'wOF2'
+          if (!isTTF && !isOTF && !isTTC && !isWOFF && !isWOFF2) {
+            console.error('Stamp: chosen font file failed magic-byte check:', chosen, 'head=', head.toString('hex'))
+            throw new Error('Unknown font format')
+          }
           helv = await pdfDoc.embedFont(fontBuf)
         } catch (embedErr) {
           console.error('Stamp: failed to embed chosen font file:', chosen, embedErr)
           // attempt explicit known-file fallback (Noto files checked-in)
           try {
-            const maybe1 = path.resolve(process.cwd(), 'backend', 'assets', 'fonts', 'NotoSansArabic-Regular.ttf')
-            const maybe2 = path.resolve(__dirname, '..', '..', 'backend', 'assets', 'fonts', 'NotoSansArabic-Regular.ttf')
-            const candidates = [maybe1, maybe2].filter((p) => fs.existsSync(p))
+            const maybeNames = [
+              'NotoSansArabic-Regular.ttf',
+              'NotoSansArabic-Bold.ttf',
+              'NotoSansArabic-Regular.woff2',
+              'NotoSansArabic-Bold.woff2',
+              'NotoSansArabic-Regular.woff',
+              'NotoSansArabic-Bold.woff'
+            ]
+            const candidates: string[] = []
+            for (const n of maybeNames) {
+              const p1 = path.resolve(process.cwd(), 'backend', 'assets', 'fonts', n)
+              const p2 = path.resolve(__dirname, '..', '..', 'backend', 'assets', 'fonts', n)
+              if (fs.existsSync(p1)) candidates.push(p1)
+              if (fs.existsSync(p2)) candidates.push(p2)
+            }
             if (candidates.length) {
               console.debug('Stamp: attempting embed of checked-in Noto font at', candidates[0])
-              helv = await pdfDoc.embedFont(fs.readFileSync(candidates[0]))
+              const fb = fs.readFileSync(candidates[0])
+              // magic check
+              const h = Buffer.from(fb.slice(0,4))
+              const isTTF_ = h.equals(Buffer.from([0x00,0x01,0x00,0x00]))
+              const isOTF_ = h.toString('ascii') === 'OTTO'
+              const isTTC_ = h.toString('ascii') === 'ttcf'
+              const isWOFF_ = h.toString('ascii') === 'wOFF'
+              const isWOFF2_ = h.toString('ascii') === 'wOF2'
+              if (!isTTF_ && !isOTF_ && !isTTC_ && !isWOFF_ && !isWOFF2_) {
+                console.error('Stamp: checked-in Noto font file is invalid/malformed:', candidates[0], 'head=', h.toString('hex'))
+                throw new Error('Unknown font format')
+              }
+              helv = await pdfDoc.embedFont(fb)
             } else {
               throw embedErr
             }
@@ -165,25 +200,42 @@ router.post('/:barcode/stamp', async (req, res) => {
         // no local font found: attempt runtime download of Noto Sans Arabic as a fallback
         console.warn('Stamp: no local TTF/OTF font found in assets; attempting runtime download of Noto Sans Arabic')
         try {
-          const notoRegUrl = 'https://github.com/googlefonts/noto-fonts/raw/main/phaseIII_only/unhinted/ttf/NotoSansArabic/NotoSansArabic-Regular.ttf'
-          const notoBoldUrl = 'https://github.com/googlefonts/noto-fonts/raw/main/phaseIII_only/unhinted/ttf/NotoSansArabic/NotoSansArabic-Bold.ttf'
-          const regResp = await fetch(notoRegUrl)
-          const boldResp = await fetch(notoBoldUrl)
-          const ctReg = String(regResp.headers.get('content-type') || '')
-          const ctBold = String(boldResp.headers.get('content-type') || '')
-          const isFontReg = regResp.ok && /font|octet|application\//i.test(ctReg)
-          const isFontBold = boldResp.ok && /font|octet|application\//i.test(ctBold)
-          if (isFontReg && fontkitRegistered) {
-            const buf = Buffer.from(await regResp.arrayBuffer())
-            helv = await pdfDoc.embedFont(buf)
-          } else {
-            console.warn('Stamp: runtime font download did not return a valid font for regular (content-type=' + ctReg + ')')
+          const notoCandidates = [
+            { url: 'https://github.com/googlefonts/noto-fonts/raw/main/phaseIII_only/unhinted/ttf/NotoSansArabic/NotoSansArabic-Regular.ttf' , name: 'regular.ttf' },
+            { url: 'https://github.com/googlefonts/noto-fonts/raw/main/phaseIII_only/unhinted/ttf/NotoSansArabic/NotoSansArabic-Bold.ttf' , name: 'bold.ttf' },
+            // fallback to packaged woff2 on unpkg (reliable CDN)
+            { url: 'https://unpkg.com/@fontsource/noto-sans-arabic/files/noto-sans-arabic-arabic-400-normal.woff2', name: 'regular.woff2' },
+            { url: 'https://unpkg.com/@fontsource/noto-sans-arabic/files/noto-sans-arabic-arabic-700-normal.woff2', name: 'bold.woff2' }
+          ]
+          try {
+            for (const cand of notoCandidates) {
+              try {
+                const r = await fetch(cand.url)
+                const ct = String(r.headers.get('content-type') || '')
+                if (r.ok && /font|octet|application|woff/i.test(ct)) {
+                  const buf = Buffer.from(await r.arrayBuffer())
+                  try {
+                    helv = helv || (fontkitRegistered ? await pdfDoc.embedFont(buf) : undefined)
+                    if (cand.name.includes('bold')) helvBold = helvBold || (fontkitRegistered ? await pdfDoc.embedFont(buf) : undefined)
+                    if (helv && helvBold) break
+                  } catch (e) {
+                    console.warn('Stamp: downloaded font candidate not embedable:', cand.url, String(e))
+                  }
+                } else {
+                  console.warn('Stamp: runtime candidate returned non-font content-type', cand.url, ct)
+                }
+              } catch (e) {
+                console.warn('Stamp: runtime candidate fetch failed', cand.url, String(e))
+              }
+            }
+          } catch (e) {
+            console.warn('Stamp: runtime font candidate loop failed', e)
           }
-          if (isFontBold && fontkitRegistered) {
-            const buf2 = Buffer.from(await boldResp.arrayBuffer())
-            helvBold = await pdfDoc.embedFont(buf2)
-          } else {
-            console.warn('Stamp: runtime font download did not return a valid font for bold (content-type=' + ctBold + ')')
+          // if download didn't produce fonts, fall back
+          if (!helv) {
+            console.warn('Stamp: runtime download failed or fonts not embedable; falling back to standard fonts')
+            helv = await pdfDoc.embedFont(StandardFonts.Helvetica)
+            helvBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
           }
           // if download didn't produce fonts, fall back
           if (!helv) {
