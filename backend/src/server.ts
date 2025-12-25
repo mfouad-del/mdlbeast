@@ -530,6 +530,23 @@ app.post('/debug/apply-doc-seq', async (req, res) => {
   }
 })
 
+// Debug: list sequences that look like document sequences
+app.get('/debug/list-sequences', async (req, res) => {
+  const secret = req.query.secret
+  if (!(process.env.DEBUG === 'true' || (typeof secret === 'string' && secret === DEBUG_SECRET && DEBUG_SECRET !== ''))) {
+    return res.status(403).json({ error: 'Forbidden' })
+  }
+
+  try {
+    const q = "SELECT sequence_schema, sequence_name FROM information_schema.sequences WHERE sequence_name LIKE 'doc%';"
+    const rows = await query(q)
+    res.json({ ok: true, sequences: rows.rows })
+  } catch (err: any) {
+    console.error('list-sequences error:', err)
+    res.status(500).json({ error: err.message || String(err) })
+  }
+})
+
 // Optional: run allowed migrations automatically on startup when AUTO_RUN_MIGRATIONS=true
 async function runAllowedMigrationsOnStartup() {
   try {
