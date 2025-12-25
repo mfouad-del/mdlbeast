@@ -6,6 +6,7 @@ import { useState, useRef } from "react"
 import type { Correspondence } from "@/types"
 import { Save, X, MousePointer2, Scan, Layers, FileSearch, Eye } from "lucide-react"
 import { useLoading } from './ui/loading-context'
+import SignedPdfPreview from './SignedPdfPreview'
 
 interface PdfStamperProps {
   doc: Correspondence
@@ -124,11 +125,8 @@ export default function PdfStamper({ doc, onClose }: PdfStamperProps) {
             className="w-[800px] min-h-[1131px] bg-white shadow-[0_40px_80px_-20px_rgba(0,0,0,0.3)] relative cursor-crosshair border border-slate-200 overflow-hidden"
           >
             {doc.pdfFile ? (
-              <iframe
-                src={`${doc.pdfFile.url}#toolbar=0&navpanes=0&scrollbar=0`}
-                className="w-full h-full min-h-[1131px] pointer-events-none border-none select-none"
-                title="PDF Preview"
-              />
+              // Use signed preview URL from server (avoid opening raw storage URL which may be private)
+              <SignedPdfPreview barcode={doc.barcode || doc.barcodeId} fallbackUrl={doc.pdfFile.url} />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center text-slate-300 flex flex-col gap-4">
                 <FileSearch size={100} className="opacity-10" />
