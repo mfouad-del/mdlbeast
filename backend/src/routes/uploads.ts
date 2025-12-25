@@ -36,7 +36,7 @@ router.post('/', upload.single('file'), async (req: Request, res: Response) => {
     // If in production, require Supabase configuration to be present
     const inProd = String(process.env.NODE_ENV || '').toLowerCase() === 'production'
 
-    console.log('DEBUG: /api/uploads supabase key rawLen=', supabaseKeyRaw.length, 'trimmedLen=', supabaseKey.length, 'startsWith=', supabaseKey.slice(0,8))
+    console.debug('UPLOADS: supabase configured=', !!supabaseUrl && !!supabaseKey && !!supabaseBucket)
 
     // If STORAGE_PROVIDER=r2 (or CF_R2_* env present) use R2
     const useR2 = String(process.env.STORAGE_PROVIDER || '').toLowerCase() === 'r2' || Boolean(process.env.CF_R2_ENDPOINT)

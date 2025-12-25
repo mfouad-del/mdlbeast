@@ -573,19 +573,31 @@ router.post('/:barcode/stamp', async (req, res) => {
             console.warn('Stamp: failed to create signed URL for R2 object:', e)
           }
 
-          // verify uploaded content
-          try {
-            const downloadedBuf = await downloadToBuffer(finalKey)
+          // verify uploaded content if VERIFY_UPLOADS=true; otherwise skip synchronous verification
+          const VERIFY_UPLOADS = String(process.env.VERIFY_UPLOADS || '').toLowerCase() === 'true'
+          if (VERIFY_UPLOADS) {
             const crypto = require('crypto')
             const outHash = crypto.createHash('sha256').update(outBuf).digest('hex')
-            const downHash = crypto.createHash('sha256').update(downloadedBuf).digest('hex')
-            if (outHash !== downHash) {
-              console.error('Stamp: verification mismatch after R2 upload', { outHash, downHash })
-              throw new Error('Uploaded file verification failed (hash mismatch)')
+            let downHash = ''
+            const maxVerifyAttempts = 3
+            let verified = false
+            for (let attempt = 1; attempt <= maxVerifyAttempts; attempt++) {
+              try {
+                const downloadedBuf = await downloadToBuffer(finalKey)
+                downHash = crypto.createHash('sha256').update(downloadedBuf).digest('hex')
+                if (outHash === downHash) { verified = true; break }
+                console.warn(`Stamp: verification mismatch attempt ${attempt} (R2)`)
+              } catch (e) {
+                console.warn(`Stamp: verification attempt ${attempt} failed:`, String((e as any)?.message || e))
+              }
+              await new Promise((r) => setTimeout(r, attempt * 500))
             }
-          } catch (verErr) {
-            console.error('Stamp: R2 verification error:', verErr)
-            return res.status(500).json({ error: 'Stamped file failed verification after upload. Try again or contact support.' })
+            if (!verified) {
+              console.error('Stamp: R2 verification final mismatch', { outHash, downHash })
+              return res.status(500).json({ error: 'Stamped file failed verification after upload. Try again or contact support.' })
+            }
+          } else {
+            console.info('Stamp: VERIFY_UPLOADS not enabled — skipping synchronous verification for R2 upload')
           }
 
           const stampedAt = new Date().toISOString()
@@ -633,25 +645,37 @@ router.post('/:barcode/stamp', async (req, res) => {
           console.warn('Failed to create signed URL for stamped object:', e)
         }
 
-        // verify uploaded content by downloading it back and comparing SHA-256 (safety check)
-        try {
-          const { data: downloadedData, error: downloadErr } = await supabase.storage.from(targetBucket).download(targetKey)
-          if (downloadErr) {
-            console.error('Stamp: verification download failed:', downloadErr)
-            throw downloadErr
-          }
-          const downloadedBuf = Buffer.from(await (downloadedData as any).arrayBuffer())
+        // verify uploaded content by downloading it back and comparing SHA-256 (safety check) if enabled
+        const VERIFY_UPLOADS = String(process.env.VERIFY_UPLOADS || '').toLowerCase() === 'true'
+        if (VERIFY_UPLOADS) {
           const crypto = require('crypto')
           const outHash = crypto.createHash('sha256').update(outBytes).digest('hex')
-          const downHash = crypto.createHash('sha256').update(downloadedBuf).digest('hex')
-          if (outHash !== downHash) {
-            console.error('Stamp: verification mismatch after upload', { outHash, downHash })
-            throw new Error('Uploaded file verification failed (hash mismatch)')
+          let downHash = ''
+          let verified = false
+          const maxVerifyAttempts = 3
+          for (let attempt = 1; attempt <= maxVerifyAttempts; attempt++) {
+            try {
+              const { data: downloadedData, error: downloadErr } = await supabase.storage.from(targetBucket).download(targetKey)
+              if (downloadErr) {
+                console.warn('Stamp: verification download attempt failed:', attempt, downloadErr)
+                await new Promise((r) => setTimeout(r, attempt * 500))
+                continue
+              }
+              const downloadedBuf = Buffer.from(await (downloadedData as any).arrayBuffer())
+              downHash = crypto.createHash('sha256').update(downloadedBuf).digest('hex')
+              if (outHash === downHash) { verified = true; break }
+              console.warn(`Stamp: verification mismatch attempt ${attempt} (Supabase)`)
+            } catch (e) {
+              console.warn('Stamp: verification attempt error:', e)
+            }
+            await new Promise((r) => setTimeout(r, attempt * 500))
           }
-        } catch (verErr) {
-          console.error('Stamp: verification error:', verErr)
-          // Do not silently continue; report failure so client knows stamp didn't actually persist
-          return res.status(500).json({ error: 'Stamped file failed verification after upload. Try again or contact support.' })
+          if (!verified) {
+            console.error('Stamp: verification final mismatch after upload', { outHash, downHash })
+            return res.status(500).json({ error: 'Stamped file failed verification after upload. Try again or contact support.' })
+          }
+        } else {
+          console.info('Stamp: VERIFY_UPLOADS not enabled — skipping synchronous verification for Supabase upload')
         }
 
         // update attachments[0] url, size, key and mark stamp time
