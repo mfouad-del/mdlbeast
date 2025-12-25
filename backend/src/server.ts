@@ -558,8 +558,14 @@ app.post('/debug/verify-token', async (req, res) => {
     const token = String(req.body?.token || req.query?.token || '')
     if (!token) return res.status(400).json({ error: 'token is required in body.token or ?token' })
     try {
-      const payload = jwt.verify(token, JWT_SECRET)
-      return res.json({ ok: true, verified: true, payload })
+      const { verify } = await import('jsonwebtoken')
+      const secretKey = process.env.JWT_SECRET || ''
+      try {
+        const payload = verify(token, secretKey)
+        return res.json({ ok: true, verified: true, payload })
+      } catch (e: any) {
+        return res.json({ ok: false, verified: false, error: String(e.message || e) })
+      }
     } catch (e: any) {
       return res.json({ ok: false, verified: false, error: String(e.message || e) })
     }
