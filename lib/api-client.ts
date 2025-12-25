@@ -145,10 +145,28 @@ class ApiClient {
 
   // Stamp a document PDF by placing a barcode image at provided coordinates (server overwrites original file)
   async stampDocument(barcode: string, payload: { x: number; y: number; containerWidth?: number; containerHeight?: number; stampWidth?: number }) {
-    return this.request<any>(`/documents/${encodeURIComponent(barcode)}/stamp`, {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
+    // Longer timeout for stamping operations (server can take time to fetch/embed/overwrite)
+    const controller = new AbortController()
+    const timeoutMs = 60_000
+    const timeout = setTimeout(() => controller.abort(), timeoutMs)
+    const headers: any = { 'Content-Type': 'application/json' }
+    if (this.token) headers['Authorization'] = `Bearer ${this.token}`
+    try {
+      const res = await fetch(`${API_BASE_URL}/documents/${encodeURIComponent(barcode)}/stamp`, { method: 'POST', body: JSON.stringify(payload), headers, signal: controller.signal })
+      if (!res.ok) {
+        let body: any = null
+        try { body = await res.json() } catch (e) { body = await res.text().catch(() => null) }
+        let msg = 'Stamp failed'
+        if (body) msg = body?.error || body?.message || String(body)
+        throw new Error(msg)
+      }
+      return res.json()
+    } catch (err: any) {
+      if (err.name === 'AbortError') throw new Error('Request timeout')
+      throw err
+    } finally {
+      clearTimeout(timeout)
+    }
   }
 
   async getPreviewUrl(barcode: string) {
