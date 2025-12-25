@@ -521,7 +521,8 @@ app.post('/debug/apply-doc-seq', async (req, res) => {
 
   try {
     await query("CREATE SEQUENCE IF NOT EXISTS doc_seq START 1")
-    const resSample = await query("SELECT seqname FROM pg_sequences WHERE seqname = 'doc_seq'")
+    // Use information_schema for broader Postgres compatibility
+    const resSample = await query("SELECT sequence_name FROM information_schema.sequences WHERE sequence_name = 'doc_seq'")
     res.json({ ok: true, created: resSample.rows.length > 0, seq: resSample.rows[0] || null })
   } catch (err: any) {
     console.error('apply-doc-seq error:', err)
