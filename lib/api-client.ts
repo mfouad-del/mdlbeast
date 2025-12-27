@@ -257,6 +257,27 @@ class ApiClient {
     return this.request<any>("/documents/stats/summary")
   }
 
+  // Backups
+  async listBackups() {
+    return this.request<any>("/admin/backups")
+  }
+
+  async createBackup() {
+    return this.request<any>("/admin/backups", { method: 'POST' })
+  }
+
+  async downloadBackupUrl(key: string) {
+    return this.request<any>(`/admin/backups/download?key=${encodeURIComponent(key)}`)
+  }
+
+  async deleteBackup(key: string) {
+    return this.request<any>(`/admin/backups?key=${encodeURIComponent(key)}`, { method: 'DELETE' })
+  }
+
+  async restoreBackup(key: string) {
+    return this.request<any>(`/admin/backups/restore`, { method: 'POST', body: JSON.stringify({ key }) })
+  }
+
   // Barcodes
   async searchBarcodes(q?: string) {
     const qp = q ? `?q=${encodeURIComponent(q)}` : ""

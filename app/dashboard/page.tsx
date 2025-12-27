@@ -12,6 +12,7 @@ import DocumentForm from "@/components/DocumentForm"
 import DocumentList from "@/components/DocumentList"
 import BarcodeScanner from "@/components/BarcodeScanner"
 import ReportGenerator from "@/components/ReportGenerator"
+import AdminBackups from "@/components/AdminBackups"
 import UserManagement from "@/components/UserManagement"
 import { Spinner } from "@/components/ui/spinner"
 
@@ -209,6 +210,7 @@ export default function DashboardPage() {
         status: data.type === "INCOMING" ? "وارد" : "صادر",
         classification: data.security,
         notes: data.description,
+        statement: data.statement || null,
         attachments: data.pdfFile ? [data.pdfFile] : [],
         tenant_id: selectedTenantId,
       }
@@ -221,6 +223,7 @@ export default function DashboardPage() {
         title: savedDoc.subject,
         recipient: savedDoc.receiver,
         documentDate: savedDoc.date,
+        statement: savedDoc.statement || null,
         companyId: savedDoc.tenant_id || savedDoc.companyId || selectedTenantId,
       }
 
@@ -387,30 +390,9 @@ export default function DashboardPage() {
           {activeTab === 'backup' && (
             <div className="space-y-6">
               <div className="bg-white p-8 rounded-3xl border border-slate-200">
-                <h3 className="text-xl font-black mb-4">تصدير البيانات</h3>
-                <p className="text-sm text-slate-500 mb-4">يمكنك تنزيل نسخة JSON من البيانات الحالية (المستندات، المؤسسات، المستخدمين).</p>
-                <div className="flex gap-3">
-                  <div className="flex gap-3">
-                  <AsyncButton className="bg-slate-900 text-white px-6 py-3 rounded" onClickAsync={handleExport}>تحميل JSON</AsyncButton>
-
-                  <input type="file" id="importBackupFile" className="hidden" accept=".json" onChange={async (e) => {
-                    const file = (e.target as HTMLInputElement).files?.[0]
-                    if (!file) return
-                    if (!confirm('تحذير: ستستبدل البيانات المحلية الحالية. تابع؟')) return
-                    try {
-                      const text = await file.text()
-                      const svc = await import('@/services/api')
-                      const ok = await svc.ApiService.importFullBackup(text)
-                      if (ok) { alert('تم الاستعادة محلياً. سيتم إعادة تحميل الصفحة'); window.location.reload() }
-                      else alert('فشل الاستعادة')
-                    } catch (err) { console.error(err); alert('فشل الاستعادة') }
-                  }} />
-                  <button className="bg-blue-600 text-white px-6 py-3 rounded" onClick={async () => {
-                    const el = document.getElementById('importBackupFile') as HTMLInputElement | null
-                    el?.click()
-                  }}>استعادة من ملف</button>
-                </div>
-                </div>
+                <h3 className="text-xl font-black mb-4">إدارة النسخ الاحتياطية</h3>
+                <p className="text-sm text-slate-500 mb-4">إنشاء وادارة النسخ الكاملة للمشروع (قاعدة البيانات، الملفات، الاعدادات).</p>
+                <AdminBackups />
               </div>
             </div>
           )}        </div>

@@ -88,9 +88,17 @@ router.post('/', async (req: any, res: any) => {
       uploadBuf = Buffer.concat([Buffer.from('GCMv1'), iv, tag, enc])
     }
 
-    // 6) Upload to R2
-    const key = `backups/${name}${process.env.BACKUP_ENCRYPTION === 'true' ? '.enc' : ''}`
-    await uploadBuffer(key, uploadBuf, 'application/gzip', 'private, max-age=0')
+    // 6) Upload to R2 (delegated to backup-service if available)
+    let key: string = `backups/${name}${process.env.BACKUP_ENCRYPTION === 'true' ? '.enc' : ''}`
+    try {
+      const service = await import('../lib/backup-service')
+      const encGpg = String(process.env.BACKUP_ENCRYPTION_GPG || '').toLowerCase() === 'true'
+      const res = await service.createAndUploadBackup({ encryptAES: String(process.env.BACKUP_ENCRYPTION || '').toLowerCase() === 'true', encryptGpg: encGpg, gpgRecipient: process.env.BACKUP_GPG_RECIPIENT, retentionCount: Number(process.env.BACKUP_RETENTION_COUNT || 6) })
+      key = res.key
+    } catch (e) {
+      // fallback to previous upload path
+      await uploadBuffer(key, uploadBuf, 'application/gzip', 'private, max-age=0')
+    }
 
     // 7) cleanup
     try { fs.rmSync(tmp, { recursive: true, force: true }) } catch (e) {}
