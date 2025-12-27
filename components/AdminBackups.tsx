@@ -22,8 +22,24 @@ export default function AdminBackups() {
       <div className="bg-white p-8 rounded-3xl border border-slate-200">
         <h3 className="text-xl font-black mb-4">نسخ النظام الاحتياطية</h3>
         <p className="text-sm text-slate-500 mb-4">انشاء نسخة كاملة للقاعدة والملفات والإعدادات.</p>
-        <div className="flex gap-3 mb-6">
-          <AsyncButton className="bg-slate-900 text-white px-6 py-3 rounded" onClickAsync={async () => { await apiClient.createBackup(); await load() }}>انشاء نسخة احتياطية الآن</AsyncButton>
+        <div className="flex flex-wrap gap-3 mb-6">
+          {/* Full comprehensive backup (DB + uploads + settings) */}
+          <AsyncButton className="bg-slate-900 text-white px-6 py-3 rounded" onClickAsync={async () => {
+            if (!confirm('سيتم إنشاء نسخة شاملة للقاعدة والملفات والإعدادات. موافق؟')) return
+            try {
+              const res = await apiClient.createBackup()
+              await load()
+              if (res && res.key) {
+                alert('تم إنشاء النسخة الشاملة بنجاح. المفتاح: ' + res.key)
+              } else {
+                alert('تم إنشاء النسخة الشاملة')
+              }
+            } catch (e) {
+              alert('فشل إنشاء النسخة الشاملة')
+            }
+          }}>إنشاء نسخة احتياطية شاملة</AsyncButton>
+
+          {/* JSON backup (metadata + uploads list) */}
           <AsyncButton className="bg-slate-700 text-white px-6 py-3 rounded" onClickAsync={async () => {
             try {
               const blob = await apiClient.downloadJsonBackupBlob()
@@ -35,15 +51,16 @@ export default function AdminBackups() {
               a.click()
               a.remove()
               URL.revokeObjectURL(url)
-            } catch (e) { alert('JSON download failed') }
+            } catch (e) { alert('فشل تحميل JSON') }
           }}>تحميل JSON</AsyncButton>
+
           <label className="px-4 py-3 bg-slate-100 border rounded cursor-pointer">
             <span className="text-sm">استعادة JSON</span>
             <input type="file" accept="application/json" onChange={async (e) => {
               const f = (e.target as HTMLInputElement).files?.[0]
               if (!f) return
               if (!confirm('استعادة JSON ستقوم بعمل إدخالات/تحديثات في قاعدة البيانات. موافق؟')) return
-              try { await apiClient.restoreJsonBackup(f); alert('تمت الاستعادة (تحقق من السجلات)'); await load() } catch (err) { alert('Restore failed') }
+              try { await apiClient.restoreJsonBackup(f); alert('تمت الاستعادة (تحقق من السجلات)'); await load() } catch (err) { alert('فشل الاستعادة') }
             }} style={{ display: 'none' }} />
           </label>
         </div>
