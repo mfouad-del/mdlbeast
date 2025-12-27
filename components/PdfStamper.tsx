@@ -17,11 +17,12 @@ export default function PdfStamper({ doc, onClose }: PdfStamperProps) {
   const [pos, setPos] = useState({ x: 400, y: 20 })
   const [isDragging, setIsDragging] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [stampWidth, setStampWidth] = useState<number>(180)
   const containerRef = useRef<HTMLDivElement>(null)
 
   const barcodeUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${
     doc.barcodeId || doc.barcode
-  }&scale=2&rotate=N&includetext=false`
+  }&scale=1.6&rotate=N&includetext=true&textsize=12`
 
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true)
@@ -70,9 +71,9 @@ export default function PdfStamper({ doc, onClose }: PdfStamperProps) {
       if (res && (res.previewUrl || res.url)) {
         const openUrl = res.previewUrl || res.url
         window.open(openUrl, '_blank')
-        alert('تم الدمغ وفتح نسخة العرض المدمغة — إذا لم ترى التغيّر، افتح المعاينة الموقعة أو امسح الكاش.')
+        alert('تم الختم وفتح نسخة العرض المدمجة — إذا لم ترى التغيّر، افتح المعاينة الموقعة أو امسح الكاش.')
       } else {
-        alert('تم الدمغ بنجاح — يُرجى تحديث الصفحة أو فتح المعاينة الموقعة إذا لم ترى التغيّر.')
+        alert('تم الختم بنجاح — يُرجى تحديث الصفحة أو فتح المعاينة الموقعة إذا لم ترى التغيّر.')
       }
 
       // Refresh document list to pick up updated attachments (some caches may delay immediate visibility)
@@ -81,7 +82,7 @@ export default function PdfStamper({ doc, onClose }: PdfStamperProps) {
       }, 1200)
     } catch (e: any) {
       console.error('Stamp failed', e)
-      alert('فشل دمغ الملصق: ' + (e?.message || e))
+      alert('فشل ختم المستند: ' + (e?.message || e))
     } finally {
       setIsSaving(false)
       loading.hide()
@@ -97,9 +98,9 @@ export default function PdfStamper({ doc, onClose }: PdfStamperProps) {
               <Layers size={28} />
             </div>
             <div>
-              <h3 className="text-2xl font-black text-slate-900 font-heading">تطبيق ملصق الأرشفة الرقمي</h3>
+              <h3 className="text-2xl font-black text-slate-900 font-heading">تطبيق ختم المستند الرقمي</h3>
               <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1 flex items-center gap-1.5">
-                <MousePointer2 size={12} /> قم بسحب ملصق الباركود لوضعه في الزاوية المناسبة للمستند
+                <MousePointer2 size={12} /> قم بسحب الختم لوضعه في المكان المناسب على المستند
               </p>
             </div>
           </div>
@@ -136,10 +137,10 @@ export default function PdfStamper({ doc, onClose }: PdfStamperProps) {
 
             <div
               onMouseDown={handleMouseDown}
-              style={{ left: pos.x, top: pos.y }}
-              className={`absolute w-[180px] p-4 bg-white border-2 ${
+              style={{ left: pos.x, top: pos.y, width: stampWidth }}
+              className={`absolute p-4 bg-white border-2 ${
                 isDragging
-                  ? "border-blue-600 ring-[15px] ring-blue-500/10 scale-105 rotate-1 cursor-grabbing"
+                  ? "border-blue-600 ring-4 ring-blue-500/10 scale-105 rotate-1 cursor-grabbing"
                   : "border-slate-300 shadow-2xl"
               } cursor-grab rounded-2xl flex flex-col items-center group z-50 transition-all duration-75`}
             >
@@ -149,7 +150,7 @@ export default function PdfStamper({ doc, onClose }: PdfStamperProps) {
                 className="w-full pointer-events-none select-none"
                 alt="barcode"
               />
-              <div className="text-[10px] font-black font-mono mt-2.5 text-slate-900 select-none tracking-[0.2em] uppercase">
+              <div className="text-[11px] font-extrabold font-mono mt-2.5 text-slate-900 select-none tracking-tight uppercase">
                 {doc.barcodeId || doc.barcode}
               </div>
 
@@ -184,25 +185,33 @@ export default function PdfStamper({ doc, onClose }: PdfStamperProps) {
             </div>
           </div>
 
-          <div className="flex gap-4">
-            <button
-              onClick={onClose}
-              className="px-10 py-5 rounded-[1.5rem] font-black text-lg text-slate-500 hover:bg-slate-50 transition-all"
-            >
-              إلغاء العملية
-            </button>
-            <button
-              onClick={handleFinalize}
-              disabled={isSaving}
-              className="bg-slate-900 text-white px-14 py-5 rounded-[1.5rem] font-black text-lg flex items-center gap-4 hover:bg-black transition-all shadow-2xl hover:shadow-blue-500/20 active:scale-95 disabled:opacity-50 font-heading"
-            >
-              {isSaving ? (
-                <span className="animate-spin h-6 w-6 border-3 border-white border-t-transparent rounded-full"></span>
-              ) : (
-                <Save size={24} />
-              )}
-              دمغ وحفظ التغييرات النهائية
-            </button>
+          <div className="flex gap-4 items-center">
+            <div className="flex items-center gap-3">
+              <label className="text-[11px] font-black text-slate-400 uppercase tracking-tight mr-1">حجم الختم</label>
+              <input type="range" min={120} max={300} value={stampWidth} onChange={(e) => setStampWidth(Number(e.target.value))} className="w-44" />
+              <div className="text-sm font-black">{stampWidth}px</div>
+            </div>
+
+            <div className="flex gap-4">
+              <button
+                onClick={onClose}
+                className="px-10 py-5 rounded-[1.5rem] font-black text-lg text-slate-500 hover:bg-slate-50 transition-all"
+              >
+                إلغاء العملية
+              </button>
+              <button
+                onClick={handleFinalize}
+                disabled={isSaving}
+                className="bg-slate-900 text-white px-14 py-5 rounded-[1.5rem] font-black text-lg flex items-center gap-4 hover:bg-black transition-all shadow-2xl hover:shadow-blue-500/20 active:scale-95 disabled:opacity-50 font-heading"
+              >
+                {isSaving ? (
+                  <span className="animate-spin h-6 w-6 border-3 border-white border-t-transparent rounded-full"></span>
+                ) : (
+                  <Save size={24} />
+                )}
+                ختم وحفظ التغييرات النهائية
+              </button>
+            </div>
           </div>
         </footer>
       </div>

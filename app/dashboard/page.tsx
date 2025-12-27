@@ -337,8 +337,8 @@ export default function DashboardPage() {
       <main className="flex-1 flex flex-col overflow-hidden relative">
         <div className="flex-1 overflow-y-auto p-8 lg:p-14 max-w-7xl mx-auto w-full">
           {activeTab === "dashboard" && <Dashboard docs={selectedTenantId ? docs.filter(d => Number(d.companyId) === selectedTenantId) : docs} />}
-          {activeTab === "incoming" && <DocumentForm type="INCOMING" onSave={handleSaveDoc} />}
-          {activeTab === "outgoing" && <DocumentForm type="OUTGOING" onSave={handleSaveDoc} />}
+          {activeTab === "incoming" && <DocumentForm type="INCOMING" onSave={handleSaveDoc} companies={tenants} />}
+          {activeTab === "outgoing" && <DocumentForm type="OUTGOING" onSave={handleSaveDoc} companies={tenants} />}
           {activeTab === "list" && <DocumentList docs={selectedTenantId ? docs.filter(d => Number(d.companyId) === selectedTenantId) : docs} settings={settings} currentUser={currentUser} users={users} />}
           {activeTab === "scanner" && <BarcodeScanner />}
           {activeTab === "reports" && <ReportGenerator docs={selectedTenantId ? docs.filter(d => Number(d.companyId) === Number(selectedTenantId)) : docs} settings={reportSettings} /> }

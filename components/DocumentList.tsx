@@ -21,6 +21,7 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
   const [searchTerm, setSearchTerm] = useState("")
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
+  const [directionFilter, setDirectionFilter] = useState<'ALL' | 'INCOMING' | 'OUTGOING'>('ALL')
   const [stamperDoc, setStamperDoc] = useState<Correspondence | null>(null)
 
   const filtered = docs.filter((doc) => {
@@ -29,12 +30,16 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
     const matchesSearch =
       title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       barcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doc.sender.toLowerCase().includes(searchTerm.toLowerCase())
+      (doc.sender || '').toLowerCase().includes(searchTerm.toLowerCase())
 
-    const matchesStartDate = !startDate || doc.date >= startDate
-    const matchesEndDate = !endDate || doc.date <= endDate
+    // Use documentDate as authoritative date for filtering
+    const docDate = (doc.documentDate || doc.date || '').split('T')?.[0]
+    const matchesStartDate = !startDate || docDate >= startDate
+    const matchesEndDate = !endDate || docDate <= endDate
 
-    return matchesSearch && matchesStartDate && matchesEndDate
+    const matchesDirection = directionFilter === 'ALL' || (directionFilter === 'INCOMING' && (doc.status === 'وارد' || (doc.type === 'INCOMING'))) || (directionFilter === 'OUTGOING' && (doc.status === 'صادر' || (doc.type === 'OUTGOING')))
+
+    return matchesSearch && matchesStartDate && matchesEndDate && matchesDirection
   })
 
   return (
@@ -75,6 +80,21 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
             />
+          </div>
+
+          <div className="space-y-2 min-w-[160px]">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2 flex items-center gap-1.5">
+              فلتر: وارد / صادر
+            </label>
+            <select
+              className="w-full p-4 bg-white border border-slate-200 rounded-2xl font-bold text-sm outline-none focus:border-slate-900 transition-all cursor-pointer"
+              value={directionFilter}
+              onChange={(e) => setDirectionFilter(e.target.value as any)}
+            >
+              <option value="ALL">الكل</option>
+              <option value="INCOMING">وارد</option>
+              <option value="OUTGOING">صادر</option>
+            </select>
           </div>
           <button
             onClick={() => {
@@ -137,12 +157,8 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
                             إلى: {doc.receiver || doc.recipient}
                           </span>
                           <span className="text-[10px] font-bold text-slate-400 flex items-center gap-2">
-                            <span>📅 القيد:</span>
-                            <span className="font-black">{doc.dateHijri || doc.date}</span>
-                            <span className="text-[11px] text-slate-500">({doc.dateGregorian || doc.date})</span>
-                          </span>
-                          <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
-                            📂 أرشفة: {doc.archiveDate || doc.date}
+                            <span>📅 تاريخ:</span>
+                            <span className="font-black">{(doc.documentDate || doc.date || '').split('T')?.[0]}</span>
                           </span>
 
                           {/* Show creator to admin/supervisor */}
@@ -159,7 +175,7 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
                           )}
                           <span
                             className={`text-[9px] font-black px-2 py-0.5 rounded-full ${
-                              doc.priority === "عادي" ? "bg-slate-100 text-slate-500" : "bg-red-50 text-red-600"
+                              doc.priority === "عاديه" ? "bg-slate-100 text-slate-500" : "bg-red-50 text-red-600"
                             }`}
                           >
                             {doc.priority}
@@ -186,7 +202,7 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
                             onClick={() => setStamperDoc(doc)}
                             className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white rounded-xl border border-slate-900 hover:bg-black transition-all text-[11px] font-black shadow-lg shadow-slate-200"
                           >
-                            <ScanText size={16} /> دمغ الملصق
+                            <ScanText size={16} /> ختم المستند
                           </button>
                           <AsyncButton
                             variant="outline"

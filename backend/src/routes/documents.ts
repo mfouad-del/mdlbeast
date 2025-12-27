@@ -328,7 +328,8 @@ router.post(
     body("date").optional().isISO8601().withMessage("Valid date is required"),
     body("subject").optional().trim(),
     body("title").optional().trim(),
-    body("priority").optional().isIn(["عادي", "عاجل", "عاجل جداً"]).withMessage("Invalid priority"),
+    body("classification").optional().isIn(["عادي", "سري"]).withMessage("Invalid classification"),
+    body("priority").optional().isIn(["عاديه", "عاجله"]).withMessage("Invalid priority"),
     body("status").optional().isIn(["وارد", "صادر", "محفوظ"]).withMessage("Invalid status"),
   ],
   async (req: AuthRequest, res: Response) => {
@@ -457,7 +458,7 @@ router.post(
           finalReceiver,
           finalDate,
           finalSubject,
-          priority || 'عادي',
+          priority || 'عاديه',
           finalStatus,
           classification,
           notes,
@@ -583,7 +584,7 @@ router.get("/stats/summary", async (req: Request, res: Response) => {
         COUNT(*) FILTER (WHERE status = 'وارد' OR type ILIKE 'IN%' OR barcode ILIKE 'IN-%') as incoming,
         COUNT(*) FILTER (WHERE status = 'صادر' OR type ILIKE 'OUT%' OR barcode ILIKE 'OUT-%') as outgoing,
         COUNT(*) FILTER (WHERE status = 'محفوظ') as archived,
-        COUNT(*) FILTER (WHERE priority = 'عاجل جداً') as urgent
+        COUNT(*) FILTER (WHERE priority = 'عاجله') as urgent
       FROM documents
     `)
 

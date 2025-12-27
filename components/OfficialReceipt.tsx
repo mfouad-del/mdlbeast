@@ -165,7 +165,7 @@ export default function OfficialReceipt({ doc, settings }: OfficialReceiptProps)
                 <div class="info-row"><div class="label">تاريخ الخطاب:</div><div class="value">${(doc.dateHijri || doc.date) + ' (' + (doc.dateGregorian || doc.date) + ')'}</div></div>
                 <div class="info-row"><div class="label">الأولوية:</div><div class="value">${doc.priority}</div></div>
                 <div class="info-row"><div class="label">درجة السرية:</div><div class="value">${
-                  doc.security || "عام"
+                  doc.security || "عادي"
                 }</div></div>
 
                 <div class="description-box">

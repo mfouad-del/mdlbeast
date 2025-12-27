@@ -267,8 +267,8 @@ const App: React.FC = () => {
             <div className="mb-6 p-3 bg-red-50 text-red-700 rounded-xl font-bold">{globalError}</div>
           )}
           {activeTab === 'dashboard' && <Dashboard docs={docs} />}
-          {activeTab === 'incoming' && <DocumentForm type={DocType.INCOMING} onSave={handleSaveDoc} />}
-          {activeTab === 'outgoing' && <DocumentForm type={DocType.OUTGOING} onSave={handleSaveDoc} />}
+          {activeTab === 'incoming' && <DocumentForm type={DocType.INCOMING} onSave={handleSaveDoc} companies={companies} />}
+          {activeTab === 'outgoing' && <DocumentForm type={DocType.OUTGOING} onSave={handleSaveDoc} companies={companies} />}
           {activeTab === 'list' && <DocumentList docs={docs} settings={{...settings, orgName: currentCompany?.nameAr, logoUrl: currentCompany?.logoUrl, orgNameEn: currentCompany?.nameEn}} currentUser={currentUser} users={users} /> }
           {activeTab === 'scanner' && <BarcodeScanner />}
           {activeTab === 'reports' && <ReportGenerator docs={docs} settings={{orgName: currentCompany?.nameAr || '', logoUrl: currentCompany?.logoUrl || ''}} />}

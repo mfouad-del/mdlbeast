@@ -19,9 +19,9 @@ export interface Document {
   receiver: string
   date: string
   subject: string
-  priority: "عادي" | "عاجل" | "عاجل جداً"
+  priority: "عاديه" | "عاجله" | "عاجل"
   status: "وارد" | "صادر" | "محفوظ"
-  classification?: string
+  classification?: "عادي" | "سري"
   notes?: string
   attachments: Attachment[]
   user_id?: number

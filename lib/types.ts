@@ -4,15 +4,14 @@ export enum DocType {
 }
 
 export enum Priority {
-  NORMAL = "عادي",
-  HIGH = "عاجل",
-  IMMEDIATE = "عاجل جداً",
+  NORMAL = "عاديه",
+  HIGH = "عاجله",
+  URGENT = "عاجل",
 }
 
 export enum SecurityLevel {
-  PUBLIC = "عام",
+  NORMAL = "عادي",
   CONFIDENTIAL = "سري",
-  TOP_SECRET = "سري للغاية",
 }
 
 export enum DocStatus {
@@ -48,7 +47,7 @@ export interface Correspondence {
     size: string
     url: string
   }
-  physicalLocation?: string
+
   signatory?: string
   internalRef?: string
   referenceNumber?: string

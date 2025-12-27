@@ -41,9 +41,10 @@ FormInput.displayName = "FormInput"
 interface DocumentFormProps {
   type: string
   onSave: (doc: any) => void
+  companies?: { id: string; name?: string; nameAr?: string; logo_url?: string }[]
 }
 
-export default function DocumentForm({ type, onSave }: DocumentFormProps) {
+export default function DocumentForm({ type, onSave, companies }: DocumentFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [file, setFile] = useState<any>(undefined)
   const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null)
@@ -54,12 +55,10 @@ export default function DocumentForm({ type, onSave }: DocumentFormProps) {
     recipient: "",
     referenceNumber: "",
     documentDate: new Date().toISOString().split("T")[0],
-    archiveDate: new Date().toISOString().split("T")[0],
     description: "",
-    security: "عام",
-    priority: "عادي",
+    security: "عادي",
+    priority: "عاديه",
     signatory: "",
-    internalRef: "",
   })
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -154,22 +153,35 @@ export default function DocumentForm({ type, onSave }: DocumentFormProps) {
                 required
               />
             </div>
-            <FormInput
-              label="الرقم الداخلي للمؤسسة"
-              icon={Shield}
-              name="internalRef"
-              value={formData.internalRef}
-              onChange={handleInputChange}
-            />
+            {/* Internal number removed per new requirements */}
 
-            <FormInput
-              label="من جهة"
-              icon={Landmark}
-              name="sender"
-              value={formData.sender}
-              onChange={handleInputChange}
-              required
-            />
+            <div className="space-y-2">
+              <label className="text-[11px] font-black text-slate-500 uppercase tracking-tight flex items-center gap-1.5 mr-1">
+                <Landmark size={12} className="text-slate-400" /> من جهة
+              </label>
+              { (typeof (companies || []) !== 'undefined') && (companies || []).length > 0 ? (
+                <select
+                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-black text-slate-900 text-sm outline-none focus:border-slate-900 transition-all cursor-pointer"
+                  value={formData.sender}
+                  onChange={(e) => handleSelectChange('sender', e.target.value)}
+                  required
+                >
+                  <option value="">اختر جهة</option>
+                  {(companies || []).map((c: any) => (
+                    <option key={c.id} value={c.nameAr || c.name || c.slug || c.id}>{c.nameAr || c.name || c.slug || c.id}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  required
+                  type="text"
+                  name="sender"
+                  className="w-full p-4 bg-white border border-slate-200 rounded-2xl outline-none focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 transition-all text-slate-900 font-bold text-sm placeholder:text-slate-300 shadow-sm"
+                  value={formData.sender}
+                  onChange={handleInputChange}
+                />
+              )}
+            </div>
             <FormInput
               label="إلى جهة"
               icon={User}
@@ -179,20 +191,10 @@ export default function DocumentForm({ type, onSave }: DocumentFormProps) {
               required
             />
             <FormInput
-              label="تاريخ المستند الأصلي"
+              label="تاريخ الصادر/الوارد"
               icon={ClipboardList}
               name="documentDate"
               value={formData.documentDate}
-              onChange={handleInputChange}
-              type="date"
-              required
-            />
-
-            <FormInput
-              label="تاريخ الأرشفة الفعلي"
-              icon={Calendar}
-              name="archiveDate"
-              value={formData.archiveDate}
               onChange={handleInputChange}
               type="date"
               required
@@ -224,9 +226,8 @@ export default function DocumentForm({ type, onSave }: DocumentFormProps) {
                 value={formData.security}
                 onChange={(e) => handleSelectChange("security", e.target.value)}
               >
-                <option value="عام">عام - متاح للجميع</option>
+                <option value="عادي">عادي - متاح للجميع</option>
                 <option value="سري">سري - محدود الوصول</option>
-                <option value="سري للغاية">سري للغاية - خاص</option>
               </select>
             </div>
             <div className="space-y-2">
@@ -238,9 +239,8 @@ export default function DocumentForm({ type, onSave }: DocumentFormProps) {
                 value={formData.priority}
                 onChange={(e) => handleSelectChange("priority", e.target.value)}
               >
-                <option value="عادي">معالجة اعتيادية</option>
-                <option value="عاجل">معالجة عاجلة</option>
-                <option value="عاجل جداً">معالجة فورية (هام جداً)</option>
+                <option value="عاديه">معالجة اعتيادية</option>
+                <option value="عاجله">معالجة عاجلة</option>
               </select>
             </div>
           </div>
