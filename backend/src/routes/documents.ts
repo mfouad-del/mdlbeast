@@ -415,6 +415,10 @@ router.post(
         return 'عادي'
       })(priority)
 
+      // Ensure 'statement' column exists (helps older DBs without running migration manually)
+      try { await query("ALTER TABLE documents ADD COLUMN IF NOT EXISTS statement TEXT") } catch (e) { /* ignore */ }
+      try { await query("ALTER TABLE barcodes ADD COLUMN IF NOT EXISTS statement TEXT") } catch (e) { /* ignore */ }
+
       // If no barcode provided, generate a numeric sequential barcode server-side
       if (!barcode) {
         // Generate numeric-only barcode (new behavior). Keep direction required for status only.
