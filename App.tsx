@@ -65,7 +65,8 @@ const App: React.FC = () => {
         description: d.description || d.notes || '',
         status: d.status || '',
         security: d.security || '',
-        priority: d.priority || '',
+        // Normalize DB priority labels to new frontend labels ('عادي' -> 'عاديه', 'عاجل' -> 'عاجله')
+        priority: (d.priority === 'عادي') ? 'عاديه' : (d.priority === 'عاجل') ? 'عاجله' : (d.priority === 'عاجل جداً' ? 'عاجل' : (d.priority || '')),
         category: d.category || '',
         physicalLocation: d.physical_location || '',
         attachmentCount: Array.isArray(d.attachments) ? d.attachments.length : 0,

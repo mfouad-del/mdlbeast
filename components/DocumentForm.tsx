@@ -58,12 +58,13 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
     description: "",
     security: "عادي",
     priority: "عاديه",
-    signatory: "",
+    attachmentCount: 0,
   })
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData((prev: any) => ({ ...prev, [name]: value }))
+    const { name, value, type } = e.target as any
+    const parsed = (name === 'attachmentCount') ? (value === '' ? '' : Number(value)) : value
+    setFormData((prev: any) => ({ ...prev, [name]: parsed }))
   }, [])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -201,18 +202,16 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
             />
             <div className="space-y-2">
               <label className="text-[11px] font-black text-slate-500 uppercase mr-1 tracking-widest">
-                الموقّع المعتمد
+                عدد المرفقات
               </label>
-              <select
-                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-black text-slate-900 text-sm outline-none focus:border-slate-900 transition-all cursor-pointer"
-                value={formData.signatory}
-                onChange={(e) => handleSelectChange('signatory', e.target.value)}
-              >
-                <option value="">اختر موقّعاً</option>
-                {users.map((u: any) => (
-                  <option key={u.id} value={u.id}>{u.full_name || u.username || u.email}</option>
-                ))}
-              </select>
+              <input
+                type="number"
+                min={0}
+                name="attachmentCount"
+                value={formData.attachmentCount}
+                onChange={(e) => handleInputChange(e as any)}
+                className="w-full p-4 bg-white border border-slate-200 rounded-2xl outline-none focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 transition-all text-slate-900 font-bold text-sm placeholder:text-slate-300 shadow-sm"
+              />
             </div>
           </div>
 

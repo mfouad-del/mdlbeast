@@ -329,7 +329,8 @@ router.post(
     body("subject").optional().trim(),
     body("title").optional().trim(),
     body("classification").optional().isIn(["عادي", "سري"]).withMessage("Invalid classification"),
-    body("priority").optional().isIn(["عاديه", "عاجله"]).withMessage("Invalid priority"),
+    // Accept both new UI labels (عاديه/عاجله) and legacy DB labels (عادي/عاجل/عاجل جداً) for compatibility
+    body("priority").optional().isIn(["عاديه", "عاجله", "عادي", "عاجل", "عاجل جداً"]).withMessage("Invalid priority"),
     body("status").optional().isIn(["وارد", "صادر", "محفوظ"]).withMessage("Invalid status"),
   ],
   async (req: AuthRequest, res: Response) => {
@@ -403,6 +404,15 @@ router.post(
       // Default status based on direction if not provided
       const finalStatus = status || (direction === 'INCOMING' ? 'وارد' : (direction === 'OUTGOING' ? 'صادر' : 'محفوظ'))
 
+      // Map frontend priority labels to DB-safe values
+      const dbPriority = (function(p: any) {
+        if (!p) return 'عادي' // default DB priority
+        if (p === 'عاديه' || p === 'عادي') return 'عادي'
+        if (p === 'عاجله' || p === 'عاجل') return 'عاجل'
+        if (p === 'عاجل جداً') return 'عاجل جداً'
+        return 'عادي'
+      })(priority)
+
       // If no barcode provided, generate a numeric sequential barcode server-side
       if (!barcode) {
         // Generate numeric-only barcode (new behavior). Keep direction required for status only.
@@ -458,7 +468,7 @@ router.post(
           finalReceiver,
           finalDate,
           finalSubject,
-          priority || 'عاديه',
+          dbPriority,
           finalStatus,
           classification,
           notes,
@@ -475,7 +485,7 @@ router.post(
           await query(
             `INSERT INTO barcodes (barcode, type, status, priority, subject, attachments, user_id, tenant_id)
              VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-            [barcode, dbType, finalStatus || null, priority || null, finalSubject || null, JSON.stringify(attachments || []), authReq.user?.id, tenant_id || null],
+            [barcode, dbType, finalStatus || null, dbPriority || null, finalSubject || null, JSON.stringify(attachments || []), authReq.user?.id, tenant_id || null],
           )
         }
       } catch (e) {
@@ -637,7 +647,7 @@ router.get("/stats/summary", async (req: Request, res: Response) => {
         COUNT(*) FILTER (WHERE status = 'وارد' OR type ILIKE 'IN%' OR barcode ILIKE 'IN-%') as incoming,
         COUNT(*) FILTER (WHERE status = 'صادر' OR type ILIKE 'OUT%' OR barcode ILIKE 'OUT-%') as outgoing,
         COUNT(*) FILTER (WHERE status = 'محفوظ') as archived,
-        COUNT(*) FILTER (WHERE priority = 'عاجله') as urgent
+        COUNT(*) FILTER (WHERE priority = 'عاجل') as urgent
       FROM documents
     `)
 
