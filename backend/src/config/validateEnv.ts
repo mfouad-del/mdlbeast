@@ -7,6 +7,10 @@ export function validateEnv() {
   if (!jwt || WEAK_SECRETS.has(jwt)) {
     throw new Error('JWT_SECRET missing/weak')
   }
+  const refresh = process.env.REFRESH_TOKEN_SECRET || ''
+  if (!refresh || WEAK_SECRETS.has(refresh)) {
+    throw new Error('REFRESH_TOKEN_SECRET missing/weak')
+  }
 }
 
 export function allowDebugAccess(req: Request, requireAdmin = false) {

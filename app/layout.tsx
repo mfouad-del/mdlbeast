@@ -35,6 +35,7 @@ export const metadata: Metadata = {
 }
 
 import { LoadingProvider } from "../components/ui/loading-context"
+import SessionExpiredModal from '@/components/SessionExpiredModal'
 
 export default function RootLayout({
   children,
@@ -47,6 +48,7 @@ export default function RootLayout({
         <LoadingProvider>
           {children}
         </LoadingProvider>
+        <SessionExpiredModal />
         <script dangerouslySetInnerHTML={{__html: `if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'development') { console.log = function(){}; }`}} />
         <Analytics />
       </body>

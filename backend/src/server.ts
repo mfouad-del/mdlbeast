@@ -44,8 +44,12 @@ app.use(
   }),
 )
 app.use(morgan("dev"))
+import cookieParser from 'cookie-parser'
+
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
+// cookie parser for refresh token cookies
+app.use(cookieParser())
 
 // Mount API routes
 app.use('/api/auth', authRoutes)

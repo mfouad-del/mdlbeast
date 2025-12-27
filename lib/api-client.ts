@@ -28,6 +28,29 @@ class ApiClient {
     }
   }
 
+  private sessionExpiredListeners: Array<() => void> = []
+
+  onSessionExpired(cb: () => void) {
+    this.sessionExpiredListeners.push(cb)
+  }
+
+  private emitSessionExpired() {
+    for (const cb of this.sessionExpiredListeners) cb()
+  }
+
+  private async refresh(): Promise<boolean> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/refresh`, { method: 'POST', credentials: 'include' })
+      if (!res.ok) return false
+      const body = await res.json().catch(() => null)
+      if (!body || !body.token) return false
+      this.setToken(body.token)
+      return true
+    } catch (e) {
+      return false
+    }
+  }
+
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const headers: HeadersInit = {
       "Content-Type": "application/json",
@@ -75,6 +98,35 @@ class ApiClient {
         }
       }
 
+      // If token expired, attempt a single refresh and retry
+      const isTokenExpired = errorObj && (errorObj.error === 'token_expired' || String(errorObj?.message || '').toLowerCase().includes('token_expired'))
+      if (isTokenExpired && !(options as any)._retry) {
+        const refreshed = await this.refresh()
+        if (refreshed) {
+          ;(options as any)._retry = true
+          // retry original request with new token
+          if (this.token) (headers as any)["Authorization"] = `Bearer ${this.token}`
+          try {
+            const retryRes = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers })
+            if (!retryRes.ok) {
+              let errBody = null
+              try { errBody = await retryRes.json() } catch (e) { errBody = await retryRes.text().catch(() => null) }
+              throw new Error(errBody?.error || errBody?.message || String(errBody))
+            }
+            return retryRes.json()
+          } catch (e) {
+            this.clearToken()
+            this.emitSessionExpired()
+            throw e
+          }
+        }
+
+        // refresh failed
+        this.clearToken()
+        this.emitSessionExpired()
+        throw new Error('Session expired')
+      }
+
       // Build a friendly message from common error shapes
       let message = 'Request failed'
       if (errorObj) {
@@ -97,11 +149,14 @@ class ApiClient {
 
   // Auth
   async login(username: string, password: string) {
-    const data = await this.request<{ token: string; user: any }>("/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ username, password }),
-    })
-    this.setToken(data.token)
+    // send credentials include so server can set HttpOnly refresh cookie
+    const res = await fetch(`${API_BASE_URL}/auth/login`, { method: 'POST', body: JSON.stringify({ username, password }), headers: { 'Content-Type': 'application/json' }, credentials: 'include' })
+    if (!res.ok) {
+      const body = await res.json().catch(() => null)
+      throw new Error(body?.error || body?.message || 'Login failed')
+    }
+    const data = await res.json()
+    if (data?.token) this.setToken(data.token)
     return data
   }
 
@@ -152,13 +207,30 @@ class ApiClient {
     const headers: any = { 'Content-Type': 'application/json' }
     if (this.token) headers['Authorization'] = `Bearer ${this.token}`
     try {
-      const res = await fetch(`${API_BASE_URL}/documents/${encodeURIComponent(barcode)}/stamp`, { method: 'POST', body: JSON.stringify(payload), headers, signal: controller.signal })
+      let res = await fetch(`${API_BASE_URL}/documents/${encodeURIComponent(barcode)}/stamp`, { method: 'POST', body: JSON.stringify(payload), headers, signal: controller.signal })
       if (!res.ok) {
         let body: any = null
         try { body = await res.json() } catch (e) { body = await res.text().catch(() => null) }
-        let msg = 'Stamp failed'
-        if (body) msg = body?.error || body?.message || String(body)
-        throw new Error(msg)
+        // handle token expiry: attempt refresh once
+        if (res.status === 401 && body?.error === 'token_expired') {
+          const refreshed = await this.refresh()
+          if (refreshed) {
+            if (this.token) headers['Authorization'] = `Bearer ${this.token}`
+            res = await fetch(`${API_BASE_URL}/documents/${encodeURIComponent(barcode)}/stamp`, { method: 'POST', body: JSON.stringify(payload), headers, signal: controller.signal })
+          } else {
+            this.clearToken()
+            this.emitSessionExpired()
+            throw new Error('Session expired')
+          }
+        }
+
+        if (!res.ok) {
+          let body2: any = null
+          try { body2 = await res.json() } catch (e) { body2 = await res.text().catch(() => null) }
+          let msg = 'Stamp failed'
+          if (body2) msg = body2?.error || body2?.message || String(body2)
+          throw new Error(msg)
+        }
       }
       return res.json()
     } catch (err: any) {
@@ -212,16 +284,32 @@ class ApiClient {
       const timeoutMs = 60_000
       const timeout = setTimeout(() => controller.abort(), timeoutMs)
       try {
-        const res = await fetch(`${API_BASE_URL}/uploads`, { method: 'POST', body: form, headers, signal: controller.signal })
-        const body = await res.json().catch(() => null)
+        let res = await fetch(`${API_BASE_URL}/uploads`, { method: 'POST', body: form, headers, signal: controller.signal })
+        let body = await res.json().catch(() => null)
         if (!res.ok) {
-          let msg = 'Upload failed'
-          if (body) {
-            if (Array.isArray(body.errors)) msg = body.errors.map((e: any) => e.msg || e.message || JSON.stringify(e)).join('; ')
-            else if (body.error || body.message) msg = body.error || body.message
-            else msg = JSON.stringify(body)
+          // handle token expiry — try refresh once
+          if (res.status === 401 && body?.error === 'token_expired') {
+            const refreshed = await this.refresh()
+            if (refreshed) {
+              if (this.token) headers['Authorization'] = `Bearer ${this.token}`
+              res = await fetch(`${API_BASE_URL}/uploads`, { method: 'POST', body: form, headers, signal: controller.signal })
+              body = await res.json().catch(() => null)
+            } else {
+              this.clearToken()
+              this.emitSessionExpired()
+              throw new Error('Session expired')
+            }
           }
-          throw new Error(msg)
+
+          if (!res.ok) {
+            let msg = 'Upload failed'
+            if (body) {
+              if (Array.isArray(body.errors)) msg = body.errors.map((e: any) => e.msg || e.message || JSON.stringify(e)).join('; ')
+              else if (body.error || body.message) msg = body.error || body.message
+              else msg = JSON.stringify(body)
+            }
+            throw new Error(msg)
+          }
         }
         return body
       } catch (err: any) {

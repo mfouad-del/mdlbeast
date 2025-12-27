@@ -35,7 +35,12 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
       return res.status(500).json({ error: 'Auth verification failed' })
     }
   } catch (error: any) {
-    console.error('Auth verify error:', error && (error.message || error))
+    // Handle expired token explicitly so clients can attempt refresh
+    if (error && error.name === 'TokenExpiredError') {
+      console.warn('Auth verify error: token expired')
+      return res.status(401).json({ error: 'token_expired' })
+    }
+    console.warn('Auth verify error: invalid token')
     return res.status(403).json({ error: "Invalid or expired token" })
   }
 }
