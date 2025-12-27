@@ -28,17 +28,24 @@ export default function BarcodePrinter({ doc, settings }: BarcodePrinterProps) {
       ctx.fillStyle = "#000000"
       ctx.textAlign = "center"
 
-      ctx.font = "900 38px Arial"
-      ctx.fillText(settings?.orgName || "ZAWAYA ALBINA", 500, 70)
+      ctx.font = "900 32px Arial"
+      ctx.fillText(settings?.orgName || "ZAWAYA ALBINA ENGINEERING CONSULTANCY", 500, 60)
 
-      ctx.drawImage(barcodeImg, 150, 110, 700, 220)
+      ctx.drawImage(barcodeImg, 150, 100, 700, 200)
 
       ctx.font = "bold 52px Monospace"
-      ctx.fillText(doc.barcodeId || doc.barcode, 500, 390)
+      ctx.fillText(doc.barcodeId || doc.barcode, 500, 370)
 
-      ctx.font = "bold 26px Arial"
+      ctx.font = "bold 22px Arial"
       ctx.fillStyle = "#666666"
-      ctx.fillText(`${doc.date} | ${doc.type === "INCOMING" ? "وارد" : "صادر"}`, 500, 450)
+      try {
+        const d = new Date(doc.date || doc.created_at || Date.now())
+        const eng = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }).format(d).replace(/\s?(AM|PM)$/, (m) => m.toLowerCase())
+        const attach = Number(((doc as any).attachmentCount ?? (doc as any).attachmentcount) || 0)
+        ctx.fillText(`${eng} ${attach > 0 ? '• Attach: ' + attach : ''}`, 500, 430)
+      } catch (e) {
+        ctx.fillText(`${doc.date} | ${doc.type === "INCOMING" ? "وارد" : "صادر"}`, 500, 430)
+      }
 
       const link = document.createElement("a")
       link.download = `STICKER-${doc.barcodeId || doc.barcode}.png`
@@ -65,7 +72,7 @@ export default function BarcodePrinter({ doc, settings }: BarcodePrinterProps) {
                text-align: center; border-radius: 15px; 
                background: #fff;
             }
-            .title { font-size: 15px; font-weight: 900; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 12px; text-transform: uppercase; }
+            .title { font-size: 13px; font-weight: 900; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 12px; text-transform: uppercase; }
             .barcode-img { width: 100%; height: auto; margin: 8px 0; }
             .id-text { font-family: monospace; font-size: 24px; font-weight: 900; margin-top: 8px; display: block; letter-spacing: 1px; }
             .footer-text { font-size: 11px; color: #000; margin-top: 12px; font-weight: 900; border-top: 1px solid #eee; padding-top: 8px; }
@@ -73,10 +80,10 @@ export default function BarcodePrinter({ doc, settings }: BarcodePrinterProps) {
         </head>
         <body>
           <div class="label-box">
-            <div class="title">${settings?.orgName || "ZAWAYA ALBINA ENGINEERING"}</div>
+            <div class="title">${settings?.orgName || "ZAWAYA ALBINA ENGINEERING CONSULTANCY"}</div>
             <img class="barcode-img" src="${barcode}">
             <span class="id-text">${doc.barcodeId || doc.barcode}</span>
-            <div class="footer-text">${doc.date} | ${doc.type === "INCOMING" ? "وارد" : "صادر"}</div>
+            <div class="footer-text">${(() => { try { const d = new Date(doc.date || doc.created_at || Date.now()); const eng = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }).format(d).replace(/\s?(AM|PM)$/, (m) => m.toLowerCase()); const attach = Number(((doc as any).attachmentCount ?? (doc as any).attachmentcount) || 0); return eng + (attach > 0 ? ' • Attach: ' + attach : ''); } catch (e) { return doc.date + ' | ' + (doc.type === 'INCOMING' ? 'وارد' : 'صادر'); } })()}</div>
           </div>
           <script>window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 600); }</script>
         </body>
