@@ -278,6 +278,19 @@ class ApiClient {
     return this.request<any>(`/admin/backups/restore`, { method: 'POST', body: JSON.stringify({ key }) })
   }
 
+  async restoreBackupUpload(file: File) {
+    const form = new FormData()
+    form.append('file', file)
+    const headers: any = {}
+    if (this.token) headers['Authorization'] = `Bearer ${this.token}`
+    const res = await fetch(`${API_BASE_URL}/admin/backups/restore-upload`, { method: 'POST', body: form, headers })
+    if (!res.ok) {
+      const body = await res.json().catch(() => null)
+      throw new Error(body?.error || 'Restore upload failed')
+    }
+    return res.json()
+  }
+
   // JSON backup/restore helpers
   async downloadJsonBackupBlob() {
     const headers: any = { 'Content-Type': 'application/json' }

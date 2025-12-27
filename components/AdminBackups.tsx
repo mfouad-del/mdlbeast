@@ -63,6 +63,20 @@ export default function AdminBackups() {
               try { await apiClient.restoreJsonBackup(f); alert('تمت الاستعادة (تحقق من السجلات)'); await load() } catch (err) { alert('فشل الاستعادة') }
             }} style={{ display: 'none' }} />
           </label>
+
+          <label className="px-4 py-3 bg-red-100 border rounded cursor-pointer">
+            <span className="text-sm">استعادة شاملة من ملف (tar.gz / .gpg / .enc)</span>
+            <input type="file" accept=".tar,.tar.gz,.tgz,.gpg,.enc" onChange={async (e) => {
+              const f = (e.target as HTMLInputElement).files?.[0]
+              if (!f) return
+              if (!confirm('استعادة ملف شاملة ستستبدل قاعدة البيانات والملفات. هذا إجراء مدمر. موافق؟')) return
+              try {
+                await apiClient.restoreBackupUpload(f)
+                alert('تمت الاستعادة الشاملة من الملف (تحقق من السجلات)')
+                await load()
+              } catch (err) { alert('فشل استعادة الملف: ' + ((err as any)?.message || 'خطأ')) }
+            }} style={{ display: 'none' }} />
+          </label>
         </div>
         <div className="space-y-3">
           {items.length === 0 && <div className="text-slate-400">لا توجد نسخ احتياطية</div>}
@@ -85,13 +99,14 @@ export default function AdminBackups() {
                   await load()
                 }}>حذف</button>
                 <button className="px-3 py-2 bg-amber-600 text-white rounded" onClick={async () => {
-                  if (!confirm('استعادة النسخة ستستبدل قاعدة البيانات والملفات. موافق؟')) return
+                  if (!confirm('استعادة النسخة الشاملة ستستبدل قاعدة البيانات والملفات. هذا إجراء مدمر. موافق؟')) return
                   if (!confirm('تأكيد نهائي: استعادة النسخة الآن؟')) return
                   try {
                     await apiClient.restoreBackup(i.key)
                     alert('تمت الاستعادة بنجاح')
-                  } catch (e) { alert('استعادة فشلت') }
-                }}>استعادة</button>
+                    await load()
+                  } catch (e) { alert('استعادة فشلت: ' + (e as any)?.message || 'خطأ') }
+                }}>استعادة كاملة</button>
               </div>
             </div>
           ))}
