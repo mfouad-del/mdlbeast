@@ -79,6 +79,7 @@ export interface Correspondence {
   attachments: Attachment[];
   signatory: string;
   tags: string[];
+  statement?: string;
   created_at: Date;
   createdBy?: string;
   pdfFile?: {

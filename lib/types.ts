@@ -49,6 +49,7 @@ export interface Correspondence {
   }
 
   signatory?: string
+  statement?: string
   internalRef?: string
   referenceNumber?: string
   attachmentCount?: number

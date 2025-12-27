@@ -56,6 +56,7 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
     referenceNumber: "",
     documentDate: new Date().toISOString().split("T")[0],
     description: "",
+    statement: "",
     security: "عادي",
     priority: "عاديه",
     attachmentCount: 0,
@@ -242,6 +243,17 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
                 <option value="عاجله">معالجة عاجلة</option>
               </select>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[11px] font-black text-slate-500 uppercase mr-1 tracking-widest">البيان (اختياري)</label>
+            <textarea
+              name="statement"
+              value={formData.statement}
+              onChange={(e) => setFormData((prev:any) => ({ ...prev, statement: e.target.value }))}
+              placeholder={`البيان والوصف الرسمي:\nتم قيد هذه المعاملة رقميًا وتوثيقها في السجل الموحد للمؤسسة، وتعتبر هذه النسخة أصلية بموجب\nالباركود المرجعي المسجل في أنظمة الحوكمة الرقمية`}
+              className="w-full min-h-[120px] p-4 bg-white border border-slate-200 rounded-2xl outline-none focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 transition-all text-slate-900 font-bold text-sm"
+            />
           </div>
 
           <div className="p-12 bg-slate-50 rounded-[2.5rem] border-2 border-dashed border-slate-200 text-center hover:bg-slate-100/50 transition-all">

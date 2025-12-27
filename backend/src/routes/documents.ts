@@ -332,6 +332,7 @@ router.post(
     // Accept both new UI labels (عاديه/عاجله) and legacy DB labels (عادي/عاجل/عاجل جداً) for compatibility
     body("priority").optional().isIn(["عاديه", "عاجله", "عادي", "عاجل", "عاجل جداً"]).withMessage("Invalid priority"),
     body("status").optional().isIn(["وارد", "صادر", "محفوظ"]).withMessage("Invalid status"),
+    body("statement").optional().trim().isLength({ max: 2000 }).withMessage("Statement too long"),
   ],
   async (req: AuthRequest, res: Response) => {
     // Ensure only allowed roles can create
@@ -362,6 +363,7 @@ router.post(
         status,
         classification,
         notes,
+        statement,
         attachments = [],
         tenant_id = null,
       } = req.body
@@ -458,8 +460,8 @@ router.post(
       // Insert document with optional tenant_id
       const dbType = (typeof type === 'string' && type) ? type : (direction || 'UNKNOWN')
       const result = await query(
-        `INSERT INTO documents (barcode, type, sender, receiver, date, subject, priority, status, classification, notes, attachments, user_id, tenant_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        `INSERT INTO documents (barcode, type, sender, receiver, date, subject, priority, status, classification, notes, statement, attachments, user_id, tenant_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
          RETURNING *`,
         [
           barcode,
@@ -472,6 +474,7 @@ router.post(
           finalStatus,
           classification,
           notes,
+          statement || null,
           JSON.stringify(attachments || []),
           creatorId,
           tenant_id,
@@ -483,9 +486,9 @@ router.post(
         const bc = await query("SELECT id FROM barcodes WHERE barcode = $1 LIMIT 1", [barcode])
         if (bc.rows.length === 0) {
           await query(
-            `INSERT INTO barcodes (barcode, type, status, priority, subject, attachments, user_id, tenant_id)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-            [barcode, dbType, finalStatus || null, dbPriority || null, finalSubject || null, JSON.stringify(attachments || []), authReq.user?.id, tenant_id || null],
+            `INSERT INTO barcodes (barcode, type, status, priority, subject, statement, attachments, user_id, tenant_id)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+            [barcode, dbType, finalStatus || null, dbPriority || null, finalSubject || null, statement || null, JSON.stringify(attachments || []), authReq.user?.id, tenant_id || null],
           )
         }
       } catch (e) {
@@ -562,7 +565,7 @@ router.post('/:barcode/attachments', async (req: AuthRequest, res: Response) => 
 router.put("/:barcode", async (req: Request, res: Response) => {
   try {
     const { barcode } = req.params
-    const { type, sender, receiver, date, subject, priority, status, classification, notes, attachments: incomingAttachments } = req.body
+    const { type, sender, receiver, date, subject, priority, status, classification, notes, statement, attachments: incomingAttachments } = req.body
 
     // Fetch existing to enforce access
     const existing = await query("SELECT * FROM documents WHERE lower(barcode) = lower($1) LIMIT 1", [barcode])
@@ -577,8 +580,8 @@ router.put("/:barcode", async (req: Request, res: Response) => {
     const result = await query(
       `UPDATE documents 
        SET type = $1, sender = $2, receiver = $3, date = $4, subject = $5, 
-           priority = $6, status = $7, classification = $8, notes = $9, attachments = $10
-       WHERE barcode = $11
+           priority = $6, status = $7, classification = $8, notes = $9, statement = $10, attachments = $11
+       WHERE barcode = $12
        RETURNING *`,
       [
         type,
@@ -590,10 +593,10 @@ router.put("/:barcode", async (req: Request, res: Response) => {
         status,
         classification,
         notes,
+        statement || null,
         JSON.stringify(incomingAttachments),
         barcode,
-      ],
-    )
+      ] )
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Document not found" })

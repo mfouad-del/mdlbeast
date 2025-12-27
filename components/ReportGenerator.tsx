@@ -17,7 +17,16 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
   const [scope, setScope] = useState<'ALL'|'INCOMING'|'OUTGOING'>('ALL')
 
   const filteredDocs = docs.filter(doc => {
-    const inRange = doc.date >= startDate && doc.date <= endDate;
+    // Use a robust date comparison using available date fields (documentDate, date, created_at)
+    const start = new Date(startDate);
+    start.setHours(0,0,0,0);
+    const end = new Date(endDate);
+    end.setHours(23,59,59,999);
+
+    const raw = doc.documentDate || doc.date || (doc.created_at ? new Date(doc.created_at).toISOString() : '');
+    const docDate = raw ? new Date(raw) : null;
+
+    const inRange = docDate ? (docDate >= start && docDate <= end) : false;
     const inScope = scope === 'ALL' || (scope === 'INCOMING' && doc.type === DocType.INCOMING) || (scope === 'OUTGOING' && doc.type === DocType.OUTGOING);
     return inRange && inScope;
   });
@@ -34,6 +43,20 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
     outgoing: filteredDocs.filter(d => d.type === DocType.OUTGOING).length,
   };
 
+  const defaultLegal = `البيان والوصف الرسمي: تم قيد هذه المعاملة رقميًا وتوثيقها في السجل الموحد للمؤسسة، وتعتبر هذه النسخة أصلية بموجب\nالباركود المرجعي المسجل في أنظمة الحوكمة الرقمية`;
+
+  // Determine which statement to show in A4 export
+  const reportStatement = (() => {
+    if (filteredDocs.length === 0) return defaultLegal
+    // If only one doc, show its statement if present
+    if (filteredDocs.length === 1) return filteredDocs[0].statement && String(filteredDocs[0].statement).trim() !== '' ? filteredDocs[0].statement : defaultLegal
+    // If multiple docs but all share same non-empty statement, show it
+    const s0 = filteredDocs[0].statement ? String(filteredDocs[0].statement).trim() : ''
+    if (s0 !== '' && filteredDocs.every(d => String(d.statement || '').trim() === s0)) return s0
+    // Otherwise fallback to default legal text
+    return defaultLegal
+  })()
+
   const handlePrintReport = () => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
@@ -47,7 +70,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
       const typeStr = (doc.type === DocType.INCOMING || String(doc.status) === 'وارد' || String(barcode).toUpperCase().startsWith('IN')) ? 'وارد' : 'صادر'
       const sender = doc.sender || doc.from || doc.createdBy || doc.user_id || '—'
       const receiver = doc.receiver || doc.recipient || doc.to || '—'
-      const dateStr = doc.date || doc.documentDate || (doc.created_at ? new Date(doc.created_at).toISOString().split('T')[0] : '—')
+      const dateStr = doc.documentDate || doc.date || (doc.created_at ? new Date(doc.created_at).toISOString().split('T')[0] : '—')
       return `
         <tr>
           <td style="text-align: center; font-family: monospace; font-weight: bold; width: 140px;">${barcode}</td>
@@ -153,6 +176,11 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
             <h2>تقرير حركة الصادر والوارد</h2>
             <p>الفترة من ${startDate} إلى ${endDate}</p>
             <p style="margin-top:8px;">نطاق التقرير: ${scope === 'ALL' ? 'الوارد + الصادر' : (scope === 'INCOMING' ? 'الوارد' : 'الصادر')}</p>
+          </div>
+
+          <div style="margin-bottom:18px; padding:12px; background:#fff; border-radius:12px; border:1px solid #e6eef6; white-space: pre-wrap;">
+            <strong>البيان:</strong>
+            <div style="margin-top:8px; color:#0f172a; font-weight:700;">${(reportStatement || defaultLegal)}</div>
           </div>
 
           <div class="stats-grid">
