@@ -7,24 +7,30 @@ interface ApiResponse<T> {
 
 class ApiClient {
   private token: string | null = null
+  private refreshToken: string | null = null
 
   constructor() {
     if (typeof window !== "undefined") {
       this.token = localStorage.getItem("auth_token")
+      this.refreshToken = localStorage.getItem("refresh_token")
     }
   }
 
-  setToken(token: string) {
+  setToken(token: string, refreshToken?: string) {
     this.token = token
+    if (refreshToken) this.refreshToken = refreshToken
     if (typeof window !== "undefined") {
       localStorage.setItem("auth_token", token)
+      if (refreshToken) localStorage.setItem("refresh_token", refreshToken)
     }
   }
 
   clearToken() {
     this.token = null
+    this.refreshToken = null
     if (typeof window !== "undefined") {
       localStorage.removeItem("auth_token")
+      localStorage.removeItem("refresh_token")
     }
   }
 
@@ -34,6 +40,26 @@ class ApiClient {
   }
   private emitSessionExpired() {
     for (const cb of this.sessionExpiredListeners) cb()
+  }
+
+  private async refreshAccessToken(): Promise<boolean> {
+    if (!this.refreshToken) return false
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: this.refreshToken })
+      })
+      if (!response.ok) return false
+      const data = await response.json()
+      if (data.token) {
+        this.setToken(data.token, this.refreshToken)
+        return true
+      }
+      return false
+    } catch (err) {
+      return false
+    }
   }
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -64,6 +90,39 @@ class ApiClient {
       clearTimeout(timeout)
     }
 
+    // If 401, try to refresh token once and retry
+    if (response.status === 401) {
+      const refreshed = await this.refreshAccessToken()
+      if (refreshed) {
+        // Retry request with new token
+        const newHeaders: HeadersInit = {
+          "Content-Type": "application/json",
+          ...options.headers,
+        }
+        if (this.token) {
+          (newHeaders as any)["Authorization"] = `Bearer ${this.token}`
+        }
+
+        const retryController = new AbortController()
+        const retryTimeout = setTimeout(() => retryController.abort(), 10000)
+        try {
+          response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            ...options,
+            headers: newHeaders,
+            signal: retryController.signal,
+          })
+        } finally {
+          clearTimeout(retryTimeout)
+        }
+      } else {
+        // Refresh failed; clear token and notify listeners
+        this.clearToken()
+        try {
+          this.emitSessionExpired()
+        } catch (e) {}
+      }
+    }
+
     // Treat 204 No Content and 304 Not Modified as empty responses
     if (response.status === 204 || response.status === 304) {
       return null as any
@@ -80,16 +139,6 @@ class ApiClient {
           errorObj = { error: txt }
         } catch (txtErr) {
           // ignore
-        }
-      }
-
-      // If unauthorized, clear token and notify listeners
-      if (response.status === 401) {
-        this.clearToken()
-        try {
-          this.emitSessionExpired()
-        } catch (e) {
-          // ignore listener errors
         }
       }
 
@@ -115,11 +164,11 @@ class ApiClient {
 
   // Auth
   async login(username: string, password: string) {
-    const data = await this.request<{ token: string; user: any }>("/auth/login", {
+    const data = await this.request<{ token: string; refreshToken: string; user: any }>("/auth/login", {
       method: "POST",
       body: JSON.stringify({ username, password }),
     })
-    this.setToken(data.token)
+    this.setToken(data.token, data.refreshToken)
     return data
   }
 

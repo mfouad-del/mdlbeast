@@ -58,13 +58,19 @@ router.post(
         return res.status(401).json({ error: "Invalid credentials" })
       }
 
-      const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET as string, {
-        expiresIn: "24h",
+      const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || 'default-refresh-secret'
+      const accessToken = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET as string, {
+        expiresIn: "1h",
+        algorithm: 'HS256'
+      })
+      const refreshToken = jwt.sign({ id: user.id }, REFRESH_TOKEN_SECRET, {
+        expiresIn: "7d",
         algorithm: 'HS256'
       })
 
       res.json({
-        token,
+        token: accessToken,
+        refreshToken,
         user: {
           id: user.id,
           username: user.email || user.name,
@@ -140,4 +146,31 @@ const loginLimiter = (req: any, res: any, next: any) => {
 
 // Login route should apply loginLimiter at call site via router.post('/login', loginLimiter, ...), ensure it's used in server startup when mounting router.
 // If server doesn't mount it, the loginLimiter above will gracefully no-op.
+
+// Refresh token endpoint
+router.post("/refresh", (req: Request, res: Response) => {
+  try {
+    const { refreshToken } = req.body
+    if (!refreshToken) return res.status(401).json({ error: "Refresh token required" })
+
+    const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || 'default-refresh-secret'
+    let decoded: any
+    try {
+      decoded = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET)
+    } catch (err) {
+      return res.status(401).json({ error: "Invalid or expired refresh token" })
+    }
+
+    const accessToken = jwt.sign({ id: decoded.id }, JWT_SECRET as string, {
+      expiresIn: "1h",
+      algorithm: 'HS256'
+    })
+
+    res.json({ token: accessToken })
+  } catch (error) {
+    console.error("Refresh error:", error)
+    res.status(500).json({ error: "Refresh failed" })
+  }
+})
+
 export default router
