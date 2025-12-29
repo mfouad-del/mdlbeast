@@ -574,6 +574,10 @@ class ApiClient {
     return this.request<any>(`/admin/status/clear`, { method: 'POST' })
   }
 
+  // Version endpoint (used by AppVersionWatcher to detect deployments)
+  async getAppVersion() {
+    return this.request<any>(`/version`)
+  }
 
 }
 
