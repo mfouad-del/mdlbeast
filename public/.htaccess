@@ -1,6 +1,9 @@
 <IfModule mod_rewrite.c>
 RewriteEngine On
 
+# Block any requests to wp-includes to prevent 404 errors
+RewriteRule ^wp-includes/ - [R=404,L]
+
 # ❌ Prevent any Redirect or Rewrite on Next files
 RewriteRule ^_next/ - [L]
 RewriteRule ^archive/_next/ - [L]
@@ -10,41 +13,11 @@ RewriteCond %{REQUEST_URI} ^/(archive/)?_next/ [NC]
 RewriteRule .* - [L]
 </IfModule>
 
-# Note: Previously blocked wp-emoji-loader which caused JS parse errors when the file was requested.
-# Allow the file so local stub can be served if present. (Avoids Unexpected token '<' errors)
-# Removed the explicit block to prevent returning HTML error pages for JS requests.
-
-
 # Force canonical host: redirect www to non-www (preserve path)
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteCond %{HTTP_HOST} ^www\.zaco\.sa$ [NC]
   RewriteRule ^(.*)$ https://zaco.sa/$1 [R=301,L]
-</IfModule>
-
-# BEGIN WordPress
-<IfModule mod_rewrite.c>
-RewriteEngine On
-RewriteBase /
-
-RewriteRule ^index\.php$ - [L]
-
-# ✅ Exclude Next.js from WordPress handling
-RewriteCond %{REQUEST_URI} !^/_next/
-RewriteCond %{REQUEST_URI} !^/archive/_next/
-
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule . /index.php [L]
-</IfModule>
-# END WordPress
-
-# CORS for fonts and JS/CSS — explicit origin for Bluehost
-<IfModule mod_headers.c>
-<FilesMatch "\.(woff2|woff|ttf|otf|eot|js|css)$">
-  Header always set Access-Control-Allow-Origin "https://zaco.sa"
-  Header always set Access-Control-Allow-Methods "GET, OPTIONS"
-</FilesMatch>
 </IfModule>
 
 # Security: prevent directory listing

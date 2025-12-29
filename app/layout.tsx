@@ -67,8 +67,11 @@ export default function RootLayout({
                 'use strict';
                 if(typeof window==='undefined')return;
                 
-                // MessageChannel polyfill for browsers that don't support it
-                if(typeof MessageChannel==='undefined'||!window.MessageChannel){
+                // Store native MessageChannel if it exists
+                var NativeMessageChannel = window.MessageChannel;
+                
+                // MessageChannel polyfill for browsers that don't support it properly
+                if(typeof MessageChannel==='undefined' || !NativeMessageChannel || typeof NativeMessageChannel !== 'function'){
                   function Port(){
                     this.onmessage=null;
                     this.start=function(){};
@@ -80,7 +83,15 @@ export default function RootLayout({
                       try{if(typeof self.onmessage==='function')self.onmessage({data:msg});}catch(e){}
                     },0);
                   };
-                  try{window.MessageChannel=function(){return{port1:new Port(),port2:new Port()};};}catch(e){}
+                  try{
+                    window.MessageChannel=function(){
+                      if(!(this instanceof window.MessageChannel)){
+                        return new window.MessageChannel();
+                      }
+                      this.port1=new Port();
+                      this.port2=new Port();
+                    };
+                  }catch(e){}
                 }
                 
                 // CustomEvent polyfill for older browsers
