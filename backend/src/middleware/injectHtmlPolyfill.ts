@@ -14,6 +14,14 @@ export default function injectHtmlPolyfill(req: Request, res: Response, next: Ne
       if (typeof body === 'string' && body.indexOf('<head') !== -1) {
         // Insert polyfill right after opening <head> tag
         body = body.replace(/<head(.*?)>/i, match => match + polyfillScript)
+
+        // Also remove known problematic chunk references (hotfix):
+        // This avoids loading the minified chunk that is causing runtime crashes in affected clients.
+        try {
+          body = body.replace(new RegExp(`<script[^>]*src=["'][^"']*249261e921aeebba\\.js(?:\\?[^"']*)?["'][^>]*>\\s*<\\/script>`, 'gi'), `<!-- removed problematic chunk 249261e921aeebba.js -->`)
+        } catch (e) {
+          // ignore
+        }
       }
     } catch (e) {
       // ignore

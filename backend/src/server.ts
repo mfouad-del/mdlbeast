@@ -46,10 +46,6 @@ app.use(
 )
 app.use(morgan("dev"))
 
-// Emergency: remove any problematic chunk references from /archive HTML before other handlers run
-import removeProblematicChunks from './middleware/removeProblematicChunks'
-app.use(removeProblematicChunks)
-
 // Inject a small polyfill into HTML responses for /archive/* so MessageChannel/CustomEvent are defined
 import injectHtmlPolyfill from './middleware/injectHtmlPolyfill'
 app.use(injectHtmlPolyfill)
