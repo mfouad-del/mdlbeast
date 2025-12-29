@@ -45,9 +45,8 @@ export const viewport = {
 
 import { LoadingProvider } from "../components/ui/loading-context"
 import SessionExpiredModal from '@/components/SessionExpiredModal'
-import ClientAppVersionWatcher from '@/components/ClientAppVersionWatcher'
 import SafeAnalytics from '@/components/SafeAnalytics'
-import UpdateBanner from '@/components/UpdateBanner'
+import AppVersionAutoReloader from '@/components/AppVersionAutoReloader'
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -60,6 +59,8 @@ export default function RootLayout({
         <meta httpEquiv="Cache-control" content="no-cache, no-store, must-revalidate" />
         <meta httpEquiv="Pragma" content="no-cache" />
         <meta httpEquiv="Expires" content="0" />
+        {/* Inline, tiny version-checker: runs before any main bundle to force-reload clients if server reports a new version. Keeps logic minimal to avoid depending on app bundles. */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var prev=null;try{prev=localStorage.getItem('app_version')}catch(e){}fetch('/api/version?_t='+Date.now(),{cache:'no-store',credentials:'same-origin'}).then(function(r){return r.text()}).then(function(t){try{var v=JSON.parse(t);var s=(v.version||'')+'@'+(v.commit||'');if(prev!==s){try{localStorage.setItem('app_version',s)}catch(e){}var u=new URL(window.location.href);u.searchParams.set('_t',Date.now());window.location.replace(u.toString())}}catch(e){/* ignore non-json */}}).catch(function(){})}catch(e){}})();` }} />
       </head>
       <body className={`${tajawal.className} antialiased`}>
         <LoadingProvider>
@@ -67,10 +68,10 @@ export default function RootLayout({
         </LoadingProvider>
         <SessionExpiredModal />
         <script dangerouslySetInnerHTML={{__html: `if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'development') { console.log = function(){}; }`}} />
-        <ClientAppVersionWatcher />
-        <UpdateBanner />
         {/* Safe analytics loader: loads analytics dynamically in client and fails quietly if unsupported */}
         <SafeAnalytics />
+        {/* Auto-reloader: silently force-refresh clients when a new server version is detected (no banner/dialog) */}
+        <AppVersionAutoReloader />
       </body>
     </html>
   )
