@@ -22,7 +22,8 @@ export default function SessionExpiredModal() {
     setOpen(false)
     apiClient.clearToken()
     // After session expiry, redirect user to the public archive root as requested
-    router.push('/archive')
+    // basePath is /archive so use / to redirect to the archive root
+    router.push('/')
   }
 
   return (
