@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مسح الـ Cache - نظام الأرشفة</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 {
+            color: #1a202c;
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #718096;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+        .status {
+            background: #f7fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .status-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: white;
+            border-radius: 8px;
+        }
+        .status-item:last-child {
+            margin-bottom: 0;
+        }
+        .label {
+            font-weight: 600;
+            color: #2d3748;
+        }
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .badge.success {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        .badge.warning {
+            background: #feebc8;
+            color: #7c2d12;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            font-size: 16px;
+            font-weight: 700;
+            border-radius: 12px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #2d3748;
+        }
+        .btn-secondary:hover {
+            background: #cbd5e0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .success-message {
+            background: #c6f6d5;
+            border: 2px solid #9ae6b4;
+            color: #22543d;
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 20px;
+            display: none;
+            font-weight: 600;
+        }
+        .icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">🧹</div>
+        <h1>مسح الـ Cache والبيانات</h1>
+        <p class="subtitle">حل مشكلة Access token required</p>
+        
+        <div class="status">
+            <div class="status-item">
+                <span class="label">Token:</span>
+                <span class="badge warning" id="token-status">موجود</span>
+            </div>
+            <div class="status-item">
+                <span class="label">Documents Cache:</span>
+                <span class="badge warning" id="docs-status">موجود</span>
+            </div>
+            <div class="status-item">
+                <span class="label">User Session:</span>
+                <span class="badge warning" id="user-status">موجود</span>
+            </div>
+        </div>
+
+        <button onclick="clearAllData()">🗑️ مسح جميع البيانات</button>
+        <button class="btn-secondary" onclick="window.location.href='/archive/'">↩️ العودة للنظام</button>
+        
+        <div class="success-message" id="success">
+            ✅ تم المسح بنجاح! يرجى إعادة تسجيل الدخول
+        </div>
+    </div>
+
+    <script>
+        // Check what's stored
+        function checkStorage() {
+            const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
+            const docs = localStorage.getItem('archive_docs');
+            const user = localStorage.getItem('archive_user') || localStorage.getItem('archivx_session_user');
+            
+            document.getElementById('token-status').textContent = token ? 'موجود' : 'فارغ';
+            document.getElementById('token-status').className = token ? 'badge warning' : 'badge success';
+            
+            document.getElementById('docs-status').textContent = docs ? 'موجود' : 'فارغ';
+            document.getElementById('docs-status').className = docs ? 'badge warning' : 'badge success';
+            
+            document.getElementById('user-status').textContent = user ? 'موجود' : 'فارغ';
+            document.getElementById('user-status').className = user ? 'badge warning' : 'badge success';
+        }
+
+        function clearAllData() {
+            // Clear all possible localStorage keys
+            const keysToRemove = [
+                'auth_token',
+                'token',
+                'refresh_token',
+                'archive_docs',
+                'archive_user',
+                'archivx_session_user',
+                'archive_tenant',
+                'selectedTenantId'
+            ];
+            
+            keysToRemove.forEach(key => {
+                localStorage.removeItem(key);
+            });
+            
+            // Clear sessionStorage too
+            sessionStorage.clear();
+            
+            // Update UI
+            checkStorage();
+            document.getElementById('success').style.display = 'block';
+            
+            console.log('✅ All data cleared successfully!');
+            console.log('📋 Cleared keys:', keysToRemove);
+            
+            // Redirect after 2 seconds
+            setTimeout(() => {
+                window.location.href = '/archive/';
+            }, 2000);
+        }
+
+        // Check on load
+        checkStorage();
+    </script>
+</body>
+</html>
