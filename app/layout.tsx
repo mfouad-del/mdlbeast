@@ -59,6 +59,16 @@ export default function RootLayout({
         <meta httpEquiv="Cache-control" content="no-cache, no-store, must-revalidate" />
         <meta httpEquiv="Pragma" content="no-cache" />
         <meta httpEquiv="Expires" content="0" />
+        {/* If MessageChannel constructor is broken (Illegal constructor), force React scheduler to fall back to setTimeout */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(() => {
+  if (typeof window === 'undefined') return;
+  try { new MessageChannel(); return; } catch (e) {}
+  try { (window as any).MessageChannel = undefined; } catch (e) {}
+})();`,
+          }}
+        />
       </head>
       <body className={`${tajawal.className} antialiased`}>
         <ErrorBoundary>
