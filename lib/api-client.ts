@@ -554,10 +554,6 @@ class ApiClient {
     }
   }
 
-  async getAppVersion() {
-    return await this.request<any>("/version", { method: 'GET', cache: 'no-store' })
-  }
-
   // Change own password: requires current password and new password
   async changePassword(currentPassword: string, newPassword: string) {
     return this.request<any>("/users/me/password", {

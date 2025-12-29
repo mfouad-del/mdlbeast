@@ -45,9 +45,8 @@ export const viewport = {
 
 import { LoadingProvider } from "../components/ui/loading-context"
 import SessionExpiredModal from '@/components/SessionExpiredModal'
-import SafeAnalytics from '@/components/SafeAnalytics'
-import AppVersionAutoReloader from '@/components/AppVersionAutoReloader'
 import Script from 'next/script'
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -69,10 +68,7 @@ export default function RootLayout({
         </LoadingProvider>
         <SessionExpiredModal />
         <script dangerouslySetInnerHTML={{__html: `if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'development') { console.log = function(){}; }`}} />
-        {/* Safe analytics loader: loads analytics dynamically in client and fails quietly if unsupported */}
-        <SafeAnalytics />
-        {/* Auto-reloader: silently force-refresh clients when a new server version is detected (no banner/dialog) */}
-        <AppVersionAutoReloader />
+        <Analytics />
       </body>
     </html>
   )

@@ -305,7 +305,26 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
           </table>
         </div>
       </div>
-      <StatementModal open={Boolean(statementOpenDoc)} onClose={() => { setStatementOpenDoc(null); setStatementText('') }} statement={statementText} />
++      <StatementModal open={Boolean(statementOpenDoc)} onClose={() => { setStatementOpenDoc(null); setStatementText('') }} statement={statementText} />
+    </div>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={4} className="py-24 text-center">
+                    <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-5 text-slate-200">
+                      <Search size={40} />
+                    </div>
+                    <p className="text-2xl font-black text-slate-300 font-heading">لم يتم العثور على نتائج مطابقة</p>
+                    <p className="text-slate-400 text-sm mt-1">
+                      تأكد من كتابة الرقم بشكل صحيح أو تغيير نطاق البحث التاريخي
+                    </p>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   )
 }

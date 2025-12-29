@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Lock, Check } from 'lucide-react';
 import { apiClient } from '../lib/api-client';
-import { useToast } from '@/hooks/use-toast'
 
 const ChangePassword: React.FC = () => {
   const [current, setCurrent] = useState('')
@@ -9,8 +8,6 @@ const ChangePassword: React.FC = () => {
   const [confirm, setConfirm] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
-
-  const { toast } = useToast()
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -20,14 +17,12 @@ const ChangePassword: React.FC = () => {
       setLoading(true)
       await apiClient.changePassword(current, newPass)
       setMessage('تم تحديث كلمة المرور بنجاح')
-      toast({ title: 'تم تحديث كلمة المرور', description: 'تم تغيير كلمة المرور الخاصة بك بنجاح.' })
       setCurrent('')
       setNewPass('')
       setConfirm('')
     } catch (err: any) {
       console.error(err)
       setMessage(err.message || 'فشل تغيير كلمة المرور')
-      toast({ title: 'فشل تغيير كلمة المرور', description: err?.message || 'حاول مرة أخرى' })
     } finally {
       setLoading(false)
       setTimeout(() => setMessage(null), 3000)
