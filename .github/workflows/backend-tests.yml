@@ -7,6 +7,8 @@ on:
   pull_request:
     paths:
       - 'backend/**'
+  # Allow manual runs from the Actions UI for debugging
+  workflow_dispatch:
 
 jobs:
   test:
@@ -47,3 +49,11 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET_TEST || 'test-jwt-secret-key-xyz' }}
           REFRESH_TOKEN_SECRET: ${{ secrets.REFRESH_TOKEN_SECRET_TEST || 'test-refresh-secret-xyz' }}
           DATABASE_URL: ${{ secrets.DATABASE_URL_TEST || '' }}
+        run: |
+          echo "--- Running backend tests ---"
+          echo "NODE: $(node -v)  NPM: $(npm -v)"
+          if [ -z "${{ env.DATABASE_URL }}" ]; then
+            echo "WARNING: DATABASE_URL_TEST is not set. Some integration tests may fail or be skipped."
+          fi
+          npm ci
+          npm test --silent
