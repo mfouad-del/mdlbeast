@@ -59,8 +59,25 @@ export default function RootLayout({
         <meta httpEquiv="Cache-control" content="no-cache, no-store, must-revalidate" />
         <meta httpEquiv="Pragma" content="no-cache" />
         <meta httpEquiv="Expires" content="0" />
-        {/* Inline, tiny version-checker: runs before any main bundle to force-reload clients if server reports a new version. Keeps logic minimal to avoid depending on app bundles. */}
-        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var prev=null;try{prev=localStorage.getItem('app_version')}catch(e){}fetch('/api/version?_t='+Date.now(),{cache:'no-store',credentials:'same-origin'}).then(function(r){return r.text()}).then(function(t){try{var v=JSON.parse(t);var s=(v.version||'')+'@'+(v.commit||'');if(prev!==s){try{localStorage.setItem('app_version',s)}catch(e){}var u=new URL(window.location.href);u.searchParams.set('_t',Date.now());window.location.replace(u.toString())}}catch(e){/* ignore non-json */}}).catch(function(){})}catch(e){}})();` }} />
+        {/* Inline, tiny version/checker: runs before any main bundle to force-reload clients if server reports a new version or if a small JS probe returns HTML (indicative of 404/CDN error). Minimal and self-contained. */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{
+  var now = Date.now();
+  var prev=null; try{prev=localStorage.getItem('app_version')}catch(e){}
+  // version check
+  fetch('/api/version?_t='+now,{cache:'no-store',credentials:'same-origin'}).then(function(r){return r.text()}).then(function(t){try{var v=JSON.parse(t);var s=(v.version||'')+'@'+(v.commit||'');if(prev!==s){try{localStorage.setItem('app_version',s)}catch(e){}var u=new URL(window.location.href);u.searchParams.set('_t',Date.now());window.location.replace(u.toString())}}catch(e){/* ignore non-json */}}).catch(function(){})
+  // probe a tiny static JS file to ensure assets are being served as JS and not returning HTML or an error page
+  fetch('/asset-check.js?_t='+now,{cache:'no-store',credentials:'same-origin'}).then(function(r){
+    var ct = (r.headers && r.headers.get && r.headers.get('content-type')) || '';
+    if (/text\/html/i.test(ct)) throw new Error('asset returned html');
+    return r.text()
+  }).then(function(body){
+    if (!body || body.trim().charAt(0)==='<') throw new Error('asset looks like HTML');
+    // probe ok
+  }).catch(function(){
+    // If probe failed, attempt immediate cache-busting replace to pick up correct assets
+    try{var u2=new URL(window.location.href);u2.searchParams.set('_t',Date.now());window.location.replace(u2.toString());}catch(e){}
+  })
+}catch(e){} })();` }} />
       </head>
       <body className={`${tajawal.className} antialiased`}>
         <LoadingProvider>
