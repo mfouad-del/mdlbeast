@@ -328,6 +328,28 @@ router.get("/:barcode", async (req: Request, res: Response) => {
   }
 })
 
+// Return the statement text as JSON (requires auth) - useful for quick in-app reading without PDF
+router.get("/:barcode/statement", authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    // Avoid caching the statement text
+    res.setHeader('Cache-Control', 'private, no-cache, no-store, must-revalidate')
+    const { barcode } = req.params
+    const r = await query("SELECT barcode, statement FROM documents WHERE lower(barcode) = lower($1) LIMIT 1", [barcode])
+    if (r.rows.length === 0) return res.status(404).json({ error: 'Not found' })
+    const row = r.rows[0]
+
+    const user = (req as any).user
+    const { canAccessDocument } = await import('../lib/rbac')
+    if (!canAccessDocument(user, row)) return res.status(403).json({ error: 'Forbidden' })
+
+    const statement = String(row.statement || '')
+    return res.json({ statement })
+  } catch (err: any) {
+    console.error('Statement text error:', err)
+    res.status(500).json({ error: 'Failed to fetch statement' })
+  }
+})
+
 // Generate a downloadable A4 PDF of the statement for the document (requires auth)
 router.get("/:barcode/statement.pdf", async (req: AuthRequest, res: Response) => {
   try {
@@ -342,8 +364,12 @@ router.get("/:barcode/statement.pdf", async (req: AuthRequest, res: Response) =>
     const { canAccessDocument } = await import('../lib/rbac')
     if (!canAccessDocument(user, row)) return res.status(403).json({ error: 'Forbidden' })
 
-    const statement = String(row.statement || '').trim()
-    if (!statement) return res.status(404).json({ error: 'No statement' })
+    let statement = String(row.statement || '').trim()
+    // If there's no stored statement, generate a small placeholder PDF instead of returning an error so clients can always download a PDF
+    if (!statement) {
+      // Use an ASCII fallback when no statement exists so a PDF can be generated even if font files are unavailable in the environment
+      statement = 'No statement available for this document'
+    }
 
     const { PDFDocument, StandardFonts } = await import('pdf-lib')
     const fontkit = (await import('@pdf-lib/fontkit')).default
@@ -365,13 +391,13 @@ router.get("/:barcode/statement.pdf", async (req: AuthRequest, res: Response) =>
     const headerFontSize = 16
     const bodyFontSize = 12
 
-    // Draw header (right aligned for RTL)
-    const headerText = `بيان القيد - ${row.barcode}`
+    // Draw header (right aligned for RTL). If we don't have an embedded Arabic font available, fall back to English headers
+    const headerText = fontBytes ? `بيان القيد - ${row.barcode}` : `Statement - ${row.barcode}`
     const headerTextWidth = font.widthOfTextAtSize(headerText, headerFontSize)
     page.drawText(headerText, { x: pageWidth - margin - headerTextWidth, y, size: headerFontSize, font })
     y -= headerFontSize + 10
 
-    const meta = `التاريخ: ${(row.date || '').split('T')?.[0] || ''}  |  الجهة: ${row.sender || ''}`
+    const meta = fontBytes ? `التاريخ: ${(row.date || '').split('T')?.[0] || ''}  |  الجهة: ${row.sender || ''}` : `Date: ${(row.date || '').split('T')?.[0] || ''}`
     const metaWidth = font.widthOfTextAtSize(meta, 10)
     page.drawText(meta, { x: pageWidth - margin - metaWidth, y, size: 10, font })
     y -= 18

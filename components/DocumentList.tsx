@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import type { Correspondence, SystemSettings } from "@/types"
 import { Search, ArrowRightLeft, FileSpreadsheet, AlertCircle, FileText, Calendar, ScanText } from "lucide-react"
 import AsyncButton from "./ui/async-button"
+import StatementModal from "./StatementModal"
 import { exportToCSV } from "@/lib/barcode-service"
 import BarcodePrinter from "./BarcodePrinter"
 import OfficialReceipt from "./OfficialReceipt"
@@ -23,6 +24,9 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
   const [endDate, setEndDate] = useState("")
   const [directionFilter, setDirectionFilter] = useState<'ALL' | 'INCOMING' | 'OUTGOING'>('ALL')
   const [stamperDoc, setStamperDoc] = useState<Correspondence | null>(null)
+  const [statementOpenDoc, setStatementOpenDoc] = useState<Correspondence | null>(null)
+  const [statementText, setStatementText] = useState<string>('')
+  const [statementLoading, setStatementLoading] = useState(false)
 
   const addAttachmentInputRef = useRef<HTMLInputElement | null>(null)
   const [localDocs, setLocalDocs] = useState(docs)
@@ -187,6 +191,11 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
                             <span className="font-black">{(doc.documentDate || doc.date || '').split('T')?.[0]}</span>
                           </span>
 
+                          {/* Badge when no statement exists */}
+                          {!(doc.statement || '').trim() && (
+                            <span className="text-[10px] font-black text-amber-700 bg-amber-50 px-2 py-0.5 rounded uppercase">بدون بيان</span>
+                          )}
+
                           {/* Show creator to admin/supervisor */}
                           {(currentUser && (String(currentUser.role || '').toLowerCase() === 'admin' || String(currentUser.role || '').toLowerCase() === 'supervisor')) && (
                             <span className="text-[10px] font-bold text-slate-500">أصدر: {(() => {
@@ -211,7 +220,7 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
                     </td>
                     <td className="px-8 py-7">
                       <div className="flex gap-3 items-center">
-                        <div className="text-[11px] font-black px-3 py-1 rounded bg-slate-50 border border-slate-100">عدد المرفقات: <span className="font-extrabold ml-2">{(doc.attachments || []).length}</span></div>
+                        <div className="text-[11px] font-black px-3 py-1 rounded bg-slate-50 border border-slate-100">مرفقات: <span className="font-extrabold mr-2">{(doc.attachments || []).length}</span></div>
 
                         {/* Numbered attachment buttons */}
                         {(doc.attachments || []).length > 0 && (
@@ -253,9 +262,20 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
                           حذف
                         </button>
 
-                        {/* Small button to download the statement as a PDF (server-generated, secure) */}
-                        <button onClick={async () => { try { await apiClient.downloadStatementPdf(doc.barcode || doc.barcodeId) } catch (e) { console.error(e); alert('فشل تنزيل البيان') } }} className="w-9 h-9 flex items-center justify-center rounded-md bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100 transition-all">
-                          عرض
+                        {/* Button to open the statement for quick reading (fetches JSON and opens inline modal). Keep PDF download accessible via long-press or secondary action. */}
+                        <button onClick={async () => {
+                          try {
+                            setStatementLoading(true)
+                            const res = await apiClient.getStatement(doc.barcode || doc.barcodeId)
+                            setStatementText(res?.statement || '')
+                            setStatementOpenDoc(doc)
+                          } catch (e:any) {
+                            console.error('Fetch statement failed', e)
+                            alert('فشل جلب البيان: ' + (e?.message || JSON.stringify(e)))
+                          } finally { setStatementLoading(false) }
+                        }} className="h-9 px-3 flex items-center gap-2 rounded-md bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-all text-[11px] font-black">
+                          <FileText size={16} /> عرض ملخص
+                          {statementLoading && <span className="ml-1 text-xs text-slate-400">...</span>}
                         </button>
 
                       </div>
@@ -267,6 +287,26 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
                       </div>
                     </td>
                   </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={4} className="py-24 text-center">
+                    <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-5 text-slate-200">
+                      <Search size={40} />
+                    </div>
+                    <p className="text-2xl font-black text-slate-300 font-heading">لم يتم العثور على نتائج مطابقة</p>
+                    <p className="text-slate-400 text-sm mt-1">
+                      تأكد من كتابة الرقم بشكل صحيح أو تغيير نطاق البحث التاريخي
+                    </p>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
++      <StatementModal open={Boolean(statementOpenDoc)} onClose={() => { setStatementOpenDoc(null); setStatementText('') }} statement={statementText} />
+    </div>
                 ))
               ) : (
                 <tr>

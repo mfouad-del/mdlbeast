@@ -17,6 +17,15 @@ class ApiClient {
   setToken(token: string) {
     // Defensive: strip accidental leading "Bearer " so we don't store "Bearer Bearer ..."
     if (typeof token === 'string' && token.startsWith('Bearer ')) token = token.slice(7)
+
+    // Basic JWT format check (three dot-separated base64url segments). If malformed, don't store.
+    const jwtLike = typeof token === 'string' && /^[-_A-Za-z0-9]+\.[-_A-Za-z0-9]+\.[-_A-Za-z0-9]+$/.test(token)
+    if (!jwtLike) {
+      console.warn('Attempted to set malformed auth token; rejecting and clearing.')
+      this.clearToken()
+      return
+    }
+
     this.token = token
     if (typeof window !== "undefined") {
       localStorage.setItem("auth_token", token)
@@ -65,10 +74,11 @@ class ApiClient {
 
     // For GET requests to documents/barcodes, ensure we bypass browser/CDN caches to reduce stale results for managers/supervisors
     try {
-      const method = ((options.method || 'GET') as string).toUpperCase()
+      const method = (typeof options.method === 'string' ? options.method : 'GET').toUpperCase()
       if (method === 'GET' && (endpoint.startsWith('/documents') || endpoint.startsWith('/barcodes'))) {
-        (headers as any)['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-        (headers as any)['Pragma'] = 'no-cache'
+        const h = headers as Record<string, string>
+        h['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        h['Pragma'] = 'no-cache'
         options = { ...options, cache: 'no-store' }
       }
     } catch (e) { /* ignore */ }
@@ -139,6 +149,13 @@ class ApiClient {
         throw new Error('Session expired')
       }
 
+      // If token is invalid (signature/malformed) clear it and notify listeners so UI can force login
+      if (response.status === 401 && (errorObj?.error === 'invalid_token' || errorObj?.error === 'invalid_or_expired_token')) {
+        this.clearToken()
+        this.emitSessionExpired()
+        throw new Error('Invalid session')
+      }
+
       // Build a friendly message from common error shapes
       let message = 'Request failed'
       if (errorObj) {
@@ -188,6 +205,10 @@ class ApiClient {
 
   async getDocumentByBarcode(barcode: string) {
     return this.request<any>(`/documents/${barcode}`)
+  }
+
+  async getStatement(barcode: string) {
+    return this.request<{ statement: string }>(`/documents/${encodeURIComponent(barcode)}/statement`)
   }
 
   async createDocument(document: any) {

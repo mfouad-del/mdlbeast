@@ -2,7 +2,9 @@ import { validateEnv, redactedEnvPresent } from './validateEnv'
 
 describe('validateEnv', () => {
   const OLD = process.env.JWT_SECRET
-  afterEach(() => { process.env.JWT_SECRET = OLD })
+  const OLD_REFRESH = process.env.REFRESH_TOKEN_SECRET
+  afterEach(() => { process.env.JWT_SECRET = OLD; process.env.REFRESH_TOKEN_SECRET = OLD_REFRESH })
+  beforeEach(() => { process.env.REFRESH_TOKEN_SECRET = 'super-strong-refresh' })
 
   test('throws if JWT_SECRET missing', () => {
     process.env.JWT_SECRET = ''
