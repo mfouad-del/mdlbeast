@@ -18,7 +18,7 @@ interface DocumentListProps {
   onRefresh?: () => Promise<void>
 }
 
-export default function DocumentList({ docs, settings, currentUser, users }: DocumentListProps) {
+export default function DocumentList({ docs, settings, currentUser, users, onRefresh }: DocumentListProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
