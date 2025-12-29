@@ -45,13 +45,16 @@ npm install
 ```
 
 3. إنشاء ملف `.env`:
-```env
-DATABASE_URL=postgresql://zacodb_user:ToKNTzF4XsvJHTxLqYYqCeyk7YAMjICO@dpg-d54jrg6mcj7s73esp1i0-a.oregon-postgres.render.com/zacodb
-JWT_SECRET=JWT_7aP!Q9#xL$4M@Wc2KZr8NfD0m
-PORT=3001
-NODE_ENV=production
-FRONTEND_URL=https://zaco.sa
+```bash
+cp backend/.env.example backend/.env
 ```
+
+4. **تحديث قيم البيئة**:
+   - اتصل بـ Render Dashboard أو قاعدة البيانات لديك
+   - أضف قيم صحيحة لـ `DATABASE_URL` و `JWT_SECRET` في الملف `.env`
+   - لا تشارك هذه المفاتيح مع أحد أو تضيفها للـ Git
+   
+   > ⚠️ **تنبيه أمني**: المفاتيح السرية لا تُخزّن في الـ repo. استخدم GitHub Secrets للـ CI/CD
 
 4. تشغيل SQL Scripts لإنشاء الجداول:
 - قم بتنفيذ `scripts/01_create_tables.sql`
@@ -107,15 +110,13 @@ npm start
 
 ### معلومات الاتصال
 
-**External URL** (للاتصال من خارج Render):
-```
-postgresql://zacodb_user:ToKNTzF4XsvJHTxLqYYqCeyk7YAMjICO@dpg-d54jrg6mcj7s73esp1i0-a.oregon-postgres.render.com/zacodb
-```
+لا تشارك معلومات الاتصال مع أحد أو تضيفها للـ repository. استخدم:
+- **GitHub Secrets** للـ CI/CD pipelines
+- **متغيرات البيئة المحلية** لـ development فقط
 
-**PSQL Command**:
-```bash
-PGPASSWORD=ToKNTzF4XsvJHTxLqYYqCeyk7YAMjICO psql -h dpg-d54jrg6mcj7s73esp1i0-a.oregon-postgres.render.com -U zacodb_user zacodb
-```
+اطلب معلومات الاتصال من:
+- 🔐 **مسؤول النظام** إذا كنت في فريق
+- 📧 **صاحب المشروع** للوصول للـ production
 
 ### الجداول
 
@@ -204,7 +205,33 @@ npm run export
 
 3. تأكد من إعداد CORS في Backend للسماح بالاتصال من `https://zaco.sa`
 
-## 📞 الدعم
+## � إعداد CI/CD والمتغيرات الحساسة
+
+### GitHub Secrets (للـ CI/CD)
+
+1. اذهب إلى: **Settings → Secrets and variables → Actions**
+2. أضف الـ secrets التالية:
+   - `JWT_SECRET_TEST`: JWT secret للاختبارات
+   - `REFRESH_TOKEN_SECRET_TEST`: Refresh token secret للاختبارات
+   - `DATABASE_URL_TEST`: Connection string لـ test database (اختياري)
+   - `JWT_SECRET`: JWT secret للإنتاج
+   - `DATABASE_URL`: Production database URL
+
+### المتغيرات المحلية
+
+ملف `.env` (يجب عدم مشاركته):
+```
+DATABASE_URL=postgresql://user:pass@host/dbname
+JWT_SECRET=your-strong-secret-key-here
+REFRESH_TOKEN_SECRET=your-refresh-secret-key-here
+PORT=3001
+NODE_ENV=development
+FRONTEND_URL=http://localhost:3000
+```
+
+> ⚠️ **لا تشارك أو تضيف .env للـ Git!** الملف مُضاف في `.gitignore` بالفعل.
+
+## �📞 الدعم
 
 للمساعدة أو الاستفسارات، يرجى التواصل مع فريق التطوير.
 

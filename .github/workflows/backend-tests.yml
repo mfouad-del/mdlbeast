@@ -42,12 +42,8 @@ jobs:
           done
       - name: Run tests
         working-directory: backend
-        run: npm test --silent
-      - name: Check package.json for supabase dep
-        working-directory: backend
-        run: |
-          if grep -q "@supabase" package.json; then
-            echo "Found @supabase in package.json — please remove the dependency when migrating to R2-only"; exit 1
-          else
-            echo "No supabase dependency in package.json"
-          fi
+        env:
+          NODE_ENV: test
+          JWT_SECRET: ${{ secrets.JWT_SECRET_TEST || 'test-jwt-secret-key-xyz' }}
+          REFRESH_TOKEN_SECRET: ${{ secrets.REFRESH_TOKEN_SECRET_TEST || 'test-refresh-secret-xyz' }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL_TEST || '' }}

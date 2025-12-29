@@ -29,22 +29,33 @@ npm run dev
 
 Backend سيعمل على: https://zaco-backend.onrender.com
 
-### 2️⃣ إنشاء قاعدة البيانات
+### 2️⃣ إعداد المتغيرات البيئية
 
 ```bash
-# اتصل بقاعدة البيانات
-PGPASSWORD=ToKNTzF4XsvJHTxLqYYqCeyk7YAMjICO psql -h dpg-d54jrg6mcj7s73esp1i0-a.oregon-postgres.render.com -U zacodb_user zacodb
+# نسخ ملف .env.example إلى .env
+cp .env.example .env
 
-# نفذ السكريبتات داخل psql
-\i scripts/01_create_tables.sql
-\i scripts/02_seed_data.sql
-
-# أو من خارج psql
-psql $DATABASE_URL -f scripts/01_create_tables.sql
-psql $DATABASE_URL -f scripts/02_seed_data.sql
+# تحرير الملف وإضافة قيمك الفعلية
+# DATABASE_URL: اتصل بـ Render أو قاعدة بيانات محلية
+# JWT_SECRET: استخدم كلمة مرور قوية عشوائية
+# FRONTEND_URL: رابط الـ frontend الخاص بك (محلي: http://localhost:3000)
 ```
 
-### 3️⃣ Frontend
+> ⚠️ **تحذير أمني**: لا تشارك ملف `.env` أو تضيفه للـ Git!
+
+### 3️⃣ إنشاء قاعدة البيانات
+
+```bash
+# استخدم متغير البيئة DATABASE_URL من .env
+psql $DATABASE_URL -f ../scripts/01_create_tables.sql
+psql $DATABASE_URL -f ../scripts/02_seed_data.sql
+
+# أو إذا كنت داخل psql:
+\i ../scripts/01_create_tables.sql
+\i ../scripts/02_seed_data.sql
+```
+
+### 4️⃣ Frontend
 
 ```bash
 # في المجلد الرئيسي (ارجع من backend)
@@ -54,25 +65,25 @@ cd ..
 npm install
 
 # انسخ ملف البيئة
-cp .env.local.example .env.local
+cp .env.example .env.local
+
+# عدّل .env.local بـ API URL الصحيح
+# NEXT_PUBLIC_API_URL=http://localhost:3001/api (للـ local)
+# أو NEXT_PUBLIC_API_URL=https://your-backend.com/api (للـ production)
 
 # شغّل Frontend
 npm run dev
 ```
 
-Frontend سيعمل محليًا على المنفذ 3000 (http://<your-host>:3000)
+Frontend سيعمل محليًا على: http://localhost:3000
 
 ## 🔐 تسجيل الدخول
 
-افتح http://<your-host>:3000 واستخدم:
+**بيانات الدخول الافتراضية** (يجب تغييرها فوراً في الإنتاج):
+- **Admin**: `admin@zaco.sa` / `admin123`
+- **User**: `user@zaco.sa` / `user123`
 
-**Admin:**
-- Email: `admin@zaco.sa`
-- Password: `admin123`
-
-**User:**
-- Email: `user@zaco.sa`
-- Password: `user123`
+⚠️ **تنبيه أمني**: غيّر هذه كلمات المرور مباشرة بعد أول تسجيل دخول!
 
 ## ✅ اختبار النظام
 
