@@ -59,47 +59,60 @@ export default function RootLayout({
         <meta httpEquiv="Cache-control" content="no-cache, no-store, must-revalidate" />
         <meta httpEquiv="Pragma" content="no-cache" />
         <meta httpEquiv="Expires" content="0" />
-        {/* Inline, tiny version/checker & defensive polyfills: runs before any main bundle to force-reload clients if server reports a new version or if a small JS probe returns HTML (indicative of 404/CDN error). Also patches environment where constructing MessageChannel or CustomEvent throws (prevents "Illegal constructor" crashes). */}
+        {/* Inline, tiny version/checker, probe, defensive polyfills, and an emergency error handler.
+            - Polyfills MessageChannel/CustomEvent where they throw
+            - Probes /asset-check.js and /api/version, forces cache-busting reload when needed
+            - Installs a global error/unhandledrejection handler that logs Illegal constructor errors
+              to /api/client-log (via sendBeacon) and attempts a limited cache-busting reload to recover.
+        */}
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{
-  // Defensive: some environments/proxies/extensions throw when calling native constructors (MessageChannel, CustomEvent).
-  // Provide safe fallbacks to avoid runtime "Illegal constructor" errors in downstream bundles.
-  try {
-    // Test MessageChannel usage; replace with a tiny polyfill if constructing it throws
-    try { new MessageChannel(); } catch (e) {
-      (function(){
-        function Port(){ this.onmessage = null; }
-        Port.prototype.postMessage = function(msg){ var self=this; setTimeout(function(){ try{ if (typeof self.onmessage === 'function') self.onmessage({ data: msg }); }catch(e){} }, 0); };
-        window.MessageChannel = function(){ return { port1: new Port(), port2: new Port() } };
-      })();
-    }
-  } catch(e) { /* ignore */ }
-  try {
-    // Test CustomEvent; provide old-style init-based polyfill if constructing fails
-    try { new CustomEvent('__zaco_test', { detail: {} }); } catch (e) {
-      (function(){
-        function CustomEventPoly(type, params){ params = params || { bubbles: false, cancelable: false, detail: null }; var ev = document.createEvent('CustomEvent'); ev.initCustomEvent(type, params.bubbles, params.cancelable, params.detail); return ev; }
-        CustomEventPoly.prototype = (window.Event || function(){}).prototype;
-        window.CustomEvent = CustomEventPoly;
-      })();
-    }
-  } catch(e) { /* ignore */ }
+  // -- defensive polyfills (MessageChannel, CustomEvent)
+  try { new MessageChannel(); } catch (e) { (function(){ function Port(){ this.onmessage=null } Port.prototype.postMessage=function(msg){ var self=this; setTimeout(function(){ try{ if(typeof self.onmessage==='function') self.onmessage({data:msg}) }catch(e){} },0) }; window.MessageChannel=function(){ return { port1:new Port(), port2:new Port() } } })(); }
+  try { new CustomEvent('__zaco_test',{detail:{}}) } catch(e) { (function(){ function CustomEventPoly(type, params){ params=params||{bubbles:false,cancelable:false,detail:null}; var ev=document.createEvent('CustomEvent'); ev.initCustomEvent(type, params.bubbles, params.cancelable, params.detail); return ev } CustomEventPoly.prototype=(window.Event||function(){}).prototype; window.CustomEvent=CustomEventPoly })(); }
 
-  var now = Date.now();
-  var prev=null; try{prev=localStorage.getItem('app_version')}catch(e){}
-  // version check
-  fetch('/api/version?_t='+now,{cache:'no-store',credentials:'same-origin'}).then(function(r){return r.text()}).then(function(t){try{var v=JSON.parse(t);var s=(v.version||'')+'@'+(v.commit||'');if(prev!==s){try{localStorage.setItem('app_version',s)}catch(e){}var u=new URL(window.location.href);u.searchParams.set('_t',Date.now());window.location.replace(u.toString())}}catch(e){/* ignore non-json */}}).catch(function(){})
-  // probe a tiny static JS file to ensure assets are being served as JS and not returning HTML or an error page
-  fetch('/asset-check.js?_t='+now,{cache:'no-store',credentials:'same-origin'}).then(function(r){
-    var ct = (r.headers && r.headers.get && r.headers.get('content-type')) || '';
-    if (/text\/html/i.test(ct)) throw new Error('asset returned html');
-    return r.text()
-  }).then(function(body){
-    if (!body || body.trim().charAt(0)==='<') throw new Error('asset looks like HTML');
-    // probe ok
-  }).catch(function(){
-    // If probe failed, attempt immediate cache-busting replace to pick up correct assets
-    try{var u2=new URL(window.location.href);u2.searchParams.set('_t',Date.now());window.location.replace(u2.toString());}catch(e){}
-  })
+  // -- small helper: report to server without blocking
+  function reportClientError(payload){ try{ var b = null; if(navigator && navigator.sendBeacon){ try{ b = navigator.sendBeacon('/api/client-log', JSON.stringify(payload)) }catch(e){} } if(!b){ try{ fetch('/api/client-log', { method:'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(payload), keepalive: true }).catch(()=>{}) }catch(e){} } } catch(e){}
+  }
+
+  // -- emergency handlers: intercept errors that would crash the app
+  (function(){
+    var reloadKey = 'app_error_reload_count'
+    var maxReloads = 3
+    function attemptRecovery(ev, reason){ try{
+      var msg = (ev && (ev.error && ev.error.message)) || (ev && ev.message) || (reason && reason.message) || String(reason || '');
+      var filename = ev && ev.filename || (reason && reason.filename) || null;
+      var important = false;
+      if(msg && msg.indexOf('Illegal constructor') !== -1) important = true;
+      if(filename && filename.indexOf('cc759f7c2413b7ff.js') !== -1) important = true;
+      if(!important) return; // only handle the problematic case
+
+      try{ ev.preventDefault && ev.preventDefault(); ev.stopImmediatePropagation && ev.stopImmediatePropagation(); }catch(e){}
+
+      // send a small log to the server (non-blocking)
+      try{ reportClientError({ message: msg, filename: filename, href: location.href, ua: navigator.userAgent, stack: ev && ev.error && ev.error.stack || (reason && reason.stack) || null }) }catch(e){}
+
+      // limit reload loops
+      try{
+        var count = parseInt(localStorage.getItem(reloadKey) || '0', 10) || 0;
+        if(count < maxReloads){ localStorage.setItem(reloadKey, String(count+1)); var u=new URL(window.location.href); u.searchParams.set('_t', Date.now()); setTimeout(function(){ try{ window.location.replace(u.toString()) }catch(e){ try{ window.location.reload() }catch(e){} } }, 800);
+        }else{
+          // exceeded retries: avoid infinite loop
+          console.warn('app: exceeded error reload attempts');
+        }
+      }catch(e){}
+    }catch(e){}
+  })();
+
+  window.addEventListener('error', function(ev){ try{ attemptRecovery(ev, null); }catch(e){} }, true);
+  window.addEventListener('unhandledrejection', function(ev){ try{ attemptRecovery(null, ev.reason); }catch(e){} }, true);
+
+  // -- standard version & asset probe (unchanged)
+  try{
+    var now = Date.now(); var prev=null; try{ prev = localStorage.getItem('app_version') }catch(e){}
+    fetch('/api/version?_t='+now, { cache: 'no-store', credentials: 'same-origin' }).then(function(r){ return r.text() }).then(function(t){ try{ var v = JSON.parse(t); var s = (v.version||'')+'@'+(v.commit||''); if(prev !== s){ try{ localStorage.setItem('app_version', s) }catch(e){} var u = new URL(window.location.href); u.searchParams.set('_t', Date.now()); window.location.replace(u.toString()); } }catch(e){} }).catch(function(){})
+    fetch('/asset-check.js?_t='+now, { cache: 'no-store', credentials: 'same-origin' }).then(function(r){ var ct = (r.headers && r.headers.get && r.headers.get('content-type')) || ''; if(/text\/html/i.test(ct)) throw new Error('asset returned html'); return r.text() }).then(function(body){ if(!body || body.trim().charAt(0)==='<') throw new Error('asset looks like HTML') }).catch(function(){ try{ var u2=new URL(window.location.href); u2.searchParams.set('_t', Date.now()); window.location.replace(u2.toString()); }catch(e){} })
+  }catch(e){}
+
 }catch(e){} })();` }} />
       </head>
       <body className={`${tajawal.className} antialiased`}>
