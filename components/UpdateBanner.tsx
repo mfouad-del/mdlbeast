@@ -7,11 +7,16 @@ export default function UpdateBanner() {
   })
 
   useEffect(() => {
-    const onUpdate = (e: any) => {
-      setPayload(e?.detail || (e && e.detail ? e.detail : null))
+    const onUpdate = () => {
+      try { const s = localStorage.getItem('app_update_available'); setPayload(s ? JSON.parse(s) : null) } catch (e) { setPayload(null) }
     }
     window.addEventListener('app-update-available', onUpdate)
-    return () => window.removeEventListener('app-update-available', onUpdate)
+    // also listen to storage events (other tabs may set localStorage)
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'app_update_available') onUpdate()
+    }
+    window.addEventListener('storage', onStorage)
+    return () => { window.removeEventListener('app-update-available', onUpdate); window.removeEventListener('storage', onStorage) }
   }, [])
 
   if (!payload) return null

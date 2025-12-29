@@ -30,7 +30,7 @@ export default function AppVersionWatcher() {
           try {
             const payload = v || { version: 'unknown' }
             try { localStorage.setItem('app_update_available', JSON.stringify(payload)) } catch (e) {}
-            try { window.dispatchEvent(new CustomEvent('app-update-available', { detail: payload })) } catch (e) {}
+            try { window.dispatchEvent(new Event('app-update-available')) } catch (e) {}
           } catch (e) { console.warn('AppVersionWatcher: broadcast failed', e) }
           // Optional: auto reload after short delay
           // setTimeout(() => window.location.reload(true), 5000)
