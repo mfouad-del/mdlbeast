@@ -697,7 +697,7 @@ router.post('/:barcode/attachments', async (req: AuthRequest, res: Response) => 
 })
 
 // Update document
-router.put("/:barcode", async (req: Request, res: Response) => {
+router.put("/:barcode", authenticateToken, async (req: Request, res: Response) => {
   try {
     const { barcode } = req.params
     const { type, sender, receiver, date, subject, priority, status, classification, notes, statement, attachments: incomingAttachments } = req.body
@@ -765,7 +765,7 @@ router.put("/:barcode", async (req: Request, res: Response) => {
 })
 
 // Delete document
-router.delete("/:barcode", async (req: Request, res: Response) => {
+router.delete("/:barcode", authenticateToken, async (req: Request, res: Response) => {
   try {
     const { barcode } = req.params
     const existing = await query("SELECT * FROM documents WHERE lower(barcode) = lower($1) LIMIT 1", [barcode])

@@ -27,6 +27,9 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
   const [statementOpenDoc, setStatementOpenDoc] = useState<Correspondence | null>(null)
   const [statementText, setStatementText] = useState<string>('')
   const [statementLoading, setStatementLoading] = useState(false)
+  const [editingDoc, setEditingDoc] = useState<Correspondence | null>(null)
+  const [editFormData, setEditFormData] = useState<any>({})
+  const [editPending, setEditPending] = useState(false)
 
   const addAttachmentInputRef = useRef<HTMLInputElement | null>(null)
   const [localDocs, setLocalDocs] = useState(docs)
@@ -264,20 +267,19 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
                         </button>
 
                         {currentUser && String(currentUser.role || '').toLowerCase() === 'admin' && (
-                          <button onClick={async () => {
-                            try {
-                              const choice = prompt('تغيير نوع القيد إلى (INCOMING أو OUTGOING) — أدخل INCOMING أو OUTGOING');
-                              if (!choice) return;
-                              const normalized = String(choice).toUpperCase().trim();
-                              if (!['INCOMING','OUTGOING'].includes(normalized)) { alert('قيمة غير صالحة'); return }
-                              const newStatus = normalized === 'INCOMING' ? 'وارد' : 'صادر'
-                              await (await import('@/lib/api-client')).apiClient.updateDocument(doc.barcode || doc.barcodeId, { type: normalized, status: newStatus })
-                              const updated = await (await import('@/lib/api-client')).apiClient.getDocumentByBarcode(doc.barcode || doc.barcodeId)
-                              if (updated) setLocalDocs((prev:any[]) => prev.map((d:any) => ((d.barcode === doc.barcode || d.barcodeId === doc.barcodeId) ? updated : d)))
-                              alert('تم تعديل نوع القيد')
-                            } catch (e) { console.error('Failed to change type', e); alert('فشل تعديل نوع القيد') }
-                          }} className="h-9 px-3 flex items-center gap-2 rounded-md bg-yellow-500 text-white border border-yellow-500 hover:bg-yellow-600 transition-all text-[11px] font-black">
-                            تعديل نوع
+                          <button onClick={() => {
+                            setEditingDoc(doc)
+                            setEditFormData({
+                              sender: doc.sender || '',
+                              receiver: doc.receiver || '',
+                              subject: doc.subject || doc.title || '',
+                              date: (doc.documentDate || doc.date || '').split('T')[0],
+                              priority: doc.priority || 'عاديه',
+                              notes: doc.notes || '',
+                              classification: doc.security || 'عادي',
+                            })
+                          }} className="h-9 px-3 flex items-center gap-2 rounded-md bg-blue-600 text-white border border-blue-600 hover:bg-blue-700 transition-all text-[11px] font-black">
+                            تعديل القيد
                           </button>
                         )}
 
@@ -338,6 +340,160 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
         </div>
       </div>
       <StatementModal open={Boolean(statementOpenDoc)} onClose={() => { setStatementOpenDoc(null); setStatementText('') }} statement={statementText} />
+      
+      {/* Edit Record Modal */}
+      {editingDoc && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-[2.5rem] shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-300">
+            <div className="p-8 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white">
+              <div>
+                <h2 className="text-2xl font-black text-slate-900">تعديل القيد</h2>
+                <p className="text-sm text-slate-500 mt-1">الباركود: {editingDoc.barcode || editingDoc.barcodeId}</p>
+              </div>
+              <button 
+                onClick={() => setEditingDoc(null)} 
+                className="text-slate-400 hover:text-slate-700 transition-colors p-2"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form 
+              onSubmit={async (e) => {
+                e.preventDefault()
+                if (!editingDoc) return
+                try {
+                  setEditPending(true)
+                  const payload = {
+                    sender: editFormData.sender,
+                    receiver: editFormData.receiver,
+                    subject: editFormData.subject,
+                    date: editFormData.date,
+                    priority: editFormData.priority,
+                    notes: editFormData.notes,
+                    classification: editFormData.classification,
+                  }
+                  await apiClient.updateDocument(editingDoc.barcode || editingDoc.barcodeId, payload)
+                  const updated = await apiClient.getDocumentByBarcode(editingDoc.barcode || editingDoc.barcodeId)
+                  if (updated) {
+                    setLocalDocs((prev:any[]) => prev.map((d:any) => ((d.barcode === editingDoc.barcode || d.barcodeId === editingDoc.barcodeId) ? updated : d)))
+                  }
+                  setEditingDoc(null)
+                  alert('تم حفظ التعديلات بنجاح')
+                } catch (err: any) {
+                  console.error('Failed to update document', err)
+                  alert('فشل حفظ التعديلات: ' + (err?.message || 'حدث خطأ'))
+                } finally {
+                  setEditPending(false)
+                }
+              }}
+              className="p-8 space-y-6"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-black text-slate-700 block">من (الجهة الأولى) *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editFormData.sender}
+                    onChange={(e) => setEditFormData({...editFormData, sender: e.target.value})}
+                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all font-bold"
+                    placeholder="اسم الجهة الأولى"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-black text-slate-700 block">إلى (الجهة الثانية) *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editFormData.receiver}
+                    onChange={(e) => setEditFormData({...editFormData, receiver: e.target.value})}
+                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all font-bold"
+                    placeholder="اسم الجهة الثانية"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-black text-slate-700 block">الموضوع/العنوان *</label>
+                <input
+                  type="text"
+                  required
+                  value={editFormData.subject}
+                  onChange={(e) => setEditFormData({...editFormData, subject: e.target.value})}
+                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all font-bold"
+                  placeholder="موضوع المعاملة"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-black text-slate-700 block">التاريخ *</label>
+                  <input
+                    type="date"
+                    required
+                    value={editFormData.date}
+                    onChange={(e) => setEditFormData({...editFormData, date: e.target.value})}
+                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all font-bold"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-black text-slate-700 block">الأولوية</label>
+                  <select
+                    value={editFormData.priority}
+                    onChange={(e) => setEditFormData({...editFormData, priority: e.target.value})}
+                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all font-bold cursor-pointer"
+                  >
+                    <option value="عاديه">عادي</option>
+                    <option value="عاجله">عاجل</option>
+                    <option value="عاجل">أولوية عالية</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-black text-slate-700 block">التصنيف</label>
+                <select
+                  value={editFormData.classification}
+                  onChange={(e) => setEditFormData({...editFormData, classification: e.target.value})}
+                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all font-bold cursor-pointer"
+                >
+                  <option value="عادي">عادي</option>
+                  <option value="سري">سري</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-black text-slate-700 block">ملاحظات</label>
+                <textarea
+                  value={editFormData.notes}
+                  onChange={(e) => setEditFormData({...editFormData, notes: e.target.value})}
+                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all font-bold min-h-[100px]"
+                  placeholder="ملاحظات إضافية"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="submit"
+                  disabled={editPending}
+                  className="flex-1 bg-blue-600 text-white py-4 rounded-xl font-black text-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-lg shadow-blue-600/20"
+                >
+                  {editPending ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingDoc(null)}
+                  disabled={editPending}
+                  className="flex-1 bg-slate-200 text-slate-700 py-4 rounded-xl font-black text-lg hover:bg-slate-300 disabled:opacity-60 transition-all"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
