@@ -27,6 +27,8 @@ class ApiClient {
     }
 
     this.token = token
+    // Reset any session-block that may have been set after an invalid token
+    this.sessionBlocked = false
     if (typeof window !== "undefined") {
       localStorage.setItem("auth_token", token)
     }
@@ -34,12 +36,16 @@ class ApiClient {
 
   clearToken() {
     this.token = null
+    // Prevent further authenticated requests until user signs in again
+    this.sessionBlocked = true
     if (typeof window !== "undefined") {
       localStorage.removeItem("auth_token")
     }
   }
 
   private sessionExpiredListeners: Array<() => void> = []
+  // When an invalid_token is detected, we set this flag to avoid repeatedly sending failing requests
+  private sessionBlocked = false
 
   onSessionExpired(cb: () => void) {
     this.sessionExpiredListeners.push(cb)
@@ -70,6 +76,12 @@ class ApiClient {
 
     if (this.token) {
       (headers as any)["Authorization"] = `Bearer ${this.token}`
+    }
+
+    // If we've already detected an invalid session, short-circuit and avoid hammering the API
+    if (this.sessionBlocked && !endpoint.startsWith('/auth')) {
+      console.warn('Blocked API request due to invalid session:', endpoint)
+      throw new Error('Session expired')
     }
 
     // For GET requests to documents/barcodes, ensure we bypass browser/CDN caches to reduce stale results for managers/supervisors
@@ -149,7 +161,7 @@ class ApiClient {
         throw new Error('Session expired')
       }
 
-      // If token is invalid (signature/malformed) clear it and notify listeners so UI can force login
+      // If token is invalid (signature/malformed) clear it, block future requests, and notify listeners so UI can force login
       if (response.status === 401 && (errorObj?.error === 'invalid_token' || errorObj?.error === 'invalid_or_expired_token')) {
         this.clearToken()
         this.emitSessionExpired()
