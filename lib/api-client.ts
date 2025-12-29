@@ -366,6 +366,15 @@ class ApiClient {
     return res.json()
   }
 
+  // ADMIN: system status and logs
+  async getAdminStatus() {
+    return this.request<any>(`/admin/status`, { method: 'GET', cache: 'no-store' })
+  }
+
+  async clearAdminLogs() {
+    return this.request<any>(`/admin/status/clear`, { method: 'POST' })
+  }
+
   // JSON backup/restore helpers
   async downloadJsonBackupBlob() {
     const headers: any = { 'Content-Type': 'application/json' }

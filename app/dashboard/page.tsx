@@ -369,7 +369,7 @@ export default function DashboardPage() {
           {activeTab === "list" && <DocumentList docs={selectedTenantId ? docs.filter(d => Number(d.companyId) === selectedTenantId) : docs} settings={settings} currentUser={currentUser} users={users} />}
           {activeTab === "scanner" && <BarcodeScanner />}
           {activeTab === "reports" && <ReportGenerator docs={selectedTenantId ? docs.filter(d => Number(d.companyId) === Number(selectedTenantId)) : docs} settings={reportSettings} /> }
-          {activeTab === "users" && <UserManagement users={users} onUpdateUsers={async () => { const u = await apiClient.getUsers().catch(()=>[]); setUsers(u); }} currentUserEmail={currentUser?.username || ''} />}
+          {activeTab === "users" && <UserManagement users={users} onUpdateUsers={async () => { const u = await apiClient.getUsers().catch(()=>[]); setUsers(u); }} currentUserEmail={currentUser?.username || ''} currentUserRole={currentUser?.role || ''} />}
           {activeTab === "change-password" && <ChangePassword />}
           {activeTab === 'companies' && (
             <div className="space-y-8">

@@ -45,6 +45,15 @@ app.use(
   }),
 )
 app.use(morgan("dev"))
+
+// Capture logs into an in-memory buffer to show in admin UI
+import { logBuffer } from './lib/logBuffer'
+const origLog = console.log; const origWarn = console.warn; const origError = console.error; const origInfo = console.info
+console.log = (...args: any[]) => { try { logBuffer.push('log', args.map(a => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ')) } catch(e){}; origLog.apply(console, args) }
+console.warn = (...args: any[]) => { try { logBuffer.push('warn', args.map(a => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ')) } catch(e){}; origWarn.apply(console, args) }
+console.error = (...args: any[]) => { try { logBuffer.push('error', args.map(a => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ')) } catch(e){}; origError.apply(console, args) }
+console.info = (...args: any[]) => { try { logBuffer.push('info', args.map(a => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ')) } catch(e){}; origInfo.apply(console, args) }
+
 import cookieParser from 'cookie-parser'
 
 app.use(express.json())
@@ -728,6 +737,8 @@ app.get("/debug/backup-db", async (req, res) => {
 import backupsRouter from './routes/backups'
 // mount under /api to match client API_BASE_URL
 app.use('/api/admin/backups', backupsRouter)
+import adminStatusRouter from './routes/adminStatus'
+app.use('/api/admin/status', adminStatusRouter)
 
 // Debug: list available font files on server (protected)
 app.get('/debug/list-fonts', async (req, res) => {

@@ -15,7 +15,33 @@ export default function AdminBackups() {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [])
+  const [status, setStatus] = useState<any | null>(null)
+  const [logsLoading, setLogsLoading] = useState(false)
+
+  useEffect(() => { load(); loadStatus() }, [])
+
+  async function loadStatus() {
+    setLogsLoading(true)
+    try {
+      const s = await apiClient.getAdminStatus()
+      setStatus(s)
+    } catch (e) {
+      console.error('Failed to load status', e)
+      setStatus(null)
+    }
+    setLogsLoading(false)
+  }
+
+  const clearLogs = async () => {
+    if (!confirm('هل تريد مسح السجلات الأخيرة؟')) return
+    try {
+      await apiClient.clearAdminLogs()
+      await loadStatus()
+      alert('تم مسح السجلات')
+    } catch (e: any) {
+      alert('فشل مسح السجلات: ' + (e?.message || e))
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -77,39 +103,76 @@ export default function AdminBackups() {
               } catch (err) { alert('فشل استعادة الملف: ' + ((err as any)?.message || 'خطأ')) }
             }} style={{ display: 'none' }} />
           </label>
-        </div>
-        <div className="space-y-3">
-          {items.length === 0 && <div className="text-slate-400">لا توجد نسخ احتياطية</div>}
-          {items.map(i => (
-            <div key={i.key} className="p-3 border rounded flex items-center justify-between">
+
+          <div className="ml-auto p-4 rounded bg-slate-50 border border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className={`w-3 h-3 rounded-full ${status && status.healthy ? 'bg-emerald-500' : 'bg-amber-400'}`} />
               <div>
-                <div className="text-sm font-black">{i.key}</div>
-                <div className="text-xs text-slate-400">{i.lastModified ? new Date(i.lastModified).toLocaleString() : ''} • {i.size} bytes</div>
-              </div>
-              <div className="flex gap-2">
-                <button className="px-3 py-2 bg-blue-600 text-white rounded" onClick={async () => {
-                  try {
-                    const r = await apiClient.downloadBackupUrl(i.key)
-                    window.open(r.url || r.previewUrl || r.signedUrl, '_blank')
-                  } catch (e) { alert('Download failed') }
-                }}>تحميل</button>
-                <button className="px-3 py-2 bg-red-500 text-white rounded" onClick={async () => {
-                  if (!confirm('هل أنت متأكد أنك تريد حذف النسخة؟')) return
-                  await apiClient.deleteBackup(i.key)
-                  await load()
-                }}>حذف</button>
-                <button className="px-3 py-2 bg-amber-600 text-white rounded" onClick={async () => {
-                  if (!confirm('استعادة النسخة الشاملة ستستبدل قاعدة البيانات والملفات. هذا إجراء مدمر. موافق؟')) return
-                  if (!confirm('تأكيد نهائي: استعادة النسخة الآن؟')) return
-                  try {
-                    await apiClient.restoreBackup(i.key)
-                    alert('تمت الاستعادة بنجاح')
-                    await load()
-                  } catch (e) { alert('استعادة فشلت: ' + (e as any)?.message || 'خطأ') }
-                }}>استعادة كاملة</button>
+                <div className="text-xs font-black">حالة النظام</div>
+                <div className="text-[11px] text-slate-500">{status ? (status.healthy ? 'صحي وآمن' : 'ملاحظات مطلوبة') : (logsLoading ? 'جارٍ التحميل...' : 'غير متاح')}</div>
               </div>
             </div>
-          ))}
+            <div className="mt-2 text-xs text-slate-400">نسخة: {status?.version || '—'}</div>
+            <div className="mt-3 flex gap-2">
+              <button onClick={loadStatus} className="px-3 py-2 bg-white rounded shadow text-sm">تحديث</button>
+              <button onClick={clearLogs} className="px-3 py-2 bg-red-50 rounded shadow text-sm text-red-600">مسح السجلات</button>
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-6">
+          <div className="flex-1 space-y-3">
+            {items.length === 0 && <div className="text-slate-400">لا توجد نسخ احتياطية</div>}
+            {items.map(i => (
+              <div key={i.key} className="p-3 border rounded flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-black">{i.key}</div>
+                  <div className="text-xs text-slate-400">{i.lastModified ? new Date(i.lastModified).toLocaleString() : ''} • {i.size} bytes</div>
+                </div>
+                <div className="flex gap-2">
+                  <button className="px-3 py-2 bg-blue-600 text-white rounded" onClick={async () => {
+                    try {
+                      const r = await apiClient.downloadBackupUrl(i.key)
+                      window.open(r.url || r.previewUrl || r.signedUrl, '_blank')
+                    } catch (e) { alert('Download failed') }
+                  }}>تحميل</button>
+                  <button className="px-3 py-2 bg-red-500 text-white rounded" onClick={async () => {
+                    if (!confirm('هل أنت متأكد أنك تريد حذف النسخة؟')) return
+                    await apiClient.deleteBackup(i.key)
+                    await load()
+                  }}>حذف</button>
+                  <button className="px-3 py-2 bg-amber-600 text-white rounded" onClick={async () => {
+                    if (!confirm('استعادة النسخة الشاملة ستستبدل قاعدة البيانات والملفات. هذا إجراء مدمر. موافق؟')) return
+                    if (!confirm('تأكيد نهائي: استعادة النسخة الآن؟')) return
+                    try {
+                      await apiClient.restoreBackup(i.key)
+                      alert('تمت الاستعادة بنجاح')
+                      await load()
+                    } catch (e) { alert('استعادة فشلت: ' + (e as any)?.message || 'خطأ') }
+                  }}>استعادة كاملة</button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="w-96 p-4 rounded border bg-white shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-sm font-black">سجل النظام (آخر السجلات)</div>
+              <div className="text-xs text-slate-400">{status ? new Date(status.at).toLocaleString() : ''}</div>
+            </div>
+            <div className="h-64 overflow-auto bg-slate-50 p-3 rounded">
+              {status && status.logs && status.logs.length > 0 ? (
+                status.logs.map((l:any, idx:number) => (
+                  <div key={idx} className={`text-[12px] ${l.level === 'error' ? 'text-red-600' : l.level === 'warn' ? 'text-amber-700' : 'text-slate-700'}`}>
+                    <div className="text-[10px] text-slate-400">{new Date(l.ts).toLocaleString()}</div>
+                    <div className="font-mono break-words">{l.msg}</div>
+                    <hr className="my-1" />
+                  </div>
+                ))
+              ) : (
+                <div className="text-slate-400">لا توجد سجلات</div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

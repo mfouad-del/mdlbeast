@@ -7,6 +7,7 @@ interface UserManagementProps {
   users: User[];
   onUpdateUsers: (users: User[]) => void;
   currentUserEmail: string;
+  currentUserRole?: string;
 }
 
 const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, currentUserEmail }) => {
@@ -14,6 +15,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, c
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editUser, setEditUser] = useState<any>({});
+  const isAdmin = String(currentUserRole || '').toLowerCase() === 'admin'
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -45,7 +47,11 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, c
     if (!editingUserId) return;
     try {
       setIsSaving(true);
-      await apiClient.updateUser(editingUserId, { full_name: (editUser as any).name, role: (editUser as any).role as any, password: (editUser as any).password || undefined })
+      const payload: any = { full_name: (editUser as any).name, role: (editUser as any).role as any }
+      if ((editUser as any).password) payload.password = (editUser as any).password
+      // Include email if admin and provided
+      if (isAdmin && typeof (editUser as any).email === 'string') payload.email = (editUser as any).email
+      await apiClient.updateUser(editingUserId, payload)
       setMessage('تم تحديث المستخدم')
       onUpdateUsers(await apiClient.getUsers().catch(()=>[]))
       setEditingUserId(null);
@@ -117,14 +123,14 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, c
                 <Mail className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
                 <input
                   type="email"
-                  className={editingUserId ? 'w-full pr-12 p-4 rounded-2xl outline-none focus:bg-white focus:border-slate-900 font-bold bg-slate-100 cursor-not-allowed' : 'w-full pr-12 p-4 rounded-2xl outline-none focus:bg-white focus:border-slate-900 font-bold bg-slate-50'}
+                  className={editingUserId ? `w-full pr-12 p-4 rounded-2xl outline-none focus:bg-white focus:border-slate-900 font-bold ${isAdmin ? 'bg-slate-50' : 'bg-slate-100 cursor-not-allowed'}` : 'w-full pr-12 p-4 rounded-2xl outline-none focus:bg-white focus:border-slate-900 font-bold bg-slate-50'}
                   value={editingUserId ? (editUser.email || '') : newUser.email}
                   onChange={e => editingUserId ? setEditUser({...editUser, email: e.target.value}) : setNewUser({...newUser, email: e.target.value})}
                   required={!editingUserId}
-                  readOnly={!!editingUserId}
+                  readOnly={editingUserId ? !isAdmin : false}
                 />
-                {editingUserId && (
-                  <div className="text-[10px] text-slate-400 mt-2">لا يمكن تغيير البريد من هنا. لإعادة تعيين البريد تواصل مع المسؤول.</div>
+                {editingUserId && !isAdmin && (
+                  <div className="text-[10px] text-slate-400 mt-2">لا يمكن تغيير البريد من هنا. لإعادة تعيين البريد تواصل مع مدير النظام.</div>
                 )}
               </div>
            </div>

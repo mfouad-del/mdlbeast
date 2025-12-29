@@ -366,6 +366,8 @@ router.post('/:barcode/stamp', async (req, res) => {
     const page = pages[Math.max(0, Math.min(pageIndex, pages.length - 1))]
     const { width: pageWidth, height: pageHeight } = page.getSize()
 
+    const compactMode = !!req.body?.compact
+
     // compute image size in PDF units based on provided stampWidth (px) and container size
     let widthPdf: number
     let heightPdf: number
@@ -380,6 +382,12 @@ router.post('/:barcode/stamp', async (req, res) => {
       const scaled = pngImage.scale(0.6)
       widthPdf = scaled.width
       heightPdf = scaled.height
+    }
+
+    // compact mode squeezes the stamp to be more compact and precise
+    if (compactMode) {
+      widthPdf = Math.max(80, Math.min(widthPdf, 220))
+      heightPdf = Math.max(18, Math.min(heightPdf, 40))
     }
 
     // compute coordinates: x,y are in pixels from top-left of preview; convert to PDF coords
@@ -588,18 +596,41 @@ router.post('/:barcode/stamp', async (req, res) => {
     console.debug('Stamp: computed_text', { displayCompanyText, docTypeText, displayBarcodeLatin, displayEnglishDate })
     console.debug('Stamp: coords', { xPdf, yPdf, widthPdf, heightPdf, companyX, companyY, typeX, typeY, barcodeX, barcodeY, dateX, dateY })
 
-    if (displayCompanyText) {
-      page.drawText(displayCompanyText, { x: companyX, y: companyY, size: companySize, font: helvBold, color: rgb(0,0,0) })
-    }
-    if (docTypeText) {
-      page.drawText(docTypeText, { x: typeX, y: typeY, size: typeSize, font: helv, color: rgb(0,0,0) })
-    }
+    if (compactMode) {
+      // Compact stamp: small border, minimal text (date and small barcode text if space)
+      const borderPad = 4
+      const borderX = Math.max(4, xPdf - borderPad)
+      const borderY = Math.max(4, yPdf - borderPad)
+      const borderW = Math.min(pageWidth - 8, widthPdf + borderPad * 2)
+      const borderH = Math.min(pageHeight - 8, heightPdf + borderPad * 2)
+      page.drawRectangle({ x: borderX, y: borderY, width: borderW, height: borderH, borderWidth: 0.6, color: rgb(0.95, 0.95, 0.95), borderColor: rgb(0.2,0.2,0.2) })
 
-    // barcode identifier centered below (or near) the barcode image
-    page.drawText(displayBarcodeLatin, { x: barcodeX, y: barcodeY, size: barcodeSize2, font: helv, color: rgb(0,0,0) })
+      // Small date at the bottom-right of the stamp box
+      const smallDateSize = 7
+      const dateText = displayEnglishDate || new Date().toISOString().split('T')[0]
+      const dateW = helv.widthOfTextAtSize(dateText, smallDateSize)
+      page.drawText(dateText, { x: borderX + borderW - dateW - 4, y: borderY + 4, size: smallDateSize, font: helv, color: rgb(0,0,0) })
 
-    // Draw English Gregorian date centered near the barcode for readability (include attachment count when present)
-    page.drawText(displayEnglishDateWithAttachments, { x: dateX, y: dateY, size: dateSize2, font: helv, color: rgb(0,0,0) })
+      // small barcode (if it fits)
+      const smallBarcodeSize = 7
+      const smallBarcodeW = helv.widthOfTextAtSize(displayBarcodeLatin, smallBarcodeSize)
+      if (smallBarcodeW + 8 < borderW) {
+        page.drawText(displayBarcodeLatin, { x: borderX + 4, y: borderY + 4, size: smallBarcodeSize, font: helv, color: rgb(0,0,0) })
+      }
+    } else {
+      if (displayCompanyText) {
+        page.drawText(displayCompanyText, { x: companyX, y: companyY, size: companySize, font: helvBold, color: rgb(0,0,0) })
+      }
+      if (docTypeText) {
+        page.drawText(docTypeText, { x: typeX, y: typeY, size: typeSize, font: helv, color: rgb(0,0,0) })
+      }
+
+      // barcode identifier centered below (or near) the barcode image
+      page.drawText(displayBarcodeLatin, { x: barcodeX, y: barcodeY, size: barcodeSize2, font: helv, color: rgb(0,0,0) })
+
+      // Draw English Gregorian date centered near the barcode for readability (include attachment count when present)
+      page.drawText(displayEnglishDateWithAttachments, { x: dateX, y: dateY, size: dateSize2, font: helv, color: rgb(0,0,0) })
+    }
 
     const outBytes = await pdfDoc.save()
     // normalize to Buffer for consistency when uploading/verifying

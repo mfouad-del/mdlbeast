@@ -18,6 +18,8 @@ export default function PdfStamper({ doc, onClose }: PdfStamperProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [stampWidth, setStampWidth] = useState<number>(160)
+  const [compact, setCompact] = useState<boolean>(false)
+  const [pageIndex, setPageIndex] = useState<number>(0)
   const containerRef = useRef<HTMLDivElement>(null)
 
   const barcodeUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${
@@ -62,6 +64,8 @@ export default function PdfStamper({ doc, onClose }: PdfStamperProps) {
         containerWidth: Math.round(containerWidth),
         containerHeight: Math.round(containerHeight),
         stampWidth: Math.round(stampWidth),
+        page: pageIndex,
+        compact: !!compact,
       }
 
       const api = (await import("@/lib/api-client")).apiClient
@@ -199,8 +203,32 @@ export default function PdfStamper({ doc, onClose }: PdfStamperProps) {
 
             <div className="flex items-center gap-6">
               <div className="flex flex-col">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">عدد المرفقات</span>
-                <span className="text-2xl font-black text-slate-900 tabular-nums">{doc.attachmentCount ?? 0}</span>
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">عدد صفحات المرفق</span>
+                <span className="text-2xl font-black text-slate-900 tabular-nums">{(doc.attachments && doc.attachments[0] && doc.attachments[0].pageCount) ? doc.attachments[0].pageCount : (doc.attachmentCount ?? 0)}</span>
+              </div>
+
+              <div className="flex flex-col">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-tight mr-1">صفحة</label>
+                <select value={pageIndex} onChange={(e) => setPageIndex(Number(e.target.value))} className="p-3 rounded-xl border bg-white text-sm font-black">
+                  {Array.from({length: Math.max(1, ((doc.attachments && doc.attachments[0] && doc.attachments[0].pageCount) ? doc.attachments[0].pageCount : (doc.attachmentCount ?? 1)))}, (_,i)=>i).map(i => (
+                    <option key={i} value={i}>صفحة {i+1}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-tight mr-1">دقة X</label>
+                <input type="number" value={Math.round(pos.x)} onChange={(e)=> setPos({...pos, x: Number(e.target.value)})} className="p-2 rounded-xl border w-20" />
+              </div>
+
+              <div className="flex flex-col">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-tight mr-1">دقة Y</label>
+                <input type="number" value={Math.round(pos.y)} onChange={(e)=> setPos({...pos, y: Number(e.target.value)})} className="p-2 rounded-xl border w-20" />
+              </div>
+
+              <div className="flex items-center gap-3">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-tight mr-1">وضع ختام مدمج</label>
+                <input type="checkbox" checked={compact} onChange={(e)=> setCompact(e.target.checked)} />
               </div>
             </div>
 

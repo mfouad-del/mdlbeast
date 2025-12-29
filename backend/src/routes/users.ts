@@ -51,16 +51,34 @@ router.post("/", isManager, async (req: AuthRequest, res: Response) => {
 router.put('/:id', isManager, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params
-    const { full_name, role, password } = req.body
+    const { full_name, role, password, email } = req.body
+
+    // Only admins may change email addresses
+    if (typeof email !== 'undefined' && req.user?.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required to change email' })
+    }
+
     const parts: string[] = []
     const values: any[] = []
     let idx = 1
     if (full_name) { parts.push(`full_name = $${idx++}`); values.push(full_name) }
     if (role) { parts.push(`role = $${idx++}`); values.push(role) }
+    if (typeof email !== 'undefined') {
+      // basic validation
+      if (typeof email !== 'string' || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+        return res.status(400).json({ error: 'invalid_email' })
+      }
+      // ensure uniqueness
+      const exists = await query('SELECT id FROM users WHERE (email = $1 OR username = $1) AND id != $2 LIMIT 1', [email, id])
+      if (exists.rows.length) return res.status(400).json({ error: 'email_in_use' })
+      parts.push(`email = $${idx++}`); values.push(email)
+      // keep username in sync if present
+      parts.push(`username = $${idx++}`); values.push(email)
+    }
     if (password) { const h = await import('bcrypt').then(b => b.hash(password, 10)); parts.push(`password = $${idx++}`); values.push(h) }
     if (!parts.length) return res.status(400).json({ error: 'No updates provided' })
     values.push(id)
-    const q = `UPDATE users SET ${parts.join(', ')} WHERE id = $${idx} RETURNING id, username, full_name, role, created_at`
+    const q = `UPDATE users SET ${parts.join(', ')} WHERE id = $${idx} RETURNING id, username, full_name, role, email, created_at`
     const r = await query(q, values)
     if (r.rows.length === 0) return res.status(404).json({ error: 'User not found' })
     res.json(r.rows[0])

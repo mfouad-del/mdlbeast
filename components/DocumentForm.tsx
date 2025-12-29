@@ -48,6 +48,7 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [file, setFile] = useState<any>(undefined)
   const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null)
+  const [filePageCount, setFilePageCount] = useState<number>(0)
   const [users, setUsers] = useState<any[]>([])
   const [formData, setFormData] = useState<any>({
     title: "",
@@ -68,12 +69,24 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
     setFormData((prev: any) => ({ ...prev, [name]: parsed }))
   }, [])
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
     if (selectedFile && selectedFile.type === "application/pdf") {
       setFile(selectedFile)
       const preview = URL.createObjectURL(selectedFile)
       setFilePreviewUrl(preview)
+
+      // compute page count using pdf-lib in client
+      try {
+        const { PDFDocument } = await import('pdf-lib')
+        const ab = await selectedFile.arrayBuffer()
+        const pdfDoc = await PDFDocument.load(ab)
+        const pc = pdfDoc.getPageCount()
+        setFilePageCount(pc)
+      } catch (err) {
+        console.warn('Failed to compute page count', err)
+        setFilePageCount(0)
+      }
     }
   }
 
@@ -257,7 +270,7 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
           </div>
 
           <div className="p-12 bg-slate-50 rounded-[2.5rem] border-2 border-dashed border-slate-200 text-center hover:bg-slate-100/50 transition-all">
-            <div className="mb-4 text-sm font-black text-slate-700">عدد المرفقات: <span className="font-extrabold">{file ? 1 : 0}</span></div>
+            <div className="mb-4 text-sm font-black text-slate-700">عدد صفحات المرفق: <span className="font-extrabold">{file ? filePageCount || 1 : 0}</span></div>
 
             {!file ? (
               <div className="flex flex-col items-center gap-4">
