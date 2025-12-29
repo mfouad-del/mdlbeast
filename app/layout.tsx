@@ -62,11 +62,15 @@ export default function RootLayout({
         {/* If MessageChannel constructor is broken (Illegal constructor), force React scheduler to fall back to setTimeout */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(() => {
+            __html: `(function() {
   if (typeof window === 'undefined') return;
-  try { new MessageChannel(); } catch (e) {
-    // MessageChannel is broken, remove it to force React to use setTimeout
+  try {
+    // Force React to use setTimeout by removing MessageChannel
+    // This fixes "Illegal constructor" errors in some environments
     delete window.MessageChannel;
+    console.log("MessageChannel disabled to prevent crashes.");
+  } catch (e) {
+    console.error("Failed to disable MessageChannel:", e);
   }
 })();`,
           }}
