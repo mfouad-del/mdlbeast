@@ -43,7 +43,7 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
         const barcode = e?.detail?.barcode
         if (!barcode) return
         const updated = await apiClient.getDocumentByBarcode(barcode).catch(() => null)
-        if (updated) setLocalDocs((prev:any[]) => prev.map((d:any) => ((d.barcode === barcode || d.barcodeId === barcode) ? updated : d)))
+        if (updated) setLocalDocs((prev:any[]) => prev.map((d:any) => (d.barcode === barcode ? updated : d)))
       } catch (err) { console.warn('document:stamped handler failed', err) }
     }
     window.addEventListener('document:stamped', handler)
@@ -60,7 +60,7 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
       // Fetch updated document and update local state (avoid full page reload)
       const updated = await apiClient.getDocumentByBarcode(targetBarcode)
       if (updated) {
-        setLocalDocs((prev:any[]) => prev.map((d:any) => ((d.barcode === targetBarcode || d.barcodeId === targetBarcode) ? updated : d)))
+        setLocalDocs((prev:any[]) => prev.map((d:any) => (d.barcode === targetBarcode ? updated : d)))
       }
     } catch (err: any) {
       console.error('Add attachment failed', err)
@@ -72,7 +72,7 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
 
   const filtered = (localDocs || []).filter((doc) => {
     const title = doc.title || doc.subject || ""
-    const barcode = doc.barcodeId || doc.barcode || ""
+    const barcode = doc.barcode || ""
     const matchesSearch =
       title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       barcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -188,7 +188,7 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
                   <tr key={doc.id} className="hover:bg-slate-50/80 transition-all group">
                     <td className="px-8 py-7 text-center">
                         <span className="font-mono text-[13px] font-black text-slate-900 bg-white border border-slate-300 px-4 py-2 rounded-xl shadow-sm tracking-wider whitespace-nowrap overflow-hidden text-ellipsis max-w-[220px] inline-block">
-                        {doc.barcodeId || doc.barcode}
+                        {doc.barcode}
                       </span>
                     </td>
                     <td className="px-8 py-7">
@@ -248,7 +248,7 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
                                 title={`فتح المرفق ${idx + 1}`}
                                 onClick={async () => {
                                   try {
-                                    const url = await apiClient.getPreviewUrl(doc.barcode || doc.barcodeId, idx)
+                                    const url = await apiClient.getPreviewUrl(doc.barcode, idx)
                                     if (!url) { alert('لا يوجد ملف لعرضه'); return }
                                     window.open(url, '_blank')
                                   } catch (e) { console.error(e); alert('فشل فتح المرفق') }
@@ -286,14 +286,14 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
                         <button className="h-9 px-3 flex items-center gap-2 rounded-md bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-all text-[11px] font-black" onClick={() => {
                           const el = document.getElementById('addAttachmentInput') as HTMLInputElement | null
                           if (!el) return
-                          ;(el as any)._targetBarcode = doc.barcode || doc.barcodeId
+                          ;(el as any)._targetBarcode = doc.barcode
                           el.click()
                         }}>
                           إضافة مرفق
                         </button>
 
                         {currentUser?.role === 'admin' && (
-                        <button onClick={async () => { if (!confirm('حذف المستند؟')) return; await (await import('@/lib/api-client')).apiClient.deleteDocument(doc.barcode || doc.barcodeId); setLocalDocs((prev:any[]) => prev.filter((d:any) => d.barcode !== doc.barcode && d.barcodeId !== doc.barcodeId)) }} className="h-9 px-3 flex items-center gap-2 rounded-md bg-white text-red-500 border border-red-100 hover:bg-red-50 transition-all text-[11px] font-black">
+                        <button onClick={async () => { if (!confirm('حذف المستند؟')) return; await (await import('@/lib/api-client')).apiClient.deleteDocument(doc.barcode); setLocalDocs((prev:any[]) => prev.filter((d:any) => d.barcode !== doc.barcode)) }} className="h-9 px-3 flex items-center gap-2 rounded-md bg-white text-red-500 border border-red-100 hover:bg-red-50 transition-all text-[11px] font-black">
                           حذف
                         </button>
                         )}
@@ -302,7 +302,7 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
                         <button onClick={async () => {
                           try {
                             setStatementLoading(true)
-                            const res = await apiClient.getStatement(doc.barcode || doc.barcodeId)
+                            const res = await apiClient.getStatement(doc.barcode)
                             setStatementText(res?.statement || '')
                             setStatementOpenDoc(doc)
                           } catch (e:any) {
@@ -350,7 +350,7 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
             <div className="p-8 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white">
               <div>
                 <h2 className="text-2xl font-black text-slate-900">تعديل القيد</h2>
-                <p className="text-sm text-slate-500 mt-1">الباركود: {editingDoc.barcode || editingDoc.barcodeId}</p>
+                <p className="text-sm text-slate-500 mt-1">الباركود: {editingDoc.barcode}</p>
               </div>
               <button 
                 onClick={() => setEditingDoc(null)} 
@@ -375,10 +375,10 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
                     notes: editFormData.notes,
                     classification: editFormData.classification,
                   }
-                  await apiClient.updateDocument(editingDoc.barcode || editingDoc.barcodeId, payload)
-                  const updated = await apiClient.getDocumentByBarcode(editingDoc.barcode || editingDoc.barcodeId)
+                  await apiClient.updateDocument(editingDoc.barcode, payload)
+                  const updated = await apiClient.getDocumentByBarcode(editingDoc.barcode)
                   if (updated) {
-                    setLocalDocs((prev:any[]) => prev.map((d:any) => ((d.barcode === editingDoc.barcode || d.barcodeId === editingDoc.barcodeId) ? updated : d)))
+                    setLocalDocs((prev:any[]) => prev.map((d:any) => (d.barcode === editingDoc.barcode ? updated : d)))
                   }
                   setEditingDoc(null)
                   alert('تم حفظ التعديلات بنجاح')

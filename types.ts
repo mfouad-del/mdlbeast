@@ -34,7 +34,7 @@ export interface Company {
 export interface User {
   id: string | number
   username: string
-  full_name?: string
+  full_name: string
   email?: string
   role: 'admin' | 'manager' | 'supervisor' | 'member'
   created_at?: Date | string
@@ -78,6 +78,7 @@ export interface Correspondence {
   updated_at?: Date | string
   createdBy?: string
   notes?: string
+  description?: string
   statement?: string
   displayDate?: string // Server-provided formatted date
   pdfFile?: {

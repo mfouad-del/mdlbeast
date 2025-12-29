@@ -9,7 +9,7 @@ export const generateBusinessBarcode = (prefix: string): string => {
 export const exportToCSV = (documents: any[], filename: string) => {
   const headers = ["الباركود", "النوع", "المرسل", "المستقبل", "التاريخ", "الموضوع", "الأولوية", "الحالة"]
   const rows = documents.map((doc) => [
-    doc.barcode || doc.barcodeId,
+    doc.barcode,
     doc.type === "INCOMING" ? "وارد" : "صادر",
     doc.sender,
     doc.receiver || doc.recipient,

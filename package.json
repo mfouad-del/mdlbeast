@@ -11,7 +11,7 @@
     "build": "next build",
     "export": "next build",
     "dev": "next dev",
-    "lint": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
+    "lint": "next lint",
     "start": "next start",
     "build:backend": "npm ci --prefix backend && npm run build --prefix backend",
     "start:backend": "npm start --prefix backend"
@@ -97,6 +97,8 @@
     "yaml": "latest"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.3",
+    "@eslint/js": "^9.39.2",
     "@tailwindcss/postcss": "^4.1.18",
     "@types/node": "^22.14.0",
     "@types/qrcode": "^1.5.5",

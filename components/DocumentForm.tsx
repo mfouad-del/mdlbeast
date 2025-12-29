@@ -83,13 +83,6 @@ interface FormDataState {
   attachmentCount: number | string
 }
 
-interface User {
-  id: string | number
-  username?: string
-  name?: string
-  email?: string
-}
-
 export default function DocumentForm({ type, onSave, companies }: DocumentFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [file, setFile] = useState<File | undefined>(undefined)

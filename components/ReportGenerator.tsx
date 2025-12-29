@@ -17,7 +17,8 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
   const [scope, setScope] = useState<'ALL'|'INCOMING'|'OUTGOING'>('ALL')
 
   const filteredDocs = docs.filter(doc => {
-    const inRange = doc.date >= startDate && doc.date <= endDate;
+    const docDate = doc.date || doc.documentDate || '';
+    const inRange = docDate >= startDate && docDate <= endDate;
     const inScope = scope === 'ALL' || (scope === 'INCOMING' && doc.type === DocType.INCOMING) || (scope === 'OUTGOING' && doc.type === DocType.OUTGOING);
     return inRange && inScope;
   });
@@ -42,11 +43,11 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
     const logoUrl = settings.logoUrl;
 
     const tableRows = filteredDocs.map(doc => {
-      const barcode = doc.barcode || doc.barcodeId || (doc.referenceNumber || '')
+      const barcode = doc.barcode || (doc.referenceNumber || '')
       const title = doc.subject || doc.title || doc.description || '—'
       const typeStr = (doc.type === DocType.INCOMING || String(doc.status) === 'وارد' || String(barcode).toUpperCase().startsWith('IN')) ? 'وارد' : 'صادر'
-      const sender = doc.sender || doc.from || doc.createdBy || doc.user_id || '—'
-      const receiver = doc.receiver || doc.recipient || doc.to || '—'
+      const sender = doc.sender || doc.createdBy || String(doc.user_id || '') || '—'
+      const receiver = doc.receiver || doc.recipient || '—'
       const dateStr = doc.date || doc.documentDate || (doc.created_at ? new Date(doc.created_at).toISOString().split('T')[0] : '—')
       return `
         <tr>

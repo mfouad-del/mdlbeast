@@ -14,13 +14,13 @@ export default function OfficialReceipt({ doc, settings }: OfficialReceiptProps)
     if (!p) return
 
     const barcodeUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${
-      doc.barcodeId || doc.barcode
+      doc.barcode
     }&scale=8&rotate=N&includetext=false`
 
     p.document.write(`
       <html>
         <head>
-          <title>مستند رسمي - ${doc.barcodeId || doc.barcode}</title>
+          <title>مستند رسمي - ${doc.barcode}</title>
           <style>
             @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap');
             @page { size: A4; margin: 0; }
@@ -144,13 +144,13 @@ export default function OfficialReceipt({ doc, settings }: OfficialReceiptProps)
                   </td>
                   <td width="30%" class="barcode-cell">
                     <img src="${barcodeUrl}">
-                    <span class="barcode-id">${doc.barcodeId || doc.barcode}</span>
+                    <span class="barcode-id">${doc.barcode}</span>
                   </td>
                 </tr>
               </table>
 
               <div class="metadata-strip">
-                <div>رقم المرجع: ${doc.barcodeId || doc.barcode}</div>
+                <div>رقم المرجع: ${doc.barcode}</div>
                 <div>تاريخ القيد: ${doc.dateHijri || doc.date} (${doc.dateGregorian || doc.date})</div>
                 <div>نوع المعاملة: ${doc.type === "INCOMING" ? "وارد" : "صادر"}</div>
               </div>

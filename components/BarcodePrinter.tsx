@@ -21,7 +21,7 @@ export default function BarcodePrinter({ doc, settings }: BarcodePrinterProps) {
     const barcodeImg = new Image()
     barcodeImg.crossOrigin = "anonymous"
     barcodeImg.src = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${
-      doc.barcodeId || doc.barcode
+      doc.barcode
     }&scale=6&rotate=N&includetext=false`
 
     barcodeImg.onload = () => {
@@ -34,14 +34,14 @@ export default function BarcodePrinter({ doc, settings }: BarcodePrinterProps) {
       ctx.drawImage(barcodeImg, 150, 110, 700, 220)
 
       ctx.font = "bold 52px Monospace"
-      ctx.fillText(doc.barcodeId || doc.barcode, 500, 390)
+      ctx.fillText(doc.barcode, 500, 390)
 
       ctx.font = "bold 26px Arial"
       ctx.fillStyle = "#666666"
       ctx.fillText(`${doc.date} | ${doc.type === "INCOMING" ? "وارد" : "صادر"}`, 500, 450)
 
       const link = document.createElement("a")
-      link.download = `STICKER-${doc.barcodeId || doc.barcode}.png`
+      link.download = `STICKER-${doc.barcode}.png`
       link.href = canvas.toDataURL("image/png")
       link.click()
     }
@@ -51,7 +51,7 @@ export default function BarcodePrinter({ doc, settings }: BarcodePrinterProps) {
     const p = window.open("", "_blank")
     if (!p) return
     const barcode = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${
-      doc.barcodeId || doc.barcode
+      doc.barcode
     }&scale=4&rotate=N&includetext=false`
 
     p.document.write(`
@@ -75,7 +75,7 @@ export default function BarcodePrinter({ doc, settings }: BarcodePrinterProps) {
           <div class="label-box">
             <div class="title">${settings?.orgName || "ZAWAYA ALBINA ENGINEERING"}</div>
             <img class="barcode-img" src="${barcode}">
-            <span class="id-text">${doc.barcodeId || doc.barcode}</span>
+            <span class="id-text">${doc.barcode}</span>
             <div class="footer-text">${doc.date} | ${doc.type === "INCOMING" ? "وارد" : "صادر"}</div>
           </div>
           <script>window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 600); }</script>

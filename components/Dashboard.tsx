@@ -153,7 +153,7 @@ export default function Dashboard({ docs }: DashboardProps) {
                   <div className="text-[10px] font-bold text-slate-400">{doc.sender}</div>
                 </div>
               </div>
-              <div className="text-xs font-mono font-bold text-slate-400 whitespace-nowrap max-w-[140px] overflow-hidden text-ellipsis">{doc.barcodeId || doc.barcode}</div>
+              <div className="text-xs font-mono font-bold text-slate-400 whitespace-nowrap max-w-[140px] overflow-hidden text-ellipsis">{doc.barcode}</div>
             </div>
           ))}
           {docs.length === 0 && (

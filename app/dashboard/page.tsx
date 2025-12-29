@@ -106,11 +106,11 @@ export default function DashboardPage() {
           return {
             ...doc,
             id: doc.id,
-            barcode: doc.barcode || doc.barcodeId || '' ,
-            barcodeId: doc.barcode || doc.barcodeId || '' ,
+            barcode: doc.barcode || '' ,
+            
             title: doc.subject || doc.title || '',
             subject: doc.subject || doc.title || '',
-            sender: doc.sender || doc.from || '',
+            sender: doc.sender  || '',
             receiver: doc.receiver || doc.recipient || '',
             recipient: doc.receiver || doc.recipient || '',
             // Prefer server-supplied displayDate (merges date with created_at time when necessary) and show localized date+time
@@ -179,11 +179,11 @@ export default function DashboardPage() {
           return {
             ...doc,
             id: doc.id,
-            barcode: doc.barcode || doc.barcodeId || '' ,
-            barcodeId: doc.barcode || doc.barcodeId || '' ,
+            barcode: doc.barcode || '' ,
+            
             title: doc.subject || doc.title || '',
             subject: doc.subject || doc.title || '',
-            sender: doc.sender || doc.from || '',
+            sender: doc.sender  || '',
             receiver: doc.receiver || doc.recipient || '',
             recipient: doc.receiver || doc.recipient || '',
             // Prefer server-supplied displayDate (merges date with created_at time when necessary) and show localized date+time
@@ -224,7 +224,6 @@ export default function DashboardPage() {
 
       const mappedDoc = {
         ...savedDoc,
-        barcodeId: savedDoc.barcode,
         title: savedDoc.subject,
         recipient: savedDoc.receiver,
         documentDate: savedDoc.date,
@@ -331,11 +330,11 @@ export default function DashboardPage() {
           </button>
           <div className="p-4 bg-slate-900 rounded-[1.5rem] flex items-center gap-3 text-white shadow-2xl">
             <div className="w-9 h-9 rounded-xl bg-slate-700 flex items-center justify-center font-black text-sm">
-              {(currentUser.full_name || currentUser.name || "U").substring(0, 1)}
+              {(currentUser.full_name || "U").substring(0, 1)}
             </div>
             <div className="overflow-hidden">
               <div className="text-[11px] font-black truncate leading-tight">
-                {currentUser.full_name || currentUser.name}
+                {currentUser.full_name}
               </div>
               <div className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
                 {String(currentUser.role || '').toLowerCase() === 'admin' ? "مدير نظام" : "محرر"}

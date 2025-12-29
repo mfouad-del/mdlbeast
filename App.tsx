@@ -50,8 +50,7 @@ const App: React.FC = () => {
       const fetchedDocs = await apiClient.getDocuments().catch((e) => { console.warn('Documents fetch failed', e); return [] as any[] })
       const normalized = (fetchedDocs || []).map((d: any) => ({
         id: d.id,
-        barcode: d.barcode || d.barcode_id || d.barcodeId || '',
-        barcodeId: d.barcode || d.barcode_id || d.barcodeId || '',
+        barcode: d.barcode || d.barcode_id || '',
         companyId: d.tenant_id || d.companyId || null,
         type: (String(d.type || '').toLowerCase().startsWith('in') || String(d.type) === 'وارد') ? DocType.INCOMING : DocType.OUTGOING,
         title: d.subject || d.title || '',
@@ -147,21 +146,22 @@ const App: React.FC = () => {
 
   const currentCompany = companies.find(c => c.id === selectedCompanyId) || companies[0];
 
-  const handleSaveDoc = async (data: Partial<Correspondence>) => {
+  const handleSaveDoc = async (data: any) => {
     // Do not set barcode client-side; backend will generate numeric sequence.
     const docToSave = {
       ...data,
       type: data.type,
       sender: data.sender,
       receiver: data.recipient || data.receiver,
-      date: new Date().toISOString().split('T')[0],
+      date: data.date || data.documentDate || new Date().toISOString(),
       subject: data.title || data.subject,
       priority: data.priority || 'عادي',
       status: data.status || (data.type === DocType.INCOMING ? 'وارد' : 'صادر'),
+      attachments: data.pdfFile ? [data.pdfFile] : [],
     };
 
     try {
-      const savedDoc = await apiClient.createDocument(docToSave as any);
+      const savedDoc = await apiClient.createDocument(docToSave);
       setDocs(prev => [savedDoc, ...prev]);
       setActiveTab('list');
     } catch (err: any) {
@@ -256,9 +256,9 @@ const App: React.FC = () => {
         <div className="p-6 border-t border-slate-100 bg-slate-50/30">
           <button onClick={() => { localStorage.removeItem('archivx_session_user'); setCurrentUser(null); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-black text-red-600 hover:bg-red-50 transition-all mb-4"><LogOut size={16} /> تسجيل الخروج</button>
           <div className="p-4 bg-slate-900 rounded-[1.5rem] flex items-center gap-3 text-white shadow-2xl">
-             <div className="w-9 h-9 rounded-xl bg-slate-700 flex items-center justify-center font-black text-sm">{currentUser.name?.substring(0, 1) || 'U'}</div>
+             <div className="w-9 h-9 rounded-xl bg-slate-700 flex items-center justify-center font-black text-sm">{currentUser.full_name?.substring(0, 1) || 'U'}</div>
              <div className="overflow-hidden">
-               <div className="text-[11px] font-black truncate leading-tight">{currentUser.name}</div>
+               <div className="text-[11px] font-black truncate leading-tight">{currentUser.full_name}</div>
                <div className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{currentUser.role === 'admin' ? 'مدير نظام' : currentUser.role === 'manager' ? 'مدير' : 'محرر'}</div>
              </div>
           </div>
@@ -277,7 +277,7 @@ const App: React.FC = () => {
           {activeTab === 'list' && <DocumentList docs={docs} settings={{...settings, orgName: currentCompany?.nameAr, logoUrl: currentCompany?.logoUrl, orgNameEn: currentCompany?.nameEn}} currentUser={currentUser} users={users} /> }
           {activeTab === 'scanner' && <BarcodeScanner />}
           {activeTab === 'reports' && <ReportGenerator docs={docs} settings={{orgName: currentCompany?.nameAr || '', logoUrl: currentCompany?.logoUrl || ''}} />}
-          {activeTab === 'users' && <UserManagement users={users} onUpdateUsers={async () => { loadInitialData(); }} currentUserEmail={currentUser.email} />}
+          {activeTab === 'users' && <UserManagement users={users} onUpdateUsers={async () => { loadInitialData(); }} currentUserEmail={currentUser.email || currentUser.username || ''} />}
           {activeTab === 'change-password' && <ChangePassword />}
           {activeTab === 'admin-status' && <AdminStatus />}
           

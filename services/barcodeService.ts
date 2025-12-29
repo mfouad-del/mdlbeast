@@ -24,7 +24,7 @@ export const generateUUIDv7 = (): string => {
     }
     try {
       // Node.js environment
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
+       
       const nodeCrypto = require('crypto');
       return Array.from(nodeCrypto.randomBytes(n)) as number[];
     } catch (e) {

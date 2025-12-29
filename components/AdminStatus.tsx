@@ -4,8 +4,10 @@ import { apiClient } from '@/lib/api-client'
 import { Spinner } from './ui/spinner'
 
 interface AdminStatusData {
-  message?: string
-  timestamp?: string
+  healthy?: boolean
+  version?: string
+  at?: string
+  logs?: Array<{ ts: string; level: string; message: string }>
   [key: string]: unknown
 }
 
@@ -60,7 +62,7 @@ export default function AdminStatus() {
       <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
         <div className="flex items-center justify-between mb-2">
           <div className="text-sm font-black">سجل النظام (آخر السجلات)</div>
-          <div className="text-xs text-slate-400">{status ? new Date(status.at).toLocaleString() : ''}</div>
+          <div className="text-xs text-slate-400">{status?.at ? new Date(status.at).toLocaleString() : ''}</div>
         </div>
         <div className="h-80 overflow-auto bg-slate-50 p-3 rounded">
           {loading && <div className="flex items-center justify-center"><Spinner/></div>}

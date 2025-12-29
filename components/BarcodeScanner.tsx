@@ -192,18 +192,18 @@ const BarcodeScanner: React.FC = () => {
                   <h3 className="text-xl font-black mt-2 text-slate-900">{foundDoc.title}</h3>
                 </div>
                 <div className="font-mono text-xs font-bold bg-slate-100 p-2 rounded border border-slate-200 whitespace-nowrap overflow-hidden text-ellipsis max-w-[220px]">
-                  {foundDoc.barcodeId}
+                  {foundDoc.barcode}
                 </div>
               </div>
 
               <div className="space-y-4">
                 <div className="flex justify-between p-3 bg-slate-50 rounded-xl">
                   <span className="text-slate-500 text-sm">من:</span>
-                  <span className="font-bold text-slate-800">{foundDoc.sender || foundDoc.from || '—'}</span>
+                  <span className="font-bold text-slate-800">{foundDoc.sender || '—'}</span>
                 </div>
                 <div className="flex justify-between p-3 bg-slate-50 rounded-xl">
                   <span className="text-slate-500 text-sm">إلى:</span>
-                  <span className="font-bold text-slate-800">{foundDoc.recipient || foundDoc.to || '—'}</span>
+                  <span className="font-bold text-slate-800">{foundDoc.recipient || '—'}</span>
                 </div>
                 <div className="flex justify-between p-3 bg-slate-50 rounded-xl">
                   <span className="text-slate-500 text-sm">تاريخ التسجيل:</span>
@@ -236,7 +236,7 @@ const BarcodeScanner: React.FC = () => {
                     if (!val) return;
                     try {
                       setStatusMessage('جاري إضافة المدخل...');
-                      await apiClient.addBarcodeTimeline(foundDoc.barcodeId || foundDoc.code || foundDoc.barcode, { action: val });
+                      await apiClient.addBarcodeTimeline(foundDoc.barcode || foundDoc.code, { action: val });
                       // optimistic: append locally and then refetch
                       setTimeline(prev => [{ created_at: new Date().toISOString(), message: val, action: val }, ...prev]);
                       el.value = '';
@@ -257,7 +257,7 @@ const BarcodeScanner: React.FC = () => {
               <div className="flex gap-3">
                 <AsyncButton className="w-full mt-6 bg-slate-900 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2" onClickAsync={async () => {
                   try {
-                    const previewUrl = await apiClient.getPreviewUrl(foundDoc.barcode || foundDoc.barcodeId)
+                    const previewUrl = await apiClient.getPreviewUrl(foundDoc.barcode)
                     if (!previewUrl) { alert('لم يتم العثور على ملف للمعاينة'); return }
                     window.open(previewUrl, '_blank')
                   } catch (e: any) {
@@ -272,7 +272,7 @@ const BarcodeScanner: React.FC = () => {
                   <button onClick={() => setEditing(true)} className="mt-6 bg-yellow-500 text-white py-4 rounded-xl font-bold flex items-center gap-2 px-4">تعديل القيد</button>
                 )}
 
-                <AsyncButton className="mt-6 bg-red-500 text-white py-4 rounded-xl font-bold flex items-center gap-2 px-4" onClickAsync={async () => { if (!confirm('حذف المستند؟')) return; await apiClient.deleteDocument(foundDoc.barcode || foundDoc.barcodeId); setFoundDoc(null); setTimeline([]); setStatusMessage('تم حذف المستند'); }}>
+                <AsyncButton className="mt-6 bg-red-500 text-white py-4 rounded-xl font-bold flex items-center gap-2 px-4" onClickAsync={async () => { if (!confirm('حذف المستند؟')) return; await apiClient.deleteDocument(foundDoc.barcode); setFoundDoc(null); setTimeline([]); setStatusMessage('تم حذف المستند'); }}>
                   حذف
                 </AsyncButton>
               </div>
@@ -290,8 +290,8 @@ const BarcodeScanner: React.FC = () => {
                     <button disabled={editPending} onClick={async () => {
                       try {
                         setEditPending(true)
-                        await apiClient.updateDocument(foundDoc.barcode || foundDoc.barcodeId, { type: foundDoc.type, sender: foundDoc.sender, receiver: foundDoc.recipient, status: foundDoc.status || (foundDoc.type === 'INCOMING' ? 'وارد' : 'صادر') })
-                        const updated = await apiClient.getBarcode(foundDoc.barcode || foundDoc.barcodeId)
+                        await apiClient.updateDocument(foundDoc.barcode, { type: foundDoc.type, sender: foundDoc.sender, receiver: foundDoc.recipient, status: foundDoc.status || (foundDoc.type === 'INCOMING' ? 'وارد' : 'صادر') })
+                        const updated = await apiClient.getBarcode(foundDoc.barcode)
                         setFoundDoc(updated || foundDoc)
                         setStatusMessage('تم حفظ التعديلات')
                         setEditing(false)

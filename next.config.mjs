@@ -3,6 +3,9 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
+  eslint: {
+    dirs: ['app', 'components', 'lib', 'hooks', 'services'],
+  },
   images: {
     remotePatterns: [
       {

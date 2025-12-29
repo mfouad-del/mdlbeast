@@ -26,7 +26,7 @@ export default function PdfStamper({ doc, onClose }: PdfStamperProps) {
 
 
   const barcodeUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${
-    doc.barcodeId || doc.barcode
+    doc.barcode
   }&scale=1.2&height=12&rotate=N&includetext=true&textsize=10`
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -72,7 +72,7 @@ export default function PdfStamper({ doc, onClose }: PdfStamperProps) {
       }
 
       const api = (await import("@/lib/api-client")).apiClient
-      const res = await api.stampDocument(doc.barcode || doc.barcodeId, payload)
+      const res = await api.stampDocument(doc.barcode, payload)
 
       // If server supplied a previewUrl (signed or cache-busted), open it immediately
       if (res && (res.previewUrl || res.url)) {
@@ -134,7 +134,7 @@ export default function PdfStamper({ doc, onClose }: PdfStamperProps) {
           >
             {doc.pdfFile ? (
               // Use signed preview URL from server (avoid opening raw storage URL which may be private)
-              <SignedPdfPreview barcode={doc.barcode || doc.barcodeId} fallbackUrl={doc.pdfFile.url} />
+              <SignedPdfPreview barcode={doc.barcode} fallbackUrl={doc.pdfFile.url} />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center text-slate-300 flex flex-col gap-4">
                 <FileSearch size={100} className="opacity-10" />
@@ -159,7 +159,7 @@ export default function PdfStamper({ doc, onClose }: PdfStamperProps) {
                 alt="barcode"
               />
               <div className="text-[11px] font-extrabold font-mono mt-2.5 text-slate-900 select-none tracking-tight uppercase">
-                {doc.barcodeId || doc.barcode}
+                {doc.barcode}
               </div>
 
               <div className="absolute -top-3 -left-3 w-8 h-8 bg-emerald-600 rounded-full border-4 border-white shadow-xl flex items-center justify-center text-white text-xs font-black">

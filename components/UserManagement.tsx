@@ -13,7 +13,7 @@ interface UserManagementProps {
 const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, currentUserEmail, currentUserRole }) => {
   const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'member' as 'member' | 'supervisor' | 'manager' | 'admin' });
   const [showAddForm, setShowAddForm] = useState(false);
-  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [editingUserId, setEditingUserId] = useState<string | number | null>(null);
   const [editUser, setEditUser] = useState<any>({});
   const isAdmin = String(currentUserRole || '').toLowerCase() === 'admin'
   const [isSaving, setIsSaving] = useState(false);
@@ -51,7 +51,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, c
       if ((editUser as any).password) payload.password = (editUser as any).password
       // Include email if admin and provided
       if (isAdmin && typeof (editUser as any).email === 'string') payload.email = (editUser as any).email
-      await apiClient.updateUser(editingUserId, payload)
+      await apiClient.updateUser(String(editingUserId), payload)
       setMessage('تم تحديث المستخدم')
       onUpdateUsers(await apiClient.getUsers().catch(()=>[]))
       setEditingUserId(null);
@@ -84,7 +84,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, c
 
   const startEditing = (user: User) => {
     setEditingUserId(user.id);
-    setEditUser({ name: user.full_name || user.name || user.username || '', email: user.email || user.username || '', password: '', role: user.role });
+    setEditUser({ name: user.full_name || user.username || '', email: user.email || user.username || '', password: '', role: user.role });
     setShowAddForm(false);
   };
 
@@ -178,9 +178,9 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, c
               <tr key={u.id} className="hover:bg-slate-50/50 transition-all group">
                 <td className="px-8 py-6">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-black uppercase">{(u.name || u.full_name || u.username || '').substring(0, 2)}</div>
+                    <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-black uppercase">{(u.full_name || u.username || '').substring(0, 2)}</div>
                     <div>
-                      <div className="font-black text-slate-900">{u.name || u.full_name || u.username || ''}</div>
+                      <div className="font-black text-slate-900">{u.full_name || u.username || ''}</div>
                       <div className="text-xs text-slate-400">{u.email}</div>
                     </div>
                   </div>
@@ -195,7 +195,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, c
                     <button onClick={() => startEditing(u)} className="p-3 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all" title="تعديل المستخدم">
                       <Edit3 size={18} />
                     </button>
-                    <button onClick={() => deleteUser(u.id, u.email)} className="p-3 text-red-400 hover:bg-red-50 rounded-xl transition-all" title="حذف المستخدم">
+                    <button onClick={() => deleteUser(String(u.id), u.email || u.username)} className="p-3 text-red-400 hover:bg-red-50 rounded-xl transition-all" title="حذف المستخدم">
                       <Trash2 size={18} />
                     </button>
                   </div>

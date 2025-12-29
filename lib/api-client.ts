@@ -46,7 +46,7 @@ class ApiClient {
         console.warn('[ApiClient] Stored token is stale (expired >1min ago), clearing')
         this.clearToken()
         // Emit event to trigger re-login if needed
-        try { this.emitSessionExpired() } catch (e) {}
+        try { this.emitSessionExpired() } catch { /* ignore */ }
       }
     } catch (err) {
       // If we can't parse/validate token, clear it to prevent loops
@@ -153,7 +153,7 @@ class ApiClient {
     // This runs in the background without blocking requests
     try {
       this.checkVersion().catch(() => {}) // Fire and forget
-    } catch (e) {}
+    } catch { /* ignore */ }
 
     // Simple public endpoint detection - extend if you add more public endpoints
     const publicPrefixes = ['/auth/', '/version', '/documents/']
@@ -197,7 +197,7 @@ class ApiClient {
       if (!this.refreshToken) {
         console.warn('[ApiClient] 401 received and no refresh token available')
         this.clearToken()
-        try { this.emitSessionExpired() } catch (e) {}
+        try { this.emitSessionExpired() } catch { /* ignore */ }
       } else {
         const refreshed = await this.refreshAccessToken()
         if (refreshed) {
@@ -226,7 +226,7 @@ class ApiClient {
           this.clearToken()
           try {
             this.emitSessionExpired()
-          } catch (e) {}
+          } catch { /* ignore */ }
         }
       }
     }
