@@ -601,26 +601,39 @@ router.post('/:barcode/stamp', async (req, res) => {
     console.debug('Stamp: coords', { xPdf, yPdf, widthPdf, heightPdf, companyX, companyY, typeX, typeY, barcodeX, barcodeY, dateX, dateY })
 
     if (compactMode) {
-      // Compact stamp: small border, minimal text (date and small barcode text if space)
+      // Compact stamp: centered vertical layout similar to preview
+      // Border around image (small padding)
       const borderPad = 4
       const borderX = Math.max(4, xPdf - borderPad)
       const borderY = Math.max(4, yPdf - borderPad)
       const borderW = Math.min(pageWidth - 8, widthPdf + borderPad * 2)
       const borderH = Math.min(pageHeight - 8, heightPdf + borderPad * 2)
-      page.drawRectangle({ x: borderX, y: borderY, width: borderW, height: borderH, borderWidth: 0.6, color: rgb(0.95, 0.95, 0.95), borderColor: rgb(0.2,0.2,0.2) })
+      page.drawRectangle({ x: borderX, y: borderY, width: borderW, height: borderH, borderWidth: 0.6, color: rgb(0.98, 0.98, 0.98), borderColor: rgb(0.2,0.2,0.2) })
 
-      // Small date at the bottom-right of the stamp box
-      const smallDateSize = 7
+      // Center X within stamp
+      const centerXStamp = borderX + borderW / 2
+
+      // Company above image
+      const compSizeCompact = 9
+      const compW = helvBold.widthOfTextAtSize(displayCompanyText, compSizeCompact)
+      const compX = centerXStamp - (compW / 2)
+      const compY = yPdf + heightPdf + gap + 2
+      if (displayCompanyText) page.drawText(displayCompanyText, { x: compX, y: compY, size: compSizeCompact, font: helvBold, color: rgb(0,0,0) })
+
+      // Barcode text centered below image (bigger than tiny)
+      const bcSizeCompact = 11
+      const bcW = helv.widthOfTextAtSize(displayBarcodeLatin, bcSizeCompact)
+      const bcX = centerXStamp - (bcW / 2)
+      const bcY = yPdf - bcSizeCompact - gap
+      page.drawText(displayBarcodeLatin, { x: bcX, y: bcY, size: bcSizeCompact, font: helv, color: rgb(0,0,0) })
+
+      // Date centered under barcode text (smaller)
+      const dateSizeCompact = 7
       const dateText = displayEnglishDate || new Date().toISOString().split('T')[0]
-      const dateW = helv.widthOfTextAtSize(dateText, smallDateSize)
-      page.drawText(dateText, { x: borderX + borderW - dateW - 4, y: borderY + 4, size: smallDateSize, font: helv, color: rgb(0,0,0) })
-
-      // small barcode (if it fits)
-      const smallBarcodeSize = 7
-      const smallBarcodeW = helv.widthOfTextAtSize(displayBarcodeLatin, smallBarcodeSize)
-      if (smallBarcodeW + 8 < borderW) {
-        page.drawText(displayBarcodeLatin, { x: borderX + 4, y: borderY + 4, size: smallBarcodeSize, font: helv, color: rgb(0,0,0) })
-      }
+      const dateW = helv.widthOfTextAtSize(dateText, dateSizeCompact)
+      const dateX = centerXStamp - (dateW / 2)
+      const dateY = bcY - dateSizeCompact - 2
+      page.drawText(dateText, { x: dateX, y: dateY, size: dateSizeCompact, font: helv, color: rgb(0,0,0) })
     } else {
       if (displayCompanyText) {
         page.drawText(displayCompanyText, { x: companyX, y: companyY, size: companySize, font: helvBold, color: rgb(0,0,0) })

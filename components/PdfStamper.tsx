@@ -147,29 +147,51 @@ export default function PdfStamper({ doc, onClose }: PdfStamperProps) {
             <div
               onMouseDown={handleMouseDown}
               style={{ left: pos.x, top: pos.y, width: stampWidth, maxWidth: 'calc(100% - 40px)' }}
-              className={`absolute p-4 bg-white border-2 ${
+              className={`absolute p-3 bg-white border-2 ${
                 isDragging
                   ? "border-blue-600 ring-4 ring-blue-500/10 scale-105 rotate-1 cursor-grabbing"
                   : "border-slate-300 shadow-2xl"
               } cursor-grab rounded-2xl flex flex-col items-center group z-50 transition-all duration-75`}
             >
-              <div className="w-10 h-1 bg-slate-100 rounded-full mb-3 opacity-50"></div>
-              <img
-                src={barcodeUrl || "/placeholder.svg"}
-                style={{ maxHeight: `${Math.round(stampWidth * 0.45)}px`, objectFit: 'contain' }}
-                className="w-full pointer-events-none select-none"
-                alt="barcode"
-              />
-              <div className="text-[11px] font-extrabold font-mono mt-2.5 text-slate-900 select-none tracking-tight uppercase">
-                {doc.barcodeId || doc.barcode}
-              </div>
+              <div className="w-8 h-1 bg-slate-100 rounded-full mb-2 opacity-50"></div>
 
-              <div className="absolute -top-3 -left-3 w-8 h-8 bg-emerald-600 rounded-full border-4 border-white shadow-xl flex items-center justify-center text-white text-xs font-black">
-                {doc.attachmentCount ?? 0}
-              </div>
+              {/* Compact vertical stamp: company name, barcode, barcode number, date/status */}
+              <div className="w-full flex flex-col items-center gap-3 px-2">
+                <div className="text-[11px] font-black text-slate-900 uppercase tracking-wider text-center select-none" style={{lineHeight: 1}}>
+                  {doc.from || doc.sender || 'زاوية البناء للاستشارات الهندسية'}
+                </div>
 
-              <div className="absolute -top-3 -right-3 w-7 h-7 bg-blue-600 rounded-full border-4 border-white shadow-xl flex items-center justify-center text-white">
-                <Scan size={12} />
+                <img
+                  src={barcodeUrl || "/placeholder.svg"}
+                  style={{ maxHeight: Math.min(140, Math.round(stampWidth * 0.65)), objectFit: 'contain' }}
+                  className="w-full h-auto pointer-events-none select-none"
+                  alt="barcode"
+                />
+
+                <div className="text-[18px] font-black font-mono text-slate-900 select-none tracking-tight uppercase">
+                  {doc.barcodeId || doc.barcode}
+                </div>
+
+                <div className="text-[10px] text-slate-500 mt-0 select-none">
+                  {(() => {
+                    try {
+                      const d = doc.date ? new Date(doc.date) : new Date()
+                      const fmt = d.toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
+                      const hijri = doc.dateHijri ? ` · ${doc.dateHijri}` : ''
+                      const st = doc.status ? ` · ${doc.status}` : ''
+                      return fmt + hijri + st
+                    } catch (e) { return '' }
+                  })()}
+                </div>
+
+                {/* small badges (reduced size) */}
+                <div className="absolute -top-2 -left-2 w-6 h-6 bg-emerald-600 rounded-full border-2 border-white shadow-xl flex items-center justify-center text-white text-[10px] font-black">
+                  {doc.attachmentCount ?? 0}
+                </div>
+
+                <div className="absolute -top-2 -right-2 w-6 h-6 bg-blue-600 rounded-full border-2 border-white shadow-xl flex items-center justify-center text-white">
+                  <Scan size={12} />
+                </div>
               </div>
             </div>
 

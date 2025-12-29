@@ -47,7 +47,10 @@ app.use(morgan("dev"))
 
 // Inject a small polyfill into HTML responses for /archive/* so MessageChannel/CustomEvent are defined
 import injectHtmlPolyfill from './middleware/injectHtmlPolyfill'
+import blockHtmlJsResponses from './middleware/blockHtmlJsResponses'
 app.use(injectHtmlPolyfill)
+// Prevent HTML pages being returned for .js requests (causes "Unexpected token '<'" etc.)
+app.use(blockHtmlJsResponses)
 
 // Capture logs into an in-memory buffer to show in admin UI
 import { logBuffer } from './lib/logBuffer'
