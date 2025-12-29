@@ -45,6 +45,7 @@ export const viewport = {
 
 import { LoadingProvider } from "../components/ui/loading-context"
 import SessionExpiredModal from '@/components/SessionExpiredModal'
+import ErrorBoundary from '@/components/ErrorBoundary'
 import Script from 'next/script'
 
 export default function RootLayout({
@@ -72,10 +73,12 @@ if (!maybe && r && typeof r === 'string') { var m2 = String(r).match(/([0-9a-f]{
 if (!maybe) return; var src = maybe; try{ fetch(src + (src.indexOf('?')>-1?'&_probe=':'?_probe=') + Date.now(), {cache:'no-store', credentials:'same-origin'}).then(function(r){ return r.text().then(function(t){ fetch('/api/admin/report-asset', {method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'}, body: JSON.stringify({ url: src, status: r.status, contentType: r.headers && r.headers.get && r.headers.get('content-type'), snippet: (t||'').slice(0,1024) })}) }) }).catch(function(){}) }catch(e){} });` }} />
       </head>
       <body className={`${tajawal.className} antialiased`}>
-        <LoadingProvider>
-          {children}
-        </LoadingProvider>
-        <SessionExpiredModal />
+        <ErrorBoundary>
+          <LoadingProvider>
+            {children}
+          </LoadingProvider>
+          <SessionExpiredModal />
+        </ErrorBoundary>
         <script dangerouslySetInnerHTML={{__html: `if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'development') { console.log = function(){}; }`}} />
         <Analytics />
       </body>
