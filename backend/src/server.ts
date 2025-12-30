@@ -97,9 +97,6 @@ app.use('/api/documents', stampRoutes)
 import adminStatusRoutes from './routes/adminStatus'
 app.use('/api/admin', adminStatusRoutes)
 
-import auditRoutes from './routes/audit'
-app.use('/api/audit', auditRoutes)
-
 
 
 // Serve a small wp-emoji loader stub to avoid JS parse errors when clients request /wp-includes/js/wp-emoji-loader.min.js

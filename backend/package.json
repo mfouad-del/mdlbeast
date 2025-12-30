@@ -11,6 +11,7 @@
     "dev": "nodemon src/server.ts",
     "build": "tsc",
     "check:fonts": "node scripts/check-fonts.js",
+    "migrate:audit": "node scripts/apply_audit_migration.js",
     "start": "node dist/server.js",
     "test": "jest --config ./jest.config.cjs",
     "test:watch": "jest --config ./jest.config.cjs --watchAll"
