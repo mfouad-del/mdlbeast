@@ -214,7 +214,7 @@ export default function Dashboard({ docs }: DashboardProps) {
                 <div>
                   <div className="text-base font-black text-slate-900 mb-1 group-hover:text-blue-700 transition-colors">{doc.title || doc.subject}</div>
                   <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
-                    <span>{doc.sender}</span>
+                    <span>{doc.type === 'OUTGOING' ? doc.recipient : doc.sender}</span>
                     <span className="w-1 h-1 rounded-full bg-slate-300"></span>
                     <span dir="ltr">
                       {(() => {
