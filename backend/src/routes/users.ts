@@ -21,6 +21,16 @@ router.get("/", isManager, async (req: AuthRequest, res: Response) => {
     else if (hasEmail) select = "id, email AS username, full_name AS full_name, role, created_at"
     else if (hasName) select = "id, username AS username, name AS full_name, role, created_at"
 
+    // Always include username if it exists in the table, even if we aliased email to username above
+    // This fixes the issue where 'username' column is not returned when 'email' column exists
+    if (hasEmail) {
+       // If we have email, we might have aliased it to username. Let's make sure we get the real username column too if it exists.
+       const hasUsernameCol = (await query("SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'username' LIMIT 1")).rows.length > 0
+       if (hasUsernameCol) {
+         select += ", username"
+       }
+    }
+
     const result = await query(`SELECT ${select} FROM users ORDER BY created_at DESC`)
     res.json(result.rows)
   } catch (error) {
@@ -95,6 +105,13 @@ router.get("/me", async (req: AuthRequest, res: Response) => {
     if (hasEmail && hasName) select = "id, email AS username, name AS full_name, role, created_at"
     else if (hasEmail) select = "id, email AS username, full_name AS full_name, role, created_at"
     else if (hasName) select = "id, username AS username, name AS full_name, role, created_at"
+
+    if (hasEmail) {
+       const hasUsernameCol = (await query("SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'username' LIMIT 1")).rows.length > 0
+       if (hasUsernameCol) {
+         select += ", username"
+       }
+    }
 
     const result = await query(`SELECT ${select} FROM users WHERE id = $1`, [authReq.user?.id])
 
