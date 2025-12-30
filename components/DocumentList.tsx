@@ -31,6 +31,7 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
   const [editingDoc, setEditingDoc] = useState<Correspondence | null>(null)
   const [editFormData, setEditFormData] = useState<any>({})
   const [editPending, setEditPending] = useState(false)
+  const [uploadingAttachmentFor, setUploadingAttachmentFor] = useState<string | null>(null)
 
   const addAttachmentInputRef = useRef<HTMLInputElement | null>(null)
   const [localDocs, setLocalDocs] = useState(docs)
@@ -55,6 +56,8 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
     const file = e.target.files?.[0]
     const targetBarcode = (e.target as any)?._targetBarcode || ''
     if (!file || !targetBarcode) return
+    
+    setUploadingAttachmentFor(targetBarcode)
     try {
       const uploaded = await apiClient.uploadFile(file)
       await apiClient.addAttachment(targetBarcode, uploaded)
@@ -67,6 +70,7 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
       console.error('Add attachment failed', err)
       alert('فشل إضافة المرفق: ' + (err?.message || err))
     } finally {
+      setUploadingAttachmentFor(null)
       if (e.target) (e.target as any).value = ''
     }
   }
@@ -286,18 +290,24 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
                               <span className="text-[10px] text-slate-300 font-bold">—</span>
                             )}
                             
-                            <button 
-                              className="w-7 h-7 rounded-lg bg-white border border-dashed border-slate-300 text-slate-400 hover:border-blue-400 hover:text-blue-500 flex items-center justify-center transition-all"
-                              title="إضافة مرفق"
-                              onClick={() => {
-                                const el = document.getElementById('addAttachmentInput') as HTMLInputElement | null
-                                if (!el) return
-                                ;(el as any)._targetBarcode = doc.barcode
-                                el.click()
-                              }}
-                            >
-                              <span className="text-lg leading-none mb-0.5">+</span>
-                            </button>
+                            {uploadingAttachmentFor === doc.barcode ? (
+                              <div className="w-7 h-7 flex items-center justify-center">
+                                <Spinner size="sm" className="text-blue-600" />
+                              </div>
+                            ) : (
+                              <button 
+                                className="w-7 h-7 rounded-lg bg-white border border-dashed border-slate-300 text-slate-400 hover:border-blue-400 hover:text-blue-500 flex items-center justify-center transition-all"
+                                title="إضافة مرفق"
+                                onClick={() => {
+                                  const el = document.getElementById('addAttachmentInput') as HTMLInputElement | null
+                                  if (!el) return
+                                  ;(el as any)._targetBarcode = doc.barcode
+                                  el.click()
+                                }}
+                              >
+                                <span className="text-lg leading-none mb-0.5">+</span>
+                              </button>
+                            )}
                           </div>
                           
                           {doc.statement && (
