@@ -1,5 +1,6 @@
 import express from 'express'
 import { allowDebugAccess } from '../config/validateEnv'
+import { authenticateToken } from '../middleware/auth'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
@@ -8,6 +9,9 @@ import { uploadBuffer, getSignedDownloadUrl, downloadToBuffer, deleteObject } fr
 import { query } from '../config/database'
 
 const router = express.Router()
+
+// Apply authentication middleware to all backup routes
+router.use(authenticateToken)
 
 // Require admin-level debug access for all backups endpoints
 async function requireAdmin(req: any, res: any) {

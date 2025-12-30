@@ -12,6 +12,25 @@ import tenantRoutes from "./routes/tenants"
 import snapshotRoutes from "./routes/snapshots"
 import { errorHandler } from "./middleware/errorHandler"
 import { query } from "./config/database"
+import { logBuffer } from "./lib/logBuffer"
+
+// Intercept console logs to populate admin status logs
+const originalLog = console.log
+const originalError = console.error
+const originalWarn = console.warn
+
+console.log = (...args: any[]) => {
+  try { logBuffer.push('log', args.map(a => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ')) } catch(e) {}
+  originalLog.apply(console, args)
+}
+console.error = (...args: any[]) => {
+  try { logBuffer.push('error', args.map(a => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ')) } catch(e) {}
+  originalError.apply(console, args)
+}
+console.warn = (...args: any[]) => {
+  try { logBuffer.push('warn', args.map(a => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ')) } catch(e) {}
+  originalWarn.apply(console, args)
+}
 
 dotenv.config()
 

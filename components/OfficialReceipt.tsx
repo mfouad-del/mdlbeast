@@ -201,11 +201,10 @@ export default function OfficialReceipt({ doc, settings }: OfficialReceiptProps)
   return (
     <button
       onClick={handlePrint}
-      className="p-3 text-slate-400 hover:text-slate-900 bg-white border border-slate-200 rounded-2xl transition-all flex items-center gap-2.5 group shadow-sm hover:shadow-xl"
+      className="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-400 flex items-center justify-center transition-all shadow-sm hover:shadow-md"
       title="طباعة خطاب A4"
     >
-      <FileText size={19} />
-      <span className="text-[10px] font-black uppercase tracking-tight">A4 Doc</span>
+      <span className="text-[10px] font-black">A4</span>
     </button>
   )
 }

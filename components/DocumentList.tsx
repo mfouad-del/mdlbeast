@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import type { Correspondence, SystemSettings } from "@/types"
-import { Search, ArrowRightLeft, FileSpreadsheet, AlertCircle, FileText, Calendar, ScanText } from "lucide-react"
+import { Search, ArrowRightLeft, FileSpreadsheet, AlertCircle, FileText, Calendar, ScanText, Edit3, Check, X } from "lucide-react"
 import AsyncButton from "./ui/async-button"
 import StatementModal from "./StatementModal"
 import { exportToCSV } from "@/lib/barcode-service"
@@ -10,6 +10,7 @@ import BarcodePrinter from "./BarcodePrinter"
 import OfficialReceipt from "./OfficialReceipt"
 import PdfStamper from "./PdfStamper"
 import { apiClient } from "@/lib/api-client"
+import { Spinner } from "./ui/spinner"
 
 interface DocumentListProps {
   docs: Correspondence[]
@@ -177,178 +178,325 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
       {/* Results List */}
       <div className="bg-white rounded-3xl border border-slate-300 shadow-md overflow-hidden">
         {filtered.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-right border-collapse">
-              <thead>
-                <tr className="bg-slate-100 border-b border-slate-300">
-                  <th className="px-6 py-4 text-[11px] font-black text-slate-700 uppercase tracking-wider text-center w-48">
-                    المعرف الموحد
-                  </th>
-                  <th className="px-6 py-4 text-[11px] font-black text-slate-700 uppercase tracking-wider">
-                    تفاصيل القيد
-                  </th>
-                  <th className="px-6 py-4 text-[11px] font-black text-slate-700 uppercase tracking-wider w-64">
-                    البيانات الإضافية
-                  </th>
-                  <th className="px-6 py-4 text-[11px] font-black text-slate-700 uppercase tracking-wider text-left w-48">
-                    الإجراءات
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {filtered.map((doc) => (
-                  <tr key={doc.id} className="hover:bg-blue-50 transition-colors group">
-                    <td className="px-6 py-4 align-top">
-                      <div className="flex flex-col items-center gap-2">
-                        <span className="font-mono text-xs font-black text-slate-700 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg tracking-wider whitespace-nowrap">
-                          {doc.barcode}
-                        </span>
-                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${
-                          doc.type === 'INCOMING' 
-                            ? 'bg-blue-50 text-blue-600 border-blue-100' 
-                            : 'bg-purple-50 text-purple-600 border-purple-100'
-                        }`}>
-                          {doc.type === 'INCOMING' ? 'وارد' : 'صادر'}
-                        </span>
-                      </div>
-                    </td>
-                    
-                    <td className="px-6 py-4 align-top">
-                      <div className="space-y-2">
-                        <h3 className="font-black text-slate-900 text-base leading-snug line-clamp-2 group-hover:text-blue-700 transition-colors">
-                          {doc.title || doc.subject}
-                        </h3>
-                        
-                        <div className="flex flex-wrap gap-y-1 gap-x-4 text-xs text-slate-500">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-slate-400">من:</span>
-                            <span className="font-medium text-slate-700">{doc.sender || '—'}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-slate-400">إلى:</span>
-                            <span className="font-medium text-slate-700">{doc.recipient || '—'}</span>
-                          </div>
-                        </div>
-
-                        {(doc.date || doc.documentDate) && (
-                          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 bg-slate-50 w-fit px-2 py-1 rounded-md">
-                            <Calendar size={12} />
-                            <span dir="ltr" className="font-mono">
-                              {(() => {
-                                try {
-                                  const d = new Date(doc.date || doc.documentDate || '');
-                                  return isNaN(d.getTime()) ? '---' : d.toLocaleDateString('en-GB');
-                                } catch (e) { return '---' }
-                              })()}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </td>
-
-                    <td className="px-6 py-4 align-top">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[10px] font-bold text-slate-400">المرفقات:</span>
-                        </div>
-                        
-                        <div className="flex flex-wrap gap-1.5">
-                          {(doc.attachments || []).length > 0 ? (
-                            (doc.attachments || []).map((_, idx) => (
-                              <button
-                                key={idx}
-                                onClick={async () => {
-                                  try {
-                                    const url = await apiClient.getPreviewUrl(doc.barcode, idx)
-                                    if (url) window.open(url, '_blank')
-                                    else alert('لا يوجد ملف لعرضه')
-                                  } catch(e) { alert('فشل فتح المرفق') }
-                                }}
-                                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-600 text-[10px] font-black flex items-center justify-center transition-all border border-slate-200 shadow-sm"
-                                title={`عرض المرفق ${idx + 1}`}
-                              >
-                                {idx + 1}
-                              </button>
-                            ))
-                          ) : (
-                            <span className="text-[10px] text-slate-300 font-bold">—</span>
-                          )}
-                          
-                          <button 
-                            className="w-7 h-7 rounded-lg bg-white border border-dashed border-slate-300 text-slate-400 hover:border-blue-400 hover:text-blue-500 flex items-center justify-center transition-all"
-                            title="إضافة مرفق"
-                            onClick={() => {
-                              const el = document.getElementById('addAttachmentInput') as HTMLInputElement | null
-                              if (!el) return
-                              ;(el as any)._targetBarcode = doc.barcode
-                              el.click()
-                            }}
-                          >
-                            <span className="text-lg leading-none mb-0.5">+</span>
-                          </button>
-                        </div>
-                        
-                        {doc.statement && (
-                          <div className="text-[10px] bg-amber-50 text-amber-700 border border-amber-100 px-2 py-1.5 rounded-lg leading-relaxed line-clamp-2 mt-2">
-                            {doc.statement}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-
-                    <td className="px-6 py-4 align-middle">
-                      <div className="flex flex-col gap-3 items-end">
-                        <button
-                          onClick={() => setStamperDoc(doc)}
-                          className="w-7 h-7 rounded-lg bg-slate-900 text-white hover:bg-black flex items-center justify-center transition-all shadow-md hover:shadow-lg active:scale-95"
-                          title="ختم المستند"
-                        >
-                          <ScanText size={14} />
-                        </button>
-
-                        <div className="flex items-center gap-1 opacity-100 sm:opacity-60 sm:group-hover:opacity-100 transition-opacity">
-                          <BarcodePrinter doc={doc} settings={settings} />
-                          <OfficialReceipt doc={doc} settings={settings} />
-
-                          {currentUser?.role === 'admin' && (
-                            <>
-                              <button
-                                onClick={() => {
-                                  setEditingDoc(doc)
-                                  setEditFormData({
-                                    subject: doc.subject || doc.title,
-                                    sender: doc.sender,
-                                    recipient: doc.recipient || doc.receiver,
-                                    type: doc.type,
-                                    date: doc.date
-                                  })
-                                }}
-                                className="p-2 bg-blue-50 border border-blue-100 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm"
-                                title="تعديل"
-                              >
-                                <FileText size={16} />
-                              </button>
-
-                              <AsyncButton
-                                className="p-2 bg-red-50 border border-red-100 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition-all shadow-sm"
-                                onClickAsync={async () => {
-                                  if (!confirm('هل أنت متأكد من حذف هذا المستند؟')) return
-                                  await apiClient.deleteDocument(doc.barcode)
-                                  setLocalDocs(prev => prev.filter(d => d.barcode !== doc.barcode))
-                                }}
-                              >
-                                <AlertCircle size={16} />
-                              </AsyncButton>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </td>
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-right border-collapse">
+                <thead>
+                  <tr className="bg-slate-100 border-b border-slate-300">
+                    <th className="px-6 py-4 text-[11px] font-black text-slate-700 uppercase tracking-wider text-center w-48">
+                      المعرف الموحد
+                    </th>
+                    <th className="px-6 py-4 text-[11px] font-black text-slate-700 uppercase tracking-wider">
+                      تفاصيل القيد
+                    </th>
+                    <th className="px-6 py-4 text-[11px] font-black text-slate-700 uppercase tracking-wider w-64">
+                      البيانات الإضافية
+                    </th>
+                    <th className="px-6 py-4 text-[11px] font-black text-slate-700 uppercase tracking-wider text-left w-48">
+                      الإجراءات
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {filtered.map((doc) => (
+                    <tr key={doc.id} className="hover:bg-blue-50 transition-colors group">
+                      <td className="px-6 py-4 align-top">
+                        <div className="flex flex-col items-center gap-2">
+                          <span className="font-mono text-xs font-black text-slate-700 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg tracking-wider whitespace-nowrap">
+                            {doc.barcode}
+                          </span>
+                          <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${
+                            doc.type === 'INCOMING' 
+                              ? 'bg-blue-50 text-blue-600 border-blue-100' 
+                              : 'bg-purple-50 text-purple-600 border-purple-100'
+                          }`}>
+                            {doc.type === 'INCOMING' ? 'وارد' : 'صادر'}
+                          </span>
+                        </div>
+                      </td>
+                      
+                      <td className="px-6 py-4 align-top">
+                        <div className="space-y-2">
+                          <h3 className="font-black text-slate-900 text-base leading-snug line-clamp-2 group-hover:text-blue-700 transition-colors">
+                            {doc.title || doc.subject}
+                          </h3>
+                          
+                          <div className="flex flex-wrap gap-y-1 gap-x-4 text-xs text-slate-500">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-slate-400">من:</span>
+                              <span className="font-medium text-slate-700">{doc.sender || '—'}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-slate-400">إلى:</span>
+                              <span className="font-medium text-slate-700">{doc.recipient || '—'}</span>
+                            </div>
+                          </div>
+
+                          {(doc.date || doc.documentDate || (doc as any).displayDate) && (
+                            <div className="flex items-center gap-1.5 text-[11px] text-slate-400 bg-slate-50 w-fit px-2 py-1 rounded-md">
+                              <Calendar size={12} />
+                              <span dir="ltr" className="font-mono">
+                                {(() => {
+                                  try {
+                                    const d = new Date((doc as any).displayDate || doc.date || doc.documentDate || '');
+                                    if (isNaN(d.getTime())) return '---';
+                                    // Format: DD/MM/YYYY HH:mm
+                                    return d.toLocaleString('en-GB', { 
+                                      day: '2-digit', 
+                                      month: '2-digit', 
+                                      year: 'numeric', 
+                                      hour: '2-digit', 
+                                      minute: '2-digit',
+                                      hour12: true 
+                                    }).replace(',', '');
+                                  } catch (e) { return '---' }
+                                })()}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4 align-top">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-[10px] font-bold text-slate-400">المرفقات:</span>
+                          </div>
+                          
+                          <div className="flex flex-wrap gap-1.5">
+                            {(doc.attachments || []).length > 0 ? (
+                              (doc.attachments || []).map((_, idx) => (
+                                <button
+                                  key={idx}
+                                  onClick={async () => {
+                                    try {
+                                      const url = await apiClient.getPreviewUrl(doc.barcode, idx)
+                                      if (url) window.open(url, '_blank')
+                                      else alert('لا يوجد ملف لعرضه')
+                                    } catch(e) { alert('فشل فتح المرفق') }
+                                  }}
+                                  className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-600 text-[10px] font-black flex items-center justify-center transition-all border border-slate-200 shadow-sm"
+                                  title={`عرض المرفق ${idx + 1}`}
+                                >
+                                  {idx + 1}
+                                </button>
+                              ))
+                            ) : (
+                              <span className="text-[10px] text-slate-300 font-bold">—</span>
+                            )}
+                            
+                            <button 
+                              className="w-7 h-7 rounded-lg bg-white border border-dashed border-slate-300 text-slate-400 hover:border-blue-400 hover:text-blue-500 flex items-center justify-center transition-all"
+                              title="إضافة مرفق"
+                              onClick={() => {
+                                const el = document.getElementById('addAttachmentInput') as HTMLInputElement | null
+                                if (!el) return
+                                ;(el as any)._targetBarcode = doc.barcode
+                                el.click()
+                              }}
+                            >
+                              <span className="text-lg leading-none mb-0.5">+</span>
+                            </button>
+                          </div>
+                          
+                          {doc.statement && (
+                            <div className="text-[10px] bg-amber-50 text-amber-700 border border-amber-100 px-2 py-1.5 rounded-lg leading-relaxed line-clamp-2 mt-2">
+                              {doc.statement}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4 align-middle">
+                        <div className="flex flex-col gap-3 items-end">
+                          <button
+                            onClick={() => setStamperDoc(doc)}
+                            className="px-3 h-7 rounded-lg bg-slate-900 text-white hover:bg-black flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg active:scale-95"
+                            title="ختم المستند"
+                          >
+                            <ScanText size={14} />
+                            <span className="text-[10px] font-bold">ختم المستند</span>
+                          </button>
+
+                          <div className="flex items-center gap-1 opacity-100 sm:opacity-60 sm:group-hover:opacity-100 transition-opacity">
+                            <BarcodePrinter doc={doc} settings={settings} />
+                            <OfficialReceipt doc={doc} settings={settings} />
+
+                            {currentUser?.role === 'admin' && (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setEditingDoc(doc)
+                                    setEditFormData({
+                                      subject: doc.subject || doc.title,
+                                      sender: doc.sender,
+                                      recipient: doc.recipient || doc.receiver,
+                                      type: doc.type,
+                                      date: doc.date
+                                    })
+                                  }}
+                                  className="w-7 h-7 flex items-center justify-center bg-blue-50 border border-blue-100 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                                  title="تعديل"
+                                >
+                                  <Edit3 size={14} />
+                                </button>
+
+                                <AsyncButton
+                                  className="p-2 bg-red-50 border border-red-100 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition-all shadow-sm"
+                                  onClickAsync={async () => {
+                                    if (!confirm('هل أنت متأكد من حذف هذا المستند؟')) return
+                                    await apiClient.deleteDocument(doc.barcode)
+                                    setLocalDocs(prev => prev.filter(d => d.barcode !== doc.barcode))
+                                  }}
+                                >
+                                  <AlertCircle size={16} />
+                                </AsyncButton>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-4 p-4 bg-slate-50">
+              {filtered.map((doc) => (
+                <div key={doc.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-4">
+                  <div className="flex justify-between items-start">
+                    <div className="flex flex-col gap-1">
+                      <span className="font-mono text-xs font-black text-slate-700 bg-slate-100 border border-slate-200 px-2 py-1 rounded-lg w-fit">
+                        {doc.barcode}
+                      </span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border w-fit ${
+                        doc.type === 'INCOMING' 
+                          ? 'bg-blue-50 text-blue-600 border-blue-100' 
+                          : 'bg-purple-50 text-purple-600 border-purple-100'
+                      }`}>
+                        {doc.type === 'INCOMING' ? 'وارد' : 'صادر'}
+                      </span>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setStamperDoc(doc)}
+                        className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-md active:scale-95"
+                        title="ختم المستند"
+                      >
+                        <ScanText size={16} />
+                      </button>
+                      <BarcodePrinter doc={doc} settings={settings} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="font-black text-slate-900 text-sm leading-snug mb-2">
+                      {doc.title || doc.subject}
+                    </h3>
+                    <div className="flex flex-col gap-1 text-xs text-slate-500">
+                      <div className="flex items-center gap-1">
+                        <span className="font-bold text-slate-400">من:</span>
+                        <span>{doc.sender || '—'}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="font-bold text-slate-400">إلى:</span>
+                        <span>{doc.recipient || '—'}</span>
+                      </div>
+                      {(doc.date || doc.documentDate || (doc as any).displayDate) && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <Calendar size={12} className="text-slate-400" />
+                          <span dir="ltr" className="font-mono text-[10px]">
+                            {(() => {
+                              try {
+                                const d = new Date((doc as any).displayDate || doc.date || doc.documentDate || '');
+                                if (isNaN(d.getTime())) return '---';
+                                return d.toLocaleString('en-GB', { 
+                                  day: '2-digit', 
+                                  month: '2-digit', 
+                                  year: 'numeric', 
+                                  hour: '2-digit', 
+                                  minute: '2-digit',
+                                  hour12: true 
+                                }).replace(',', '');
+                              } catch (e) { return '---' }
+                            })()}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-100 flex justify-between items-center">
+                    <div className="flex gap-1">
+                      {(doc.attachments || []).length > 0 ? (
+                        (doc.attachments || []).map((_, idx) => (
+                          <button
+                            key={idx}
+                            onClick={async () => {
+                              try {
+                                const url = await apiClient.getPreviewUrl(doc.barcode, idx)
+                                if (url) window.open(url, '_blank')
+                                else alert('لا يوجد ملف لعرضه')
+                              } catch(e) { alert('فشل فتح المرفق') }
+                            }}
+                            className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 text-xs font-black flex items-center justify-center border border-slate-200"
+                          >
+                            {idx + 1}
+                          </button>
+                        ))
+                      ) : (
+                        <span className="text-[10px] text-slate-300 font-bold">لا يوجد مرفقات</span>
+                      )}
+                      <button 
+                        className="w-8 h-8 rounded-lg bg-white border border-dashed border-slate-300 text-slate-400 flex items-center justify-center"
+                        onClick={() => {
+                          const el = document.getElementById('addAttachmentInput') as HTMLInputElement | null
+                          if (!el) return
+                          ;(el as any)._targetBarcode = doc.barcode
+                          el.click()
+                        }}
+                      >
+                        <span className="text-lg leading-none mb-0.5">+</span>
+                      </button>
+                    </div>
+
+                    {currentUser?.role === 'admin' && (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            setEditingDoc(doc)
+                            setEditFormData({
+                              subject: doc.subject || doc.title,
+                              sender: doc.sender,
+                              recipient: doc.recipient || doc.receiver,
+                              type: doc.type,
+                              date: doc.date
+                            })
+                          }}
+                          className="p-2 bg-blue-50 text-blue-600 rounded-lg"
+                        >
+                          <FileText size={16} />
+                        </button>
+                        <AsyncButton
+                          className="p-2 bg-red-50 text-red-600 rounded-lg"
+                          onClickAsync={async () => {
+                            if (!confirm('هل أنت متأكد من حذف هذا المستند؟')) return
+                            await apiClient.deleteDocument(doc.barcode)
+                            setLocalDocs(prev => prev.filter(d => d.barcode !== doc.barcode))
+                          }}
+                        >
+                          <AlertCircle size={16} />
+                        </AsyncButton>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         ) : (
           <div className="flex flex-col items-center justify-center py-20 text-slate-400">
             <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">

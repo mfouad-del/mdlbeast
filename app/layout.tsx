@@ -1,7 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { Tajawal } from "next/font/google"
-import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 
 const tajawal = Tajawal({
@@ -95,7 +94,6 @@ export default function RootLayout({
           </LoadingProvider>
           <SessionExpiredModal />
         </ErrorBoundary>
-        <Analytics />
       </body>
     </html>
   )

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   LayoutDashboard, FilePlus, FileMinus, Search, Scan, FileText, 
   Users, Briefcase, LogOut, Trash2, Building2, Plus, Lock,
-  AlertCircle, DownloadCloud, UploadCloud, Database, RefreshCcw, ShieldCheck, Edit3, X, Check 
+  AlertCircle, DownloadCloud, UploadCloud, Database, RefreshCcw, ShieldCheck, Edit3, X, Check, Menu 
 } from 'lucide-react';
 import { DocType, Correspondence, DocStatus, SystemSettings, Company, User } from './types';
 import { apiClient } from './lib/api-client';
@@ -14,9 +14,11 @@ import BarcodeScanner from './components/BarcodeScanner';
 import ReportGenerator from './components/ReportGenerator';
 import Login from './components/Login';
 import UserManagement from './components/UserManagement';
+import TenantManagement from './components/TenantManagement';
 import AdminStatus from './components/AdminStatus';
 import AsyncButton from './components/ui/async-button'
 import { LoadingProvider } from './components/ui/loading-context'
+import AdminBackups from './components/AdminBackups';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -27,6 +29,7 @@ const App: React.FC = () => {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const backupFileInputRef = useRef<HTMLInputElement>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   const [settings] = useState<SystemSettings>({
     primaryColor: '#0f172a',
