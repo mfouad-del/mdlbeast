@@ -86,20 +86,20 @@ export default function BarcodePrinter({ doc, settings }: BarcodePrinterProps) {
   }
 
   return (
-    <div className="flex gap-2">
+    <div className="flex gap-1">
       <button
         onClick={handlePrint}
-        className="p-2.5 bg-white text-slate-400 hover:text-slate-900 border border-slate-200 rounded-xl transition-all flex items-center gap-2 group shadow-sm hover:shadow-md"
+        className="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-400 flex items-center justify-center transition-all shadow-sm hover:shadow-md"
         title="طباعة ملصق حراري"
       >
-        <Printer size={18} />
+        <Printer size={14} />
       </button>
       <button
         onClick={downloadAsPng}
-        className="p-2.5 bg-white text-slate-400 hover:text-slate-900 border border-slate-200 rounded-xl transition-all flex items-center gap-2 group shadow-sm hover:shadow-md"
+        className="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-400 flex items-center justify-center transition-all shadow-sm hover:shadow-md"
         title="حفظ كصورة PNG"
       >
-        <ImageIcon size={18} />
+        <ImageIcon size={14} />
       </button>
     </div>
   )

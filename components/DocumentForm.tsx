@@ -210,11 +210,12 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
             </div>
             {/* Internal number removed per new requirements */}
 
+            {/* Sender Field */}
             <div className="space-y-2">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-tight flex items-center gap-1.5 mr-1">
                 <Landmark size={12} className="text-slate-400" /> من جهة
               </label>
-              { (typeof (companies || []) !== 'undefined') && (companies || []).length > 0 ? (
+              { type === 'OUTGOING' && (companies || []).length > 0 ? (
                 <select
                   className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-black text-slate-900 text-sm outline-none focus:border-slate-900 transition-all cursor-pointer"
                   value={formData.sender}
@@ -237,14 +238,35 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
                 />
               )}
             </div>
-            <FormInput
-              label="إلى جهة"
-              icon={UserIcon}
-              name="recipient"
-              value={formData.recipient}
-              onChange={handleInputChange}
-              required
-            />
+
+            {/* Recipient Field */}
+            <div className="space-y-2">
+              <label className="text-[11px] font-black text-slate-500 uppercase tracking-tight flex items-center gap-1.5 mr-1">
+                <UserIcon size={12} className="text-slate-400" /> إلى جهة
+              </label>
+              { type === 'INCOMING' && (companies || []).length > 0 ? (
+                <select
+                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-black text-slate-900 text-sm outline-none focus:border-slate-900 transition-all cursor-pointer"
+                  value={formData.recipient}
+                  onChange={(e) => handleSelectChange('recipient', e.target.value)}
+                  required
+                >
+                  <option value="">اختر جهة</option>
+                  {(companies || []).map((c) => (
+                    <option key={c.id} value={c.nameAr || c.name || c.id}>{c.nameAr || c.name || c.id}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  required
+                  type="text"
+                  name="recipient"
+                  className="w-full p-4 bg-white border border-slate-200 rounded-2xl outline-none focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 transition-all text-slate-900 font-bold text-sm placeholder:text-slate-300 shadow-sm"
+                  value={formData.recipient}
+                  onChange={handleInputChange}
+                />
+              )}
+            </div>
             <FormInput
               label="تاريخ الصادر/الوارد"
               icon={ClipboardList}

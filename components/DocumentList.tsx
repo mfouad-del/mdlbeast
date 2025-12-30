@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import type { Correspondence, SystemSettings } from "@/types"
-import { Search, ArrowRightLeft, FileSpreadsheet, AlertCircle, FileText, Calendar, ScanText, Edit3, Check, X } from "lucide-react"
+import { Search, ArrowRightLeft, FileSpreadsheet, AlertCircle, FileText, Calendar, ScanText, Edit3, Check, X, Trash2 } from "lucide-react"
 import AsyncButton from "./ui/async-button"
 import StatementModal from "./StatementModal"
 import { exportToCSV } from "@/lib/barcode-service"
@@ -343,14 +343,14 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
                                 </button>
 
                                 <AsyncButton
-                                  className="p-2 bg-red-50 border border-red-100 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition-all shadow-sm"
+                                  className="w-7 h-7 flex items-center justify-center bg-red-50 border border-red-100 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition-all shadow-sm"
                                   onClickAsync={async () => {
                                     if (!confirm('هل أنت متأكد من حذف هذا المستند؟')) return
                                     await apiClient.deleteDocument(doc.barcode)
                                     setLocalDocs(prev => prev.filter(d => d.barcode !== doc.barcode))
                                   }}
                                 >
-                                  <AlertCircle size={16} />
+                                  <Trash2 size={14} />
                                 </AsyncButton>
                               </>
                             )}
@@ -481,14 +481,14 @@ export default function DocumentList({ docs, settings, currentUser, users }: Doc
                           <FileText size={16} />
                         </button>
                         <AsyncButton
-                          className="p-2 bg-red-50 text-red-600 rounded-lg"
+                          className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center"
                           onClickAsync={async () => {
                             if (!confirm('هل أنت متأكد من حذف هذا المستند؟')) return
                             await apiClient.deleteDocument(doc.barcode)
                             setLocalDocs(prev => prev.filter(d => d.barcode !== doc.barcode))
                           }}
                         >
-                          <AlertCircle size={16} />
+                          <Trash2 size={16} />
                         </AsyncButton>
                       </div>
                     )}
