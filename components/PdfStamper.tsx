@@ -20,9 +20,11 @@ export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) 
   const [isSaving, setIsSaving] = useState(false)
   const [stampWidth, setStampWidth] = useState<number>(200)
   const [pageIndex, setPageIndex] = useState<number>(0)
+  const [attachmentIndex, setAttachmentIndex] = useState<number>(0)
   const containerRef = useRef<HTMLDivElement>(null)
   
-  const pagesCount = ((doc.attachments && doc.attachments[0] && (doc.attachments[0] as any).pageCount) ? (doc.attachments[0] as any).pageCount : (doc.attachmentCount ?? 1))
+  const currentAttachment = doc.attachments && doc.attachments[attachmentIndex] ? doc.attachments[attachmentIndex] : doc.attachments?.[0]
+  const pagesCount = ((currentAttachment && (currentAttachment as any).pageCount) ? (currentAttachment as any).pageCount : (doc.attachmentCount ?? 1))
 
   // Cleaner barcode URL - text rendered manually
   const barcodeUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${doc.barcode}&scale=2&rotate=N&includetext=false`
@@ -66,6 +68,7 @@ export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) 
         containerHeight: Math.round(containerHeight),
         stampWidth: Math.round(stampWidth),
         page: pageIndex,
+        attachmentIndex: attachmentIndex,
         compact: false,
       }
 
@@ -128,7 +131,7 @@ export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) 
             className="w-full max-w-4xl min-h-[60vh] bg-white shadow-[0_40px_80px_-20px_rgba(0,0,0,0.3)] relative cursor-crosshair border border-slate-200 overflow-hidden"
           >
             {doc.pdfFile ? (
-              <SignedPdfPreview barcode={doc.barcode} fallbackUrl={doc.pdfFile.url} />
+              <SignedPdfPreview barcode={doc.barcode} fallbackUrl={doc.pdfFile.url} attachmentIndex={attachmentIndex} />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center text-slate-300 flex flex-col gap-4">
                 <FileSearch size={100} className="opacity-10" />
@@ -200,6 +203,16 @@ export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) 
                   onChange={(e) => setStampWidth(Number(e.target.value))} 
                   className="w-32 accent-slate-900" 
                 />
+              </div>
+
+              <div className="flex flex-col">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-tight mr-1">المرفق</label>
+                <select value={attachmentIndex} onChange={(e) => { setAttachmentIndex(Number(e.target.value)); setPageIndex(0); }} className="p-2.5 rounded-xl border bg-white text-sm font-black outline-none focus:ring-2 focus:ring-blue-500/20">
+                  {(doc.attachments || []).map((_, i) => (
+                    <option key={i} value={i}>مرفق {i+1}</option>
+                  ))}
+                  {(!doc.attachments || doc.attachments.length === 0) && <option value={0}>مرفق 1</option>}
+                </select>
               </div>
 
               <div className="flex flex-col">

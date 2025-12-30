@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import { apiClient } from '@/lib/api-client'
 
-export function SignedPdfPreview({ barcode, fallbackUrl }: { barcode: string; fallbackUrl?: string }) {
+export function SignedPdfPreview({ barcode, fallbackUrl, attachmentIndex = 0 }: { barcode: string; fallbackUrl?: string; attachmentIndex?: number }) {
   const [url, setUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -11,7 +11,7 @@ export function SignedPdfPreview({ barcode, fallbackUrl }: { barcode: string; fa
     let mounted = true
     const get = async () => {
       try {
-        const p = await apiClient.getPreviewUrl(barcode)
+        const p = await apiClient.getPreviewUrl(barcode, attachmentIndex)
         if (mounted) setUrl(p || (fallbackUrl ? `${fallbackUrl}?t=${Date.now()}` : null))
       } catch (e: any) {
         console.warn('SignedPdfPreview failed to fetch preview url', e)
@@ -20,7 +20,7 @@ export function SignedPdfPreview({ barcode, fallbackUrl }: { barcode: string; fa
     }
     get()
     return () => { mounted = false }
-  }, [barcode, fallbackUrl])
+  }, [barcode, fallbackUrl, attachmentIndex])
 
   if (error) return <div className="absolute inset-0 flex items-center justify-center text-slate-300"><div className="text-center"><div className="font-black opacity-20 text-2xl">فشل تحميل المعاينة</div><div className="text-xs text-slate-400 mt-2">{error}</div></div></div>
   if (!url) return <div className="absolute inset-0 flex items-center justify-center text-slate-300"><div className="font-black opacity-20 text-2xl">جارٍ تجهيز المعاينة…</div></div>
