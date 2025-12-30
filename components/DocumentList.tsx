@@ -299,7 +299,7 @@ export default function DocumentList({ docs, settings, currentUser, users, tenan
                             
                             {uploadingAttachmentFor === doc.barcode ? (
                               <div className="w-7 h-7 flex items-center justify-center">
-                                <Spinner size="sm" className="text-blue-600" />
+                                <Spinner className="text-blue-600" />
                               </div>
                             ) : (
                               <button 

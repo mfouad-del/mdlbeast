@@ -81,7 +81,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
           <title>تقرير المعاملات - ${startDate} إلى ${endDate}</title>
           <style>
             @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap');
-            @page { size: A4 landscape; margin: 15mm; }
+            @page { size: A4; margin: 15mm; }
             body { 
               font-family: 'Tajawal', sans-serif; 
               direction: rtl; 
