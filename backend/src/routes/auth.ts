@@ -4,6 +4,7 @@ import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import { body, validationResult } from "express-validator"
 import { query } from "../config/database"
+import { logAudit } from "../services/auditService"
 
 const router = express.Router()
 const JWT_SECRET = process.env.JWT_SECRET
@@ -48,6 +49,7 @@ router.post(
       }
 
       if (result.rows.length === 0) {
+        await logAudit({ action: 'LOGIN_FAILED', details: `User not found: ${username}`, ipAddress: req.ip || req.socket.remoteAddress, userAgent: req.headers['user-agent'] })
         return res.status(401).json({ error: "Invalid credentials" })
       }
 
@@ -55,8 +57,11 @@ router.post(
       const isValidPassword = await bcrypt.compare(password, user.password) // password column exists as 'password'
 
       if (!isValidPassword) {
+        await logAudit({ userId: user.id, action: 'LOGIN_FAILED', details: 'Incorrect password', ipAddress: req.ip || req.socket.remoteAddress, userAgent: req.headers['user-agent'] })
         return res.status(401).json({ error: "Invalid credentials" })
       }
+
+      await logAudit({ userId: user.id, action: 'LOGIN_SUCCESS', ipAddress: req.ip || req.socket.remoteAddress, userAgent: req.headers['user-agent'] })
 
       const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || 'default-refresh-secret'
       const accessToken = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET as string, {

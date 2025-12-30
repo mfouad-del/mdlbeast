@@ -455,7 +455,10 @@ export default function DocumentList({ docs, settings, currentUser, users, tenan
                             onClick={async () => {
                               try {
                                 const url = await apiClient.getPreviewUrl(doc.barcode, idx)
-                                if (url) window.open(url, '_blank')
+                                if (url) {
+                                  window.open(url, '_blank')
+                                  apiClient.logAction('VIEW_DOCUMENT', `Opened attachment ${idx + 1} for document ${doc.barcode}`, 'DOCUMENT', doc.barcode)
+                                }
                                 else alert('لا يوجد ملف لعرضه')
                               } catch(e) { alert('فشل فتح المرفق') }
                             }}

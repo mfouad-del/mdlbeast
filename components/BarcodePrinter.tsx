@@ -2,6 +2,7 @@
 
 import type { Correspondence, SystemSettings } from "@/types"
 import { Printer, ImageIcon } from "lucide-react"
+import { apiClient } from "@/lib/api-client"
 
 interface BarcodePrinterProps {
   doc: Correspondence
@@ -10,6 +11,7 @@ interface BarcodePrinterProps {
 
 export default function BarcodePrinter({ doc, settings }: BarcodePrinterProps) {
   const downloadAsPng = () => {
+    apiClient.logAction('PRINT_STICKER_IMAGE', `Downloaded sticker image for ${doc.barcode}`, 'DOCUMENT', doc.barcode)
     const canvas = document.createElement("canvas")
     const ctx = canvas.getContext("2d")
     if (!ctx) return
@@ -48,6 +50,7 @@ export default function BarcodePrinter({ doc, settings }: BarcodePrinterProps) {
   }
 
   const handlePrint = () => {
+    apiClient.logAction('PRINT_STICKER', `Printed sticker for ${doc.barcode}`, 'DOCUMENT', doc.barcode)
     const p = window.open("", "_blank")
     if (!p) return
     const barcode = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${

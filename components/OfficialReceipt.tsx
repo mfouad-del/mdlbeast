@@ -2,6 +2,7 @@
 
 import type { Correspondence, SystemSettings } from "@/types"
 import { FileText } from "lucide-react"
+import { apiClient } from "@/lib/api-client"
 
 interface OfficialReceiptProps {
   doc: Correspondence
@@ -10,6 +11,7 @@ interface OfficialReceiptProps {
 
 export default function OfficialReceipt({ doc, settings }: OfficialReceiptProps) {
   const handlePrint = () => {
+    apiClient.logAction('PRINT_RECEIPT', `Printed official receipt for ${doc.barcode}`, 'DOCUMENT', doc.barcode)
     const p = window.open("", "_blank")
     if (!p) return
 

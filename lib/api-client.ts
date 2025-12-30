@@ -599,6 +599,19 @@ class ApiClient {
     return this.request<any>(`/admin/status`)
   }
 
+  // Audit Logs
+  async getAuditLogs(limit = 100, offset = 0) {
+    return this.request<any[]>(`/audit?limit=${limit}&offset=${offset}`)
+  }
+
+  async logAction(action: string, entityType?: string, entityId?: string, details?: string) {
+    // Fire and forget - don't block UI
+    this.request(`/audit`, {
+      method: 'POST',
+      body: JSON.stringify({ action, entityType, entityId, details })
+    }).catch(err => console.warn('Failed to log action', err))
+  }
+
   async clearAdminLogs() {
     return this.request<any>(`/admin/status/clear`, { method: 'POST' })
   }

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { LayoutDashboard, FilePlus, FileMinus, Search, Users, LogOut, Scan, FileText, Briefcase, Database, Server, Lock } from "lucide-react"
+import { LayoutDashboard, FilePlus, FileMinus, Search, Users, LogOut, Scan, FileText, Briefcase, Database, Server, Lock, Shield } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
 import AsyncButton from '@/components/ui/async-button'
 import type { Correspondence, User, SystemSettings } from "@/types"
@@ -14,6 +14,7 @@ import BarcodeScanner from "@/components/BarcodeScanner"
 import ReportGenerator from "@/components/ReportGenerator"
 import AdminBackups from "@/components/AdminBackups"
 import AdminStatus from '@/components/AdminStatus'
+import AuditLogs from '@/components/AuditLogs'
 import UserManagement from "@/components/UserManagement"
 import ChangePassword from '@/components/ChangePassword'
 import { Spinner } from "@/components/ui/spinner"
@@ -317,6 +318,7 @@ export default function DashboardPage() {
           <NavItem id="change-password" label="تغيير كلمة المرور" icon={Lock} />
           <NavItem id="users" label="إدارة المستخدمين" icon={Users} adminOnly />
           <NavItem id="companies" label="إدارة المؤسسات" icon={Briefcase} adminOnly />
+          <NavItem id="audit-logs" label="مراقبة التفاعل" icon={Shield} adminOnly />
           <NavItem id="backup" label="النسخ الاحتياطي" icon={Database} adminOnly />
           <NavItem id="admin-status" label="حالة النظام" icon={Server} adminOnly />
         </nav>
@@ -421,6 +423,12 @@ export default function DashboardPage() {
                 <p className="text-sm text-slate-500 mb-4">إنشاء وادارة النسخ الكاملة للمشروع (قاعدة البيانات، الملفات، الاعدادات).</p>
                 <AdminBackups />
               </div>
+            </div>
+          )}
+
+          {activeTab === 'audit-logs' && (
+            <div className="space-y-6">
+              <AuditLogs />
             </div>
           )}
 

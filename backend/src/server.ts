@@ -4,6 +4,7 @@ import helmet from "helmet"
 import morgan from "morgan"
 import dotenv from "dotenv"
 import authRoutes from "./routes/auth"
+import auditRoutes from "./routes/audit"
 import documentRoutes from "./routes/documents"
 import userRoutes from "./routes/users"
 import barcodeRoutes from "./routes/barcodes"
@@ -68,6 +69,7 @@ app.use(express.urlencoded({ extended: true }))
 
 // Mount API routes
 app.use('/api/auth', authRoutes)
+app.use('/api/audit', auditRoutes)
 import backupRoutes from "./routes/backups"
 app.use('/api/backups', backupRoutes)
 app.use('/api/documents', documentRoutes)
@@ -94,6 +96,9 @@ app.use('/api/documents', stampRoutes)
 // Admin status & logs (admin-only)
 import adminStatusRoutes from './routes/adminStatus'
 app.use('/api/admin', adminStatusRoutes)
+
+import auditRoutes from './routes/audit'
+app.use('/api/audit', auditRoutes)
 
 
 
