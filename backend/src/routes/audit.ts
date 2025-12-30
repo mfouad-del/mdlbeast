@@ -13,7 +13,7 @@ router.get("/", authenticateToken, isManager, async (req: any, res) => {
     
     // Join with users table to get usernames
     const sql = `
-      SELECT a.*, u.username, u.name as full_name, u.role 
+      SELECT a.*, u.username, u.full_name, u.role 
       FROM audit_logs a
       LEFT JOIN users u ON a.user_id = u.id
       ORDER BY a.created_at DESC
