@@ -242,6 +242,14 @@ export default function Dashboard({ docs }: DashboardProps) {
           )}
         </div>
       </div>
+
+      <div className="flex justify-center py-6 opacity-40 hover:opacity-100 transition-opacity">
+        <img 
+          src="/dev.png" 
+          alt="Developer" 
+          className="h-6 grayscale hover:grayscale-0 transition-all" 
+        />
+      </div>
     </div>
   )
 }

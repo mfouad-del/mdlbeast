@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserPlus, Trash2, Edit3, Check, X, Shield, Mail, Lock, UserCircle } from 'lucide-react';
+import { UserPlus, Trash2, Edit3, Check, X, Shield, Mail, Lock, UserCircle, Upload, FileSignature, Stamp } from 'lucide-react';
 import { apiClient } from '../lib/api-client';
 import { useToast } from '../hooks/use-toast';
 import { User } from '../types';
@@ -14,13 +14,59 @@ interface UserManagementProps {
 const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, currentUserEmail, currentUserRole }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingUserId, setEditingUserId] = useState<number | string | null>(null);
-  const [newUser, setNewUser] = useState<{name: string, email: string, password: string, role: 'member' | 'supervisor' | 'manager' | 'admin'}>({ name: '', email: '', password: '', role: 'member' });
-  const [editUser, setEditUser] = useState<{name: string, email: string, password: string, role: 'member' | 'supervisor' | 'manager' | 'admin'}>({ name: '', email: '', password: '', role: 'member' });
+  
+  const [newUser, setNewUser] = useState<{
+    name: string, 
+    email: string, 
+    password: string, 
+    role: 'member' | 'supervisor' | 'manager' | 'admin',
+    manager_id?: number | null,
+    signature_url?: string,
+    stamp_url?: string
+  }>({ name: '', email: '', password: '', role: 'member', manager_id: null });
+  
+  const [editUser, setEditUser] = useState<{
+    name: string, 
+    email: string, 
+    password: string, 
+    role: 'member' | 'supervisor' | 'manager' | 'admin',
+    manager_id?: number | null,
+    signature_url?: string,
+    stamp_url?: string
+  }>({ name: '', email: '', password: '', role: 'member', manager_id: null });
+  
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [message, setMessage] = useState('');
   const { toast } = useToast();
 
   const isAdmin = (currentUserRole || '').toLowerCase() === 'admin';
+
+  // Filter potential managers (anyone with role manager or admin, excluding the user being edited)
+  const potentialManagers = users.filter(u => 
+    (u.role === 'manager' || u.role === 'admin') && 
+    (editingUserId ? String(u.id) !== String(editingUserId) : true)
+  );
+
+  const handleFileUpload = async (file: File, type: 'signature' | 'stamp', isEdit: boolean) => {
+    setIsUploading(true);
+    try {
+      const result = await apiClient.uploadFile(file);
+      const url = result.url || result.file?.url;
+      
+      if (isEdit) {
+        setEditUser(prev => ({ ...prev, [type === 'signature' ? 'signature_url' : 'stamp_url']: url }));
+      } else {
+        setNewUser(prev => ({ ...prev, [type === 'signature' ? 'signature_url' : 'stamp_url']: url }));
+      }
+      
+      toast({ title: "تم الرفع", description: "تم رفع الصورة بنجاح" });
+    } catch (error: any) {
+      toast({ title: "خطأ", description: "فشل رفع الملف", variant: "destructive" });
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,15 +74,23 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, c
     setMessage('');
     
     try {
-      await apiClient.createUser({
+      const createdUser = await apiClient.createUser({
         username: newUser.email,
         password: newUser.password,
         full_name: newUser.name,
         role: newUser.role
       });
+
+      if (createdUser && createdUser.id && (newUser.manager_id || newUser.signature_url || newUser.stamp_url)) {
+        await apiClient.updateUser(createdUser.id, {
+          manager_id: newUser.manager_id,
+          signature_url: newUser.signature_url,
+          stamp_url: newUser.stamp_url
+        });
+      }
       
       setMessage('تم إضافة المستخدم بنجاح');
-      setNewUser({ name: '', email: '', password: '', role: 'member' });
+      setNewUser({ name: '', email: '', password: '', role: 'member', manager_id: null });
       setShowAddForm(false);
       
       // Refresh users list via parent
@@ -66,7 +120,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, c
       name: user.full_name || user.username || '',
       email: user.email || '',
       password: '',
-      role: user.role as any
+      role: user.role as any,
+      manager_id: user.manager_id,
+      signature_url: user.signature_url,
+      stamp_url: user.stamp_url
     });
     setShowAddForm(false);
   };
@@ -81,7 +138,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, c
     try {
       const updates: any = {
         full_name: editUser.name,
-        role: editUser.role
+        role: editUser.role,
+        manager_id: editUser.manager_id,
+        signature_url: editUser.signature_url,
+        stamp_url: editUser.stamp_url
       };
       
       if (editUser.password) {
@@ -225,6 +285,57 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, c
                 </select>
               </div>
            </div>
+
+           <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2">المدير المباشر</label>
+              <div className="relative">
+                <UserCircle className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                <select className="w-full pr-12 p-4 bg-slate-50 rounded-2xl outline-none font-bold transition-all focus:bg-white focus:border-slate-900 appearance-none" 
+                  value={editingUserId ? (editUser.manager_id || '') : (newUser.manager_id || '')} 
+                  onChange={e => {
+                    const val = e.target.value ? Number(e.target.value) : null;
+                    editingUserId ? setEditUser({...editUser, manager_id: val}) : setNewUser({...newUser, manager_id: val});
+                  }}>
+                  <option value="">-- لا يوجد مدير --</option>
+                  {potentialManagers.map(m => (
+                    <option key={m.id} value={m.id}>{m.full_name || m.username}</option>
+                  ))}
+                </select>
+              </div>
+           </div>
+
+           {/* Signature & Stamp Upload - Only for Managers/Admins */}
+           {((editingUserId ? editUser.role : newUser.role) === 'manager' || (editingUserId ? editUser.role : newUser.role) === 'admin') && (
+             <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
+               <div className="space-y-2">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2">التوقيع (صورة شفافة)</label>
+                 <div className="flex items-center gap-4">
+                   {(editingUserId ? editUser.signature_url : newUser.signature_url) && (
+                     <img src={editingUserId ? editUser.signature_url : newUser.signature_url} alt="Signature" className="h-12 object-contain border border-slate-200 rounded-lg bg-white" />
+                   )}
+                   <label className="cursor-pointer flex items-center gap-2 px-4 py-3 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-colors">
+                     <FileSignature size={16} />
+                     {isUploading ? 'جارٍ الرفع...' : 'رفع توقيع'}
+                     <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0], 'signature', !!editingUserId)} />
+                   </label>
+                 </div>
+               </div>
+
+               <div className="space-y-2">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2">الختم (صورة شفافة)</label>
+                 <div className="flex items-center gap-4">
+                   {(editingUserId ? editUser.stamp_url : newUser.stamp_url) && (
+                     <img src={editingUserId ? editUser.stamp_url : newUser.stamp_url} alt="Stamp" className="h-12 object-contain border border-slate-200 rounded-lg bg-white" />
+                   )}
+                   <label className="cursor-pointer flex items-center gap-2 px-4 py-3 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-colors">
+                     <Stamp size={16} />
+                     {isUploading ? 'جارٍ الرفع...' : 'رفع ختم'}
+                     <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0], 'stamp', !!editingUserId)} />
+                   </label>
+                 </div>
+               </div>
+             </div>
+           )}
            
            <button type="submit" disabled={isSaving} className={`md:col-span-2 ${isSaving ? 'opacity-60 cursor-not-allowed' : 'hover:bg-blue-700'} bg-blue-600 text-white py-5 rounded-2xl font-black text-lg transition-all shadow-lg shadow-blue-100 flex items-center justify-center gap-2 mt-4`}>
              {isSaving ? 'جارٍ المعالجة...' : (editingUserId ? <><Check size={20}/> حفظ التغييرات</> : 'تفعيل حساب المستخدم')}
@@ -238,6 +349,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, c
             <tr className="bg-slate-50 border-b border-slate-100">
               <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">المستخدم</th>
               <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">الصلاحية</th>
+              <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">المدير المباشر</th>
               <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-left">إجراءات</th>
             </tr>
           </thead>
@@ -266,6 +378,20 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, c
                   </span>
                 </td>
                 <td className="px-8 py-6">
+                  {u.manager_id ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-bold">
+                        {users.find(m => m.id === u.manager_id)?.full_name?.substring(0, 1) || '?'}
+                      </div>
+                      <span className="text-xs font-bold text-slate-600">
+                        {users.find(m => m.id === u.manager_id)?.full_name || 'غير معروف'}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-slate-300 font-bold">-</span>
+                  )}
+                </td>
+                <td className4"px-8 py-6">
                   <div className="flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
                     <button onClick={() => startEditing(u)} className="p-3 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all" title="تعديل المستخدم">
                       <Edit3 size={18} />

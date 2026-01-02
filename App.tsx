@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   LayoutDashboard, FilePlus, FileMinus, Search, Scan, FileText, 
   Users, Briefcase, LogOut, Trash2, Building2, Plus, Lock,
-  AlertCircle, DownloadCloud, UploadCloud, Database, RefreshCcw, ShieldCheck, Edit3, X, Check, Menu 
+  AlertCircle, DownloadCloud, UploadCloud, Database, RefreshCcw, ShieldCheck, Edit3, X, Check, Menu, FileSignature 
 } from 'lucide-react';
 import { DocType, Correspondence, DocStatus, SystemSettings, Company, User } from './types';
 import { apiClient } from './lib/api-client';
@@ -19,6 +19,7 @@ import AdminStatus from './components/AdminStatus';
 import AsyncButton from './components/ui/async-button'
 import { LoadingProvider } from './components/ui/loading-context'
 import AdminBackups from './components/AdminBackups';
+import Approvals from './components/Approvals';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -247,6 +248,7 @@ const App: React.FC = () => {
           <div className="h-px bg-slate-100 my-4 mx-4"></div>
           <NavItem id="scanner" label="تتبع الباركود" icon={Scan} />
           <NavItem id="reports" label="مركز التقارير" icon={FileText} />
+          <NavItem id="approvals" label="نظام الإعتمادات" icon={FileSignature} />
           <NavItem id="change-password" label="تغيير كلمة المرور" icon={Lock} />
           <NavItem id="users" label="إدارة المستخدمين" icon={Users} adminOnly />
           <NavItem id="companies" label="إدارة المؤسسات" icon={Briefcase} adminOnly />
@@ -277,6 +279,7 @@ const App: React.FC = () => {
           {activeTab === 'outgoing' && <DocumentForm type={DocType.OUTGOING} onSave={handleSaveDoc} companies={companies} />}
           {activeTab === 'list' && <DocumentList docs={docs} settings={{...settings, orgName: currentCompany?.nameAr, logoUrl: currentCompany?.logoUrl, orgNameEn: currentCompany?.nameEn}} currentUser={currentUser} users={users} /> }
           {activeTab === 'scanner' && <BarcodeScanner />}
+          {activeTab === 'approvals' && <Approvals currentUser={currentUser} />}
           {activeTab === 'reports' && <ReportGenerator docs={docs} settings={{orgName: currentCompany?.nameAr || '', logoUrl: currentCompany?.logoUrl || ''}} />}
           {activeTab === 'users' && <UserManagement users={users} onUpdateUsers={async () => { loadInitialData(); }} currentUserEmail={currentUser.email || currentUser.username || ''} />}
           {activeTab === 'change-password' && <ChangePassword />}

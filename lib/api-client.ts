@@ -572,8 +572,38 @@ class ApiClient {
     })
   }
 
-  async updateUser(id: number | string, payload: { full_name?: string; role?: string; password?: string }) {
+  async updateUser(id: number | string, payload: { full_name?: string; role?: string; password?: string; manager_id?: number | null; signature_url?: string; stamp_url?: string }) {
     return this.request<any>(`/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    })
+  }
+
+  // Approvals System
+  async createApprovalRequest(payload: { title: string; description?: string; attachment_url: string; manager_id: number }) {
+    return this.request<any>("/approvals", {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  }
+
+  async getMyApprovalRequests() {
+    return this.request<any[]>("/approvals/my-requests")
+  }
+
+  async getPendingApprovals() {
+    return this.request<any[]>("/approvals/pending")
+  }
+
+  async updateApprovalRequest(id: number | string, payload: { status: 'APPROVED' | 'REJECTED'; rejection_reason?: string; signed_attachment_url?: string }) {
+    return this.request<any>(`/approvals/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    })
+  }
+
+  async updateRequestAttachment(id: number | string, payload: { attachment_url: string }) {
+    return this.request<any>(`/approvals/${id}/attachment`, {
       method: 'PUT',
       body: JSON.stringify(payload),
     })

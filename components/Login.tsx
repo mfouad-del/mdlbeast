@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Lock, Mail, ShieldCheck, RefreshCw, LogIn } from "lucide-react"
+import { Lock, Mail, ShieldCheck, RefreshCw, LogIn, Smartphone } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
 
 export default function Login({ onLogin, logoUrl }: { onLogin?: (u: any) => void; logoUrl?: string }) {
@@ -153,7 +153,7 @@ export default function Login({ onLogin, logoUrl }: { onLogin?: (u: any) => void
               <span className="text-[9px] font-bold uppercase tracking-widest">Enterprise Encrypted Session</span>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 flex flex-col items-center">
               <a 
                 href="https://zaco.sa/archive/clear-cache.html"
                 target="_blank"
@@ -162,10 +162,26 @@ export default function Login({ onLogin, logoUrl }: { onLogin?: (u: any) => void
               >
                 تواجه مشكلة؟
               </a>
+
+              <a 
+                href="https://zaco.sa/archive/app.apk"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg text-[10px] font-bold hover:bg-green-100 transition-colors"
+              >
+                <Smartphone size={14} />
+                تحميل تطبيق الأندرويد
+              </a>
               
               <p className="text-[10px] font-bold text-slate-400">
                 جميع الحقوق محفوظه زوايا البناء للإستشارات الهندسيه
               </p>
+              
+              <div className="pt-2 flex justify-center">
+                <img 
+                  src="/dev.png" 
+                  alt="Developer" 
+                  className="h-6 opacity-40 hover:opacity-100 transition-opacity grayscale hover:grayscale-0"
+                />
+              </div>
             </div>
           </footer>
         </div>

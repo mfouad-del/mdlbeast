@@ -38,7 +38,27 @@ export interface User {
   email?: string
   role: 'admin' | 'manager' | 'supervisor' | 'member'
   created_at?: Date | string
+  manager_id?: number | null
+  signature_url?: string
+  stamp_url?: string
 }
+
+export interface ApprovalRequest {
+  id: number
+  requester_id: number
+  manager_id: number
+  status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  title: string
+  description?: string
+  attachment_url: string
+  signed_attachment_url?: string
+  rejection_reason?: string
+  created_at: string
+  updated_at: string
+  requester?: User
+  manager?: User
+}
+
 
 export interface Attachment {
   name: string;
