@@ -17,8 +17,9 @@ interface PdfStamperProps {
 export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) {
   const [pos, setPos] = useState({ x: 400, y: 20 })
   const [isDragging, setIsDragging] = useState(false)
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [isSaving, setIsSaving] = useState(false)
-  const [stampWidth, setStampWidth] = useState<number>(200)
+  const [stampWidth, setStampWidth] = useState<number>(150)
   const [pageIndex, setPageIndex] = useState<number>(0)
   const [attachmentIndex, setAttachmentIndex] = useState<number>(0)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -31,6 +32,16 @@ export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) 
 
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true)
+    if (containerRef.current) {
+      const containerRect = containerRef.current.getBoundingClientRect()
+      const mouseXInContainer = e.clientX - containerRect.left
+      const mouseYInContainer = e.clientY - containerRect.top
+      
+      setDragOffset({
+          x: mouseXInContainer - pos.x,
+          y: mouseYInContainer - pos.y
+      })
+    }
     e.preventDefault()
   }
 
@@ -38,8 +49,8 @@ export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) 
     if (!isDragging || !containerRef.current) return
     const rect = containerRef.current.getBoundingClientRect()
 
-    const newX = Math.max(0, Math.min(e.clientX - rect.left - (stampWidth/2), rect.width - stampWidth))
-    const newY = Math.max(0, Math.min(e.clientY - rect.top - 40, rect.height - 80))
+    const newX = Math.max(0, Math.min(e.clientX - rect.left - dragOffset.x, rect.width - stampWidth))
+    const newY = Math.max(0, Math.min(e.clientY - rect.top - dragOffset.y, rect.height - (stampWidth * 0.5)))
 
     setPos({ x: newX, y: newY })
   }
@@ -128,7 +139,7 @@ export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) 
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
-            className="w-full max-w-4xl min-h-[60vh] bg-white shadow-[0_40px_80px_-20px_rgba(0,0,0,0.3)] relative cursor-crosshair border border-slate-200 overflow-hidden"
+            className="w-full max-w-[800px] aspect-[1/1.414] bg-white shadow-[0_40px_80px_-20px_rgba(0,0,0,0.3)] relative cursor-crosshair border border-slate-200 overflow-hidden"
           >
             {doc.pdfFile ? (
               <SignedPdfPreview barcode={doc.barcode} fallbackUrl={doc.pdfFile.url} attachmentIndex={attachmentIndex} />
@@ -147,27 +158,27 @@ export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) 
                 isDragging
                   ? "border-blue-600 ring-4 ring-blue-500/10 scale-105 rotate-1 cursor-grabbing shadow-2xl"
                   : "border-slate-900 shadow-lg"
-              } cursor-grab rounded-lg flex flex-col items-center justify-center p-3 z-50 transition-all duration-75 select-none`}
+              } cursor-grab rounded-lg flex flex-col items-center justify-center p-2 z-50 transition-all duration-75 select-none`}
             >
               {/* Header */}
-              <div className="text-[10px] font-bold text-slate-900 mb-2 text-center leading-tight w-full border-b border-slate-100 pb-2">
+              <div className="text-[8px] font-bold text-slate-900 mb-1 text-center leading-tight w-full border-b border-slate-100 pb-1">
                 {settings?.orgName || "نظام الأرشفة الإلكتروني"}
               </div>
 
               {/* Barcode */}
               <img
                 src={barcodeUrl}
-                style={{ height: '40px', objectFit: 'contain' }}
+                style={{ height: '30px', objectFit: 'contain' }}
                 className="w-full pointer-events-none select-none mix-blend-multiply"
                 alt="barcode"
               />
 
               {/* Footer */}
-              <div className="text-[12px] font-black font-mono mt-2 text-slate-900 tracking-widest">
+              <div className="text-[10px] font-black font-mono mt-1 text-slate-900 tracking-widest">
                 {doc.barcode}
               </div>
               
-              <div className="w-full flex justify-between items-center mt-2 pt-2 border-t border-slate-100 text-[8px] text-slate-500 font-medium">
+              <div className="w-full flex justify-between items-center mt-1 pt-1 border-t border-slate-100 text-[6px] text-slate-500 font-medium">
                  <span>{new Date().toLocaleDateString('en-GB')}</span>
                  <span>{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
               </div>
@@ -196,8 +207,8 @@ export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) 
                 <label className="text-[11px] font-black text-slate-500 uppercase tracking-tight">حجم الختم</label>
                 <input 
                   type="range" 
-                  min={150} 
-                  max={400} 
+                  min={100} 
+                  max={300} 
                   step={10}
                   value={stampWidth} 
                   onChange={(e) => setStampWidth(Number(e.target.value))} 

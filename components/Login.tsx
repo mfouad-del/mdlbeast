@@ -175,11 +175,11 @@ export default function Login({ onLogin, logoUrl }: { onLogin?: (u: any) => void
                 جميع الحقوق محفوظه زوايا البناء للإستشارات الهندسيه
               </p>
               
-              <div className="pt-2 flex justify-center">
+              <div className="pt-4 flex justify-center">
                 <img 
                   src="/dev.png" 
                   alt="Developer" 
-                  className="h-6 opacity-40 hover:opacity-100 transition-opacity grayscale hover:grayscale-0"
+                  className="h-20 opacity-90 hover:opacity-100 transition-all"
                 />
               </div>
             </div>

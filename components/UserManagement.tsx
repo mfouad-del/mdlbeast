@@ -42,11 +42,12 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, c
 
   const isAdmin = (currentUserRole || '').toLowerCase() === 'admin';
 
-  // Filter potential managers (anyone with role manager or admin, excluding the user being edited)
-  const potentialManagers = users.filter(u => 
-    (u.role === 'manager' || u.role === 'admin') && 
-    (editingUserId ? String(u.id) !== String(editingUserId) : true)
-  );
+  // Filter potential managers (anyone with role manager, admin, or supervisor, excluding the user being edited)
+  const potentialManagers = users.filter(u => {
+    const r = String(u.role || '').toLowerCase();
+    return (r === 'manager' || r === 'admin' || r === 'supervisor') && 
+    (editingUserId ? String(u.id) !== String(editingUserId) : true);
+  });
 
   const handleFileUpload = async (file: File, type: 'signature' | 'stamp', isEdit: boolean) => {
     setIsUploading(true);
@@ -279,8 +280,8 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, c
                     editingUserId ? setEditUser({...editUser, role: val}) : setNewUser({...newUser, role: val});
                   }}>
                   <option value="member">مستخدم عادي (إدخال وبحث)</option>
-                  <option value="supervisor">مشرف</option>
-                  <option value="manager">مدير (تحكم محدود)</option>
+                  <option value="supervisor">مدير مباشر (صلاحيات إعتماد)</option>
+                  <option value="manager">مدير تنفيذي (تحكم محدود)</option>
                   <option value="admin">مدير نظام (تحكم كامل)</option>
                 </select>
               </div>
@@ -304,8 +305,8 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, c
               </div>
            </div>
 
-           {/* Signature & Stamp Upload - Only for Managers/Admins */}
-           {((editingUserId ? editUser.role : newUser.role) === 'manager' || (editingUserId ? editUser.role : newUser.role) === 'admin') && (
+           {/* Signature & Stamp Upload - Only for Managers/Admins/Supervisors */}
+           {['manager', 'admin', 'supervisor'].includes(String(editingUserId ? editUser.role : newUser.role).toLowerCase()) && (
              <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
                <div className="space-y-2">
                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2">التوقيع (صورة شفافة)</label>
@@ -369,12 +370,12 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, c
                 </td>
                 <td className="px-8 py-6">
                   <span className={`px-4 py-2 rounded-xl text-[10px] font-black border ${
-                    u.role === 'admin' ? 'bg-purple-50 text-purple-600 border-purple-100' : 
-                    u.role === 'manager' ? 'bg-blue-50 text-blue-600 border-blue-100' : 
-                    u.role === 'supervisor' ? 'bg-orange-50 text-orange-600 border-orange-100' : 
+                    String(u.role).toLowerCase() === 'admin' ? 'bg-purple-50 text-purple-600 border-purple-100' : 
+                    String(u.role).toLowerCase() === 'manager' ? 'bg-blue-50 text-blue-600 border-blue-100' : 
+                    String(u.role).toLowerCase() === 'supervisor' ? 'bg-orange-50 text-orange-600 border-orange-100' : 
                     'bg-slate-50 text-slate-600 border-slate-100'
                   }`}>
-                    {u.role === 'admin' ? 'مدير نظام (تحكم كامل)' : u.role === 'manager' ? 'مدير (تحكم محدود)' : u.role === 'supervisor' ? 'مشرف' : 'مستخدم عادي'}
+                    {String(u.role).toLowerCase() === 'admin' ? 'مدير نظام (تحكم كامل)' : String(u.role).toLowerCase() === 'manager' ? 'مدير تنفيذي (تحكم محدود)' : String(u.role).toLowerCase() === 'supervisor' ? 'مدير مباشر' : 'مستخدم عادي'}
                   </span>
                 </td>
                 <td className="px-8 py-6">
@@ -391,7 +392,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, c
                     <span className="text-xs text-slate-300 font-bold">-</span>
                   )}
                 </td>
-                <td className4"px-8 py-6">
+                <td className="px-8 py-6">
                   <div className="flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
                     <button onClick={() => startEditing(u)} className="p-3 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all" title="تعديل المستخدم">
                       <Edit3 size={18} />

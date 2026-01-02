@@ -79,10 +79,18 @@ export default function DocumentList({ docs, settings, currentUser, users, tenan
   const filtered = (localDocs || []).filter((doc) => {
     const title = doc.title || doc.subject || ""
     const barcode = doc.barcode || ""
+    const sender = doc.sender || ""
+    const receiver = doc.receiver || doc.recipient || ""
+    const description = doc.description || doc.notes || ""
+    
+    const searchLower = searchTerm.toLowerCase()
+    
     const matchesSearch =
-      title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      barcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (doc.sender || '').toLowerCase().includes(searchTerm.toLowerCase())
+      title.toLowerCase().includes(searchLower) ||
+      barcode.toLowerCase().includes(searchLower) ||
+      sender.toLowerCase().includes(searchLower) ||
+      receiver.toLowerCase().includes(searchLower) ||
+      description.toLowerCase().includes(searchLower)
 
     // Use documentDate as authoritative date for filtering
     const docDate = (doc.documentDate || doc.date || '').split('T')?.[0]

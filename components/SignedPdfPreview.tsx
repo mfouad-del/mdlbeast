@@ -26,7 +26,7 @@ export function SignedPdfPreview({ barcode, fallbackUrl, attachmentIndex = 0 }: 
   if (!url) return <div className="absolute inset-0 flex items-center justify-center text-slate-300"><div className="font-black opacity-20 text-2xl">جارٍ تجهيز المعاينة…</div></div>
 
   return (
-    <iframe src={`${url}#toolbar=0&navpanes=0&scrollbar=0`} className="w-full h-full min-h-[1131px] border-none" title="PDF Preview" />
+    <iframe src={`${url}#toolbar=0&navpanes=0&scrollbar=0&view=Fit`} className="w-full h-full border-none" title="PDF Preview" />
   )
 }
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   FileText, Plus, CheckCircle2, XCircle, Clock, 
-  ChevronLeft, Upload, User, FileSignature, Stamp, 
+  ChevronLeft, Upload, FileSignature, Stamp, 
   AlertCircle, Download, Eye, PenTool, Save
 } from 'lucide-react';
 import { apiClient } from '../lib/api-client';
@@ -62,10 +62,11 @@ export default function Approvals({ currentUser }: ApprovalsProps) {
   const fetchManagers = async () => {
     try {
       const users = await apiClient.getUsers();
-      // Filter users who can be managers (e.g. role manager or admin)
-      // Or just list all users as per requirement "select his manager from a dropdown list of other members"
-      // But usually we filter. Let's list all except self.
-      setManagers(users.filter(u => String(u.id) !== String(currentUser.id)));
+      // Filter users who can be managers (admin, manager, supervisor)
+      setManagers(users.filter(u => {
+        const r = String(u.role || '').toLowerCase();
+        return (r === 'admin' || r === 'manager' || r === 'supervisor') && String(u.id) !== String(currentUser.id);
+      }));
     } catch (error) {
       console.error('Error fetching managers:', error);
     }
@@ -176,7 +177,7 @@ export default function Approvals({ currentUser }: ApprovalsProps) {
           >
             طلباتي
           </button>
-          {(currentUser.role === 'manager' || currentUser.role === 'admin') && (
+          {(['manager', 'admin', 'supervisor'].includes(String(currentUser.role || '').toLowerCase())) && (
             <button
               onClick={() => setActiveTab('for-approval')}
               className={`px-6 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === 'for-approval' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
