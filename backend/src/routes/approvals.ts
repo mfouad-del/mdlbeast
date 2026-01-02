@@ -202,7 +202,8 @@ router.post('/', async (req: AuthRequest, res: Response) => {
       const managerData = await query('SELECT full_name, email FROM users WHERE id=$1 LIMIT 1', [manager_id])
       
       if (managerData.rows[0]?.email) {
-        const dashboardUrl = process.env.FRONTEND_URL || 'https://mahmoudalyyt.com/archive'
+        const baseUrl = process.env.FRONTEND_URL || 'https://zaco.sa'
+        const dashboardUrl = `${baseUrl}/dashboard`
         
         const emailHtml = generateApprovalRequestEmail({
           managerName: managerData.rows[0].full_name || 'المدير',
