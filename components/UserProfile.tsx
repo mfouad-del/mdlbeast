@@ -18,9 +18,11 @@ interface UserProfileProps {
 }
 
 const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdate, onClose }) => {
-  const [isUploading, setIsUploading] = useState(false);
+  const [isUploadingSignature, setIsUploadingSignature] = useState(false);
+  const [isUploadingStamp, setIsUploadingStamp] = useState(false);
   const [signatureUrl, setSignatureUrl] = useState(user.signature_url || '');
   const [stampUrl, setStampUrl] = useState(user.stamp_url || '');
+  const [uploadSuccess, setUploadSuccess] = useState<'signature' | 'stamp' | null>(null);
   const { toast } = useToast();
 
   const canUploadSignatures = ['manager', 'admin', 'supervisor'].includes(
@@ -28,10 +30,22 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdate, onClose }) =>
   );
 
   const handleFileUpload = async (file: File, type: 'signature' | 'stamp') => {
-    setIsUploading(true);
+    // Set loading state based on type
+    if (type === 'signature') {
+      setIsUploadingSignature(true);
+    } else {
+      setIsUploadingStamp(true);
+    }
+    
+    setUploadSuccess(null);
+    
     try {
       const result = await apiClient.uploadFile(file, 3, 'signatures');
       const uploadedUrl = result.url || result.file?.url;
+
+      if (!uploadedUrl) {
+        throw new Error('لم يتم الحصول على رابط الملف');
+      }
 
       // Get signed URL for immediate preview
       let displayUrl = uploadedUrl;
@@ -51,30 +65,45 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdate, onClose }) =>
       }
 
       // Update user profile with new signature/stamp
-      await apiClient.updateUser(user.id, {
-        [type === 'signature' ? 'signature_url' : 'stamp_url']: uploadedUrl
-      });
+      const updateData = type === 'signature' 
+        ? { signature_url: uploadedUrl }
+        : { stamp_url: uploadedUrl };
+      
+      await apiClient.updateUser(user.id, updateData);
 
+      // Update local state with signed URL
       if (type === 'signature') {
         setSignatureUrl(displayUrl);
       } else {
         setStampUrl(displayUrl);
       }
 
+      // Show success indicator
+      setUploadSuccess(type);
+      
       toast({
         title: '✅ تم الرفع بنجاح',
-        description: `تم رفع ${type === 'signature' ? 'التوقيع' : 'الختم'} وحفظه`
+        description: `تم رفع ${type === 'signature' ? 'التوقيع الشخصي' : 'ختم القسم'} وحفظه بنجاح`
       });
 
+      // Refresh parent component
       onUpdate();
+      
+      // Clear success indicator after 3 seconds
+      setTimeout(() => setUploadSuccess(null), 3000);
     } catch (error: any) {
+      console.error('Upload error:', error);
       toast({
-        title: '❌ خطأ',
-        description: error.message || 'فشل رفع الملف',
+        title: '❌ فشل الرفع',
+        description: error.message || `فشل رفع ${type === 'signature' ? 'التوقيع' : 'الختم'}. حاول مرة أخرى`,
         variant: 'destructive'
       });
     } finally {
-      setIsUploading(false);
+      if (type === 'signature') {
+        setIsUploadingSignature(false);
+      } else {
+        setIsUploadingStamp(false);
+      }
     }
   };
 
@@ -145,27 +174,43 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdate, onClose }) =>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Signature */}
-                <div className="bg-slate-50 p-6 rounded-2xl space-y-4">
+                <div className="bg-slate-50 p-6 rounded-2xl space-y-4 relative">
+                  {uploadSuccess === 'signature' && (
+                    <div className="absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded-lg text-xs font-bold animate-pulse">
+                      ✓ تم الرفع
+                    </div>
+                  )}
                   <div className="text-xs font-black text-slate-500 uppercase tracking-widest">
                     التوقيع الشخصي
                   </div>
-                  {signatureUrl && (
-                    <div className="bg-white p-4 rounded-xl border-2 border-slate-200">
+                  {signatureUrl ? (
+                    <div className="bg-white p-4 rounded-xl border-2 border-green-200 shadow-sm">
                       <img
                         src={signatureUrl}
                         alt="التوقيع"
                         className="h-20 w-full object-contain"
+                        key={signatureUrl} // Force re-render on URL change
                       />
                     </div>
+                  ) : (
+                    <div className="bg-white p-4 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center h-28">
+                      <p className="text-sm text-slate-400 font-bold">لا يوجد توقيع</p>
+                    </div>
                   )}
-                  <label className="cursor-pointer flex items-center justify-center gap-3 p-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-colors">
-                    <Upload size={18} />
-                    {isUploading ? 'جارٍ الرفع...' : signatureUrl ? 'تغيير التوقيع' : 'رفع توقيع'}
+                  <label className={`cursor-pointer flex items-center justify-center gap-3 p-4 rounded-xl font-bold transition-all ${
+                    isUploadingSignature 
+                      ? 'bg-blue-400 cursor-wait' 
+                      : signatureUrl 
+                        ? 'bg-green-600 hover:bg-green-700' 
+                        : 'bg-blue-600 hover:bg-blue-700'
+                  } text-white`}>
+                    <Upload size={18} className={isUploadingSignature ? 'animate-bounce' : ''} />
+                    {isUploadingSignature ? 'جارٍ الرفع...' : signatureUrl ? 'تغيير التوقيع' : 'رفع توقيع'}
                     <input
                       type="file"
                       accept="image/*"
                       className="hidden"
-                      disabled={isUploading}
+                      disabled={isUploadingSignature}
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) handleFileUpload(file, 'signature');
@@ -178,27 +223,43 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdate, onClose }) =>
                 </div>
 
                 {/* Stamp */}
-                <div className="bg-slate-50 p-6 rounded-2xl space-y-4">
+                <div className="bg-slate-50 p-6 rounded-2xl space-y-4 relative">
+                  {uploadSuccess === 'stamp' && (
+                    <div className="absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded-lg text-xs font-bold animate-pulse">
+                      ✓ تم الرفع
+                    </div>
+                  )}
                   <div className="text-xs font-black text-slate-500 uppercase tracking-widest">
                     ختم القسم
                   </div>
-                  {stampUrl && (
-                    <div className="bg-white p-4 rounded-xl border-2 border-slate-200">
+                  {stampUrl ? (
+                    <div className="bg-white p-4 rounded-xl border-2 border-green-200 shadow-sm">
                       <img
                         src={stampUrl}
                         alt="الختم"
                         className="h-20 w-full object-contain"
+                        key={stampUrl} // Force re-render on URL change
                       />
                     </div>
+                  ) : (
+                    <div className="bg-white p-4 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center h-28">
+                      <p className="text-sm text-slate-400 font-bold">لا يوجد ختم</p>
+                    </div>
                   )}
-                  <label className="cursor-pointer flex items-center justify-center gap-3 p-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-colors">
-                    <Stamp size={18} />
-                    {isUploading ? 'جارٍ الرفع...' : stampUrl ? 'تغيير الختم' : 'رفع ختم'}
+                  <label className={`cursor-pointer flex items-center justify-center gap-3 p-4 rounded-xl font-bold transition-all ${
+                    isUploadingStamp 
+                      ? 'bg-indigo-400 cursor-wait' 
+                      : stampUrl 
+                        ? 'bg-green-600 hover:bg-green-700' 
+                        : 'bg-indigo-600 hover:bg-indigo-700'
+                  } text-white`}>
+                    <Stamp size={18} className={isUploadingStamp ? 'animate-bounce' : ''} />
+                    {isUploadingStamp ? 'جارٍ الرفع...' : stampUrl ? 'تغيير الختم' : 'رفع ختم'}
                     <input
                       type="file"
                       accept="image/*"
                       className="hidden"
-                      disabled={isUploading}
+                      disabled={isUploadingStamp}
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) handleFileUpload(file, 'stamp');
