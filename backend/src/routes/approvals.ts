@@ -28,26 +28,23 @@ async function fetchBytes(url: string): Promise<Buffer> {
 function tryDeriveR2KeyFromUrl(rawUrl: string): { key: string | null; bucket: string | null } {
   try {
     const u = new URL(String(rawUrl))
-    const endpoint = String(process.env.CF_R2_ENDPOINT || '').replace(/\/$/, '')
-    const bucket = String(process.env.CF_R2_BUCKET || '').replace(/\/$/, '')
-    if (!endpoint || !bucket) return { key: null, bucket: null }
-
-    if (!u.href.startsWith(endpoint)) return { key: null, bucket: null }
-
-    const pathname = u.pathname.replace(/^\//, '')
-    // Expect: /<bucket>/<key>
+    const bucket = String(process.env.CF_R2_BUCKET || 'zaco')
+    
+    // Extract pathname and remove leading slash
+    let pathname = u.pathname.replace(/^\//, '')
+    
+    // If pathname starts with bucket name, remove it
     if (pathname.startsWith(bucket + '/')) {
-      return { key: decodeURIComponent(pathname.slice(bucket.length + 1)), bucket }
+      pathname = pathname.slice(bucket.length + 1)
     }
-
-    // Some endpoints may include bucket implicitly; fallback: drop first segment
-    const parts = pathname.split('/')
-    if (parts.length > 1) {
-      return { key: decodeURIComponent(parts.slice(1).join('/')), bucket }
-    }
-
-    return { key: null, bucket: null }
-  } catch {
+    
+    // Decode and return
+    const key = decodeURIComponent(pathname)
+    console.log('Derived R2 key from URL:', { rawUrl, key })
+    
+    return { key: key || null, bucket }
+  } catch (err) {
+    console.error('Failed to derive R2 key from URL:', err)
     return { key: null, bucket: null }
   }
 }
@@ -347,7 +344,23 @@ router.get('/:id/attachment-url', async (req: AuthRequest, res: Response) => {
     
     // Generate signed URL (5 min expiry)
     const { getSignedDownloadUrl } = await import('../lib/r2-storage')
-    const key = String(row.attachment_url).split('.com/')[1] || String(row.attachment_url).split('.com/zaco/')[1]
+    
+    // Extract key from URL properly
+    // URL format: https://xxx.r2.cloudflarestorage.com/bucket/uploads/approvals/file.pdf
+    let key = String(row.attachment_url)
+    
+    // Remove protocol and domain
+    if (key.includes('.com/')) {
+      key = key.split('.com/')[1]
+    }
+    
+    // Remove bucket name if present at the beginning
+    const bucket = String(process.env.CF_R2_BUCKET || 'zaco')
+    if (key.startsWith(bucket + '/')) {
+      key = key.substring(bucket.length + 1)
+    }
+    
+    console.log('Generating signed URL for key:', key)
     const signedUrl = await getSignedDownloadUrl(key, 300) // 5 minutes
     
     return res.json({ url: signedUrl })
