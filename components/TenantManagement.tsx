@@ -28,10 +28,15 @@ export default function TenantManagement({ companies, onUpdate }: TenantManageme
       let displayUrl = url
       if (url.includes('r2.cloudflarestorage.com')) {
         try {
-          const urlParts = url.split('/')
-          const key = urlParts.slice(-3).join('/') // uploads/signatures/filename.ext
-          const signedResult = await apiClient.getSignedUrl(key)
-          displayUrl = signedResult.url
+          const urlObj = new URL(url);
+          let pathname = urlObj.pathname.replace(/^\//, ''); // Remove leading slash
+          const bucket = 'zaco';
+          // If pathname starts with bucket name, remove it
+          if (pathname.startsWith(bucket + '/')) {
+            pathname = pathname.slice(bucket.length + 1);
+          }
+          const signedResult = await apiClient.getSignedUrl(pathname);
+          displayUrl = signedResult.url;
         } catch (err) {
           console.warn('Failed to get signed URL, using direct URL:', err)
         }

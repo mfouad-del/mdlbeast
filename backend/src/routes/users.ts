@@ -11,23 +11,31 @@ const router = express.Router()
 async function convertToSignedUrls(user: any) {
   if (user.signature_url && user.signature_url.includes('r2.cloudflarestorage.com')) {
     try {
-      const urlParts = user.signature_url.split('/')
-      const key = urlParts.slice(-2).join('/') // signatures/filename.ext
-      user.signature_url = await getSignedDownloadUrl(key)
+      const urlObj = new URL(user.signature_url);
+      let pathname = urlObj.pathname.replace(/^\//, '');
+      const bucket = process.env.CF_R2_BUCKET || 'zaco';
+      if (pathname.startsWith(bucket + '/')) {
+        pathname = pathname.slice(bucket.length + 1);
+      }
+      user.signature_url = await getSignedDownloadUrl(pathname);
     } catch (err) {
-      console.error('Failed to generate signed URL for signature:', err)
+      console.error('Failed to generate signed URL for signature:', err);
     }
   }
   if (user.stamp_url && user.stamp_url.includes('r2.cloudflarestorage.com')) {
     try {
-      const urlParts = user.stamp_url.split('/')
-      const key = urlParts.slice(-2).join('/') // stamps/filename.ext
-      user.stamp_url = await getSignedDownloadUrl(key)
+      const urlObj = new URL(user.stamp_url);
+      let pathname = urlObj.pathname.replace(/^\//, '');
+      const bucket = process.env.CF_R2_BUCKET || 'zaco';
+      if (pathname.startsWith(bucket + '/')) {
+        pathname = pathname.slice(bucket.length + 1);
+      }
+      user.stamp_url = await getSignedDownloadUrl(pathname);
     } catch (err) {
-      console.error('Failed to generate signed URL for stamp:', err)
+      console.error('Failed to generate signed URL for stamp:', err);
     }
   }
-  return user
+  return user;
 }
 
 // All routes require authentication

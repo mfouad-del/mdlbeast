@@ -53,17 +53,51 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, c
     setIsUploading(true);
     try {
       const result = await apiClient.uploadFile(file, 3, 'signatures');
-      const url = result.url || result.file?.url;
+      const uploadedUrl = result.url || result.file?.url;
       
-      if (isEdit) {
-        setEditUser(prev => ({ ...prev, [type === 'signature' ? 'signature_url' : 'stamp_url']: url }));
-      } else {
-        setNewUser(prev => ({ ...prev, [type === 'signature' ? 'signature_url' : 'stamp_url']: url }));
+      // Get signed URL for immediate preview
+      let displayUrl = uploadedUrl;
+      if (uploadedUrl) {
+        try {
+          // Extract R2 key from uploaded URL
+          const urlObj = new URL(uploadedUrl);
+          let pathname = urlObj.pathname.replace(/^\//, ''); // Remove leading slash
+          const bucket = 'zaco';
+          // If pathname starts with bucket name, remove it
+          if (pathname.startsWith(bucket + '/')) {
+            pathname = pathname.slice(bucket.length + 1);
+          }
+          
+          // Get signed URL
+          const signedResponse = await apiClient.getSignedUrl(pathname);
+          displayUrl = signedResponse.url;
+        } catch (err) {
+          console.warn('Failed to get signed URL, using original:', err);
+        }
       }
       
-      toast({ title: "تم الرفع", description: "تم رفع الصورة بنجاح" });
+      if (isEdit) {
+        setEditUser(prev => ({ 
+          ...prev, 
+          [type === 'signature' ? 'signature_url' : 'stamp_url']: displayUrl 
+        }));
+      } else {
+        setNewUser(prev => ({ 
+          ...prev, 
+          [type === 'signature' ? 'signature_url' : 'stamp_url']: displayUrl 
+        }));
+      }
+      
+      toast({ 
+        title: "✅ تم الرفع", 
+        description: `تم رفع ${type === 'signature' ? 'التوقيع' : 'الختم'} بنجاح` 
+      });
     } catch (error: any) {
-      toast({ title: "خطأ", description: "فشل رفع الملف", variant: "destructive" });
+      toast({ 
+        title: "❌ خطأ", 
+        description: error.message || "فشل رفع الملف", 
+        variant: "destructive" 
+      });
     } finally {
       setIsUploading(false);
     }

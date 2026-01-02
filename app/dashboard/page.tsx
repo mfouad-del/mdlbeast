@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { LayoutDashboard, FilePlus, FileMinus, Search, Users, LogOut, Scan, FileText, Briefcase, Database, Server, Lock, Shield, FileSignature } from "lucide-react"
+import { LayoutDashboard, FilePlus, FileMinus, Search, Users, LogOut, Scan, FileText, Briefcase, Database, Server, Lock, Shield, FileSignature, UserCircle } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
 import AsyncButton from '@/components/ui/async-button'
 import type { Correspondence, User, SystemSettings } from "@/types"
@@ -18,6 +18,7 @@ import AuditLogs from '@/components/AuditLogs'
 import UserManagement from "@/components/UserManagement"
 import ChangePassword from '@/components/ChangePassword'
 import Approvals from '@/components/Approvals'
+import UserProfile from '@/components/UserProfile'
 import { Spinner } from "@/components/ui/spinner"
 
 export default function DashboardPage() {
@@ -34,6 +35,7 @@ export default function DashboardPage() {
   const [loadStartedAt, setLoadStartedAt] = useState<number | null>(null)
   const [newTenant, setNewTenant] = useState({ name: '', slug: '', logo_url: '', signature_url: '' })
   const [approvalsNotificationCount, setApprovalsNotificationCount] = useState(0)
+  const [showUserProfile, setShowUserProfile] = useState(false)
 
   const uploadTenantSignature = async (file: File, tenantId?: number | string) => {
     try {
@@ -370,6 +372,12 @@ export default function DashboardPage() {
 
         <div className="p-6 border-t border-slate-100 bg-slate-50/30">
           <button
+            onClick={() => setShowUserProfile(true)}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-black text-blue-600 hover:bg-blue-50 transition-all mb-2"
+          >
+            <UserCircle size={16} /> الملف الشخصي
+          </button>
+          <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-black text-red-600 hover:bg-red-50 transition-all mb-4"
           >
@@ -566,6 +574,19 @@ export default function DashboardPage() {
           </button>
         </div>
       </main>
+
+      {/* User Profile Modal */}
+      {showUserProfile && currentUser && (
+        <UserProfile
+          user={currentUser}
+          onUpdate={async () => {
+            // Refresh current user data
+            const updatedUser = await apiClient.getCurrentUser();
+            setCurrentUser(updatedUser);
+          }}
+          onClose={() => setShowUserProfile(false)}
+        />
+      )}
     </div>
   )
 }

@@ -592,8 +592,8 @@ export default function Approvals({ currentUser, tenantSignatureUrl }: Approvals
           approvalTitle={selectedRequest.title}
           approvalDescription={selectedRequest.description}
           attachmentUrl={selectedRequest.attachment_url}
-          signatureUrl={currentUser.signature_url}
-          stampUrl={currentUser.stamp_url}
+          signatureUrl={selectedRequest.manager?.signature_url || currentUser.signature_url}
+          stampUrl={selectedRequest.manager?.stamp_url || currentUser.stamp_url}
           onSuccess={() => {
             setShowSignModal(false);
             setSelectedRequest(null);

@@ -147,7 +147,7 @@ export default function ApprovalSigner({
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-[2.5rem] w-full max-w-6xl h-[90vh] flex flex-col shadow-2xl">
+      <div className="bg-white rounded-[2.5rem] w-full max-w-7xl h-[95vh] flex flex-col shadow-2xl">
         {/* Header */}
         <div className="p-6 border-b border-slate-200 bg-gradient-to-r from-blue-50 to-slate-50">
           <div className="flex items-center justify-between">
