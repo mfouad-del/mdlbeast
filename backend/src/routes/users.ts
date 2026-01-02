@@ -129,4 +129,28 @@ router.get("/me", async (req: AuthRequest, res: Response) => {
   }
 })
 
+// Get managers list (public endpoint for all authenticated users)
+router.get("/managers", async (req: AuthRequest, res: Response) => {
+  try {
+    const hasEmail = (await query("SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'email' LIMIT 1")).rows.length > 0
+    const hasName = (await query("SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'name' LIMIT 1")).rows.length > 0
+
+    let select = "id, username AS username, full_name AS full_name, role"
+    if (hasEmail && hasName) select = "id, email AS username, name AS full_name, role"
+    else if (hasEmail) select = "id, email AS username, full_name AS full_name, role"
+    else if (hasName) select = "id, username AS username, name AS full_name, role"
+
+    const result = await query(`
+      SELECT ${select} 
+      FROM users 
+      WHERE role IN ('admin', 'manager', 'supervisor') 
+      ORDER BY full_name ASC
+    `)
+    res.json(result.rows)
+  } catch (error) {
+    console.error("Get managers error:", error)
+    res.status(500).json({ error: "Failed to fetch managers" })
+  }
+})
+
 export default router

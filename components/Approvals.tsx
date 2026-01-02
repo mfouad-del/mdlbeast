@@ -62,18 +62,27 @@ export default function Approvals({ currentUser, tenantSignatureUrl }: Approvals
 
   const fetchManagers = async () => {
     try {
-      const users = await apiClient.getUsers();
-      // Filter users who can be managers (admin, manager, supervisor)
-      setManagers(users.filter(u => {
-        const r = String(u.role || '').toLowerCase();
-        return (r === 'admin' || r === 'manager' || r === 'supervisor') && String(u.id) !== String(currentUser.id);
-      }));
+      // Use dedicated managers endpoint (available for all authenticated users)
+      const users = await apiClient.getManagers();
+      setManagers(users.filter(u => String(u.id) !== String(currentUser.id)));
     } catch (error) {
       console.error('Error fetching managers:', error);
+      setManagers([]);
     }
   };
 
   const handleFileUpload = async (file: File) => {
+    // Validate file size (50MB max)
+    const maxSize = 50 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast({ 
+        title: "خطأ", 
+        description: "حجم الملف أكبر من 50 ميجابايت", 
+        variant: "destructive" 
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const result = await apiClient.uploadFile(file, 3, 'approvals');
@@ -217,17 +226,29 @@ export default function Approvals({ currentUser, tenantSignatureUrl }: Approvals
 
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-500">المدير المسؤول</label>
-                  <select 
-                    required
-                    className="w-full p-4 bg-slate-50 rounded-2xl font-bold outline-none focus:bg-white focus:border focus:border-slate-900 transition-all appearance-none"
-                    value={newRequest.manager_id}
-                    onChange={e => setNewRequest({...newRequest, manager_id: e.target.value})}
-                  >
-                    <option value="">اختر المدير...</option>
-                    {managers.map(m => (
-                      <option key={m.id} value={m.id}>{m.full_name || m.username}</option>
-                    ))}
-                  </select>
+                  {managers.length === 0 ? (
+                    <div className="p-4 bg-amber-50 rounded-xl border border-amber-200">
+                      <div className="text-amber-800 text-sm font-bold mb-2 flex items-center gap-2">
+                        <span>⚠️</span>
+                        <span>لا يوجد مديرون متاحون</span>
+                      </div>
+                      <div className="text-amber-700 text-xs">
+                        يرجى التواصل مع الإدارة لإعداد المديرين في النظام.
+                      </div>
+                    </div>
+                  ) : (
+                    <select 
+                      required
+                      className="w-full p-4 bg-slate-50 rounded-2xl font-bold outline-none focus:bg-white focus:border focus:border-slate-900 transition-all appearance-none"
+                      value={newRequest.manager_id}
+                      onChange={e => setNewRequest({...newRequest, manager_id: e.target.value})}
+                    >
+                      <option value="">اختر المدير...</option>
+                      {managers.map(m => (
+                        <option key={m.id} value={m.id}>{m.full_name || m.username}</option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 <div className="md:col-span-2 space-y-2">

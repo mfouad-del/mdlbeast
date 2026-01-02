@@ -567,6 +567,10 @@ class ApiClient {
     return this.request<any[]>("/users")
   }
 
+  async getManagers() {
+    return this.request<any[]>("/users/managers")
+  }
+
   async createUser(payload: { username: string; password: string; full_name: string; role: string }) {
     return this.request<any>("/users", {
       method: 'POST',

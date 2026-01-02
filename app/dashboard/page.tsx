@@ -423,7 +423,14 @@ export default function DashboardPage() {
                             if (!f) return
                             const target = e.currentTarget
                             try {
+                              // Validate file size (10MB max for signatures)
+                              const maxSize = 10 * 1024 * 1024;
+                              if (f.size > maxSize) {
+                                alert('حجم الملف أكبر من 10 ميجابايت');
+                                return;
+                              }
                               await uploadTenantSignature(f)
+                              alert('تم رفع التوقيع بنجاح')
                             } catch (err) {
                               console.error(err)
                               alert('فشل رفع توقيع المؤسسة')
@@ -433,7 +440,10 @@ export default function DashboardPage() {
                           }}
                         />
                         {newTenant.signature_url && (
-                          <img src={newTenant.signature_url} className="h-10 w-28 object-contain border rounded bg-white" alt="signature" />
+                          <div className="flex flex-col items-start gap-1">
+                            <img src={newTenant.signature_url} className="h-10 w-28 object-contain border rounded bg-white p-1" alt="signature" />
+                            <div className="text-[10px] text-green-600 font-bold">✓ تم الرفع</div>
+                          </div>
                         )}
                       </div>
                       <div className="text-[11px] text-slate-500 mt-2">سيظهر للتوقيع داخل الطلبات والاعتمادات.</div>
@@ -467,7 +477,7 @@ export default function DashboardPage() {
                           </div>
                           <div>
                             <label className="text-slate-700 text-xs font-black mr-2 cursor-pointer inline-flex items-center gap-2 px-2 py-1 rounded bg-slate-100 hover:bg-slate-200">
-                              رفع توقيع
+                              {t.signature_url ? '🔄 تحديث التوقيع' : '📤 رفع توقيع'}
                               <input
                                 type="file"
                                 accept="image/*"
@@ -477,7 +487,14 @@ export default function DashboardPage() {
                                   if (!f) return
                                   const target = e.currentTarget
                                   try {
+                                    // Validate file size (10MB max for signatures)
+                                    const maxSize = 10 * 1024 * 1024;
+                                    if (f.size > maxSize) {
+                                      alert('حجم الملف أكبر من 10 ميجابايت');
+                                      return;
+                                    }
                                     await uploadTenantSignature(f, t.id)
+                                    alert('✓ تم تحديث التوقيع بنجاح')
                                   } catch (err) {
                                     console.error(err)
                                     alert('فشل رفع توقيع المؤسسة')

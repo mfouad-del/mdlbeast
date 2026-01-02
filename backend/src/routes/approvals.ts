@@ -139,6 +139,14 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     if (!requesterId) return res.status(401).json({ error: 'Unauthorized' })
     if (!title || !attachment_url || !manager_id) return res.status(400).json({ error: 'Missing fields' })
 
+    // Validate manager exists and has proper role
+    const mgr = await query('SELECT id, role FROM users WHERE id=$1 LIMIT 1', [manager_id])
+    if (mgr.rows.length === 0) return res.status(400).json({ error: 'المدير المحدد غير موجود' })
+    const mgrRole = String(mgr.rows[0].role || '').toLowerCase()
+    if (!['admin', 'manager', 'supervisor'].includes(mgrRole)) {
+      return res.status(400).json({ error: 'المستخدم المحدد ليس مديراً' })
+    }
+
     const ins = await query(
       'INSERT INTO approval_requests (requester_id, manager_id, title, description, attachment_url) VALUES ($1,$2,$3,$4,$5) RETURNING *',
       [requesterId, manager_id, title, description || null, attachment_url]
@@ -222,38 +230,43 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
 
     if (status !== 'APPROVED') return res.status(400).json({ error: 'Invalid status' })
 
-    // Resolve tenant signature first; fallback to manager signature
+    // Resolve tenant signature first; fallback to manager signature (single optimized query)
     let signatureUrl: string | null = null
     try {
-      // requester tenant_id -> tenants.signature_url
-      const requester = await query('SELECT tenant_id, signature_url FROM users WHERE id=$1 LIMIT 1', [row.requester_id])
-      const tenantId = requester.rows[0]?.tenant_id
-      if (tenantId) {
-        const t = await query('SELECT signature_url FROM tenants WHERE id=$1 LIMIT 1', [tenantId])
-        signatureUrl = t.rows[0]?.signature_url || null
-      }
-      // fallback: manager signature
-      if (!signatureUrl) signatureUrl = requester.rows[0]?.signature_url || null
-      if (!signatureUrl) {
-        const mgr = await query('SELECT signature_url FROM users WHERE id=$1 LIMIT 1', [actorId])
-        signatureUrl = mgr.rows[0]?.signature_url || null
-      }
+      const sig = await query(`
+        SELECT 
+          COALESCE(t.signature_url, reqU.signature_url, mgrU.signature_url) as signature
+        FROM approval_requests ar
+        LEFT JOIN users reqU ON reqU.id = ar.requester_id
+        LEFT JOIN tenants t ON t.id = reqU.tenant_id
+        LEFT JOIN users mgrU ON mgrU.id = ar.manager_id
+        WHERE ar.id = $1
+      `, [id])
+      signatureUrl = sig.rows[0]?.signature || null
     } catch (e) {
-      // ignore; will validate below
+      console.error('Signature resolution error:', e)
     }
 
     if (!signatureUrl) {
-      return res.status(400).json({ error: 'No signature configured (tenant or user). Please upload a signature first.' })
+      return res.status(400).json({ error: 'لا يوجد توقيع مُعد (للمؤسسة أو المستخدم). الرجاء رفع توقيع أولاً.' })
     }
 
-    const { signedUrl } = await signPdfAndUpload({ approvalId: id, attachmentUrl: row.attachment_url, signatureUrl })
+    // Use transaction to ensure consistency
+    await query('BEGIN')
+    try {
+      const { signedUrl } = await signPdfAndUpload({ approvalId: id, attachmentUrl: row.attachment_url, signatureUrl })
 
-    const upd = await query(
-      "UPDATE approval_requests SET status='APPROVED', signed_attachment_url=$1, updated_at=NOW() WHERE id=$2 RETURNING *",
-      [signedUrl, id]
-    )
+      const upd = await query(
+        "UPDATE approval_requests SET status='APPROVED', signed_attachment_url=$1, updated_at=NOW() WHERE id=$2 RETURNING *",
+        [signedUrl, id]
+      )
 
-    return res.json(upd.rows[0])
+      await query('COMMIT')
+      return res.json(upd.rows[0])
+    } catch (err) {
+      await query('ROLLBACK')
+      throw err
+    }
   } catch (err: any) {
     console.error('Update approval error:', err)
     return res.status(500).json({ error: String(err?.message || err) })
