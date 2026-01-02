@@ -34,12 +34,12 @@ const App: React.FC = () => {
   
   const [settings] = useState<SystemSettings>({
     primaryColor: '#0f172a',
-    footerText: 'نظام الأرشفة الموحد - جميع الحقوق محفوظة © 2025',
+    footerText: 'مركز الإتصالات الإدارية - جميع الحقوق محفوظة © 2025',
     showStamp: true,
     companies: []
   });
 
-  const [newCompany, setNewCompany] = useState({ nameAr: '', nameEn: '', logoUrl: 'https://www.zaco.sa/logo2.png' });
+  const [newCompany, setNewCompany] = useState({ nameAr: '', nameEn: '', logoUrl: 'https://www.zaco.sa/logo2.png', signatureUrl: '' });
   const [editingCompanyId, setEditingCompanyId] = useState<string | null>(null);
   const [globalError, setGlobalError] = useState<string | null>(null);
 
@@ -182,7 +182,7 @@ const App: React.FC = () => {
 
   const startEditCompany = (company: Company) => {
     setEditingCompanyId(company.id);
-    setNewCompany({ nameAr: company.nameAr, nameEn: company.nameEn, logoUrl: company.logoUrl });
+    setNewCompany({ nameAr: company.nameAr, nameEn: company.nameEn, logoUrl: company.logoUrl, signatureUrl: company.signatureUrl || '' });
   };
 
   const handleAddOrUpdateCompany = async () => {
@@ -190,12 +190,12 @@ const App: React.FC = () => {
     try {
       const slug = newCompany.nameAr.toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, '-').replace(/--+/g, '-')
       if (editingCompanyId) {
-        await apiClient.updateTenant(editingCompanyId, { name: newCompany.nameAr, slug, logo_url: newCompany.logoUrl })
+        await apiClient.updateTenant(editingCompanyId, { name: newCompany.nameAr, slug, logo_url: newCompany.logoUrl, signature_url: (newCompany as any).signatureUrl || undefined })
         setEditingCompanyId(null)
       } else {
-        await apiClient.createTenant({ name: newCompany.nameAr, slug, logo_url: newCompany.logoUrl })
+        await apiClient.createTenant({ name: newCompany.nameAr, slug, logo_url: newCompany.logoUrl, signature_url: (newCompany as any).signatureUrl || undefined })
       }
-      setNewCompany({ nameAr: '', nameEn: '', logoUrl: 'https://www.zaco.sa/logo2.png' });
+      setNewCompany({ nameAr: '', nameEn: '', logoUrl: 'https://www.zaco.sa/logo2.png', signatureUrl: '' });
       loadInitialData();
     } catch (err) {
       console.error('Tenant upsert failed', err);
@@ -284,7 +284,7 @@ const App: React.FC = () => {
           {activeTab === 'outgoing' && <DocumentForm type={DocType.OUTGOING} onSave={handleSaveDoc} companies={companies} />}
           {activeTab === 'list' && <DocumentList docs={docs} settings={{...settings, orgName: currentCompany?.nameAr, logoUrl: currentCompany?.logoUrl, orgNameEn: currentCompany?.nameEn}} currentUser={currentUser} users={users} /> }
           {activeTab === 'scanner' && <BarcodeScanner />}
-          {activeTab === 'approvals' && <Approvals currentUser={currentUser} />}
+          {activeTab === 'approvals' && <Approvals currentUser={currentUser} tenantSignatureUrl={(currentCompany as any)?.signatureUrl || (currentCompany as any)?.signature_url || ''} />}
           {activeTab === 'reports' && <ReportGenerator docs={docs} settings={{orgName: currentCompany?.nameAr || '', logoUrl: currentCompany?.logoUrl || ''}} />}
           {activeTab === 'users' && <UserManagement users={users} onUpdateUsers={async () => { loadInitialData(); }} currentUserEmail={currentUser.email || currentUser.username || ''} />}
           {activeTab === 'change-password' && <ChangePassword />}
@@ -305,7 +305,7 @@ const App: React.FC = () => {
                      <div className="space-y-6">
                         <div className="flex justify-between items-center mb-2">
                            <h3 className="text-xl font-black text-slate-900">{editingCompanyId ? 'تعديل مؤسسة' : 'إضافة مؤسسة جديدة'}</h3>
-                           {editingCompanyId && <button onClick={() => { setEditingCompanyId(null); setNewCompany({nameAr:'', nameEn:'', logoUrl:'https://www.zaco.sa/logo2.png'}); }} className="text-slate-400 hover:text-red-500"><X size={20}/></button>}
+                           {editingCompanyId && <button onClick={() => { setEditingCompanyId(null); setNewCompany({nameAr:'', nameEn:'', logoUrl:'https://www.zaco.sa/logo2.png', signatureUrl: ''}); }} className="text-slate-400 hover:text-red-500"><X size={20}/></button>}
                         </div>
                         <div className="space-y-2">
                           <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">اسم المؤسسة (بالعربي)</label>

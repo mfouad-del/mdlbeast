@@ -116,7 +116,7 @@ router.post('/json', async (req: any, res: any) => {
   try {
     const docs = (await query("SELECT id, barcode, type, sender, receiver, date, subject, statement, priority, status, classification, notes, attachments, tenant_id, created_at, updated_at FROM documents")).rows
     const barcodes = (await query("SELECT id, barcode, type, created_at FROM barcodes")).rows
-    const tenants = (await query("SELECT id, name, slug FROM tenants")).rows
+    const tenants = (await query("SELECT id, name, slug, logo_url, signature_url FROM tenants")).rows
     let settings: any = {}
     try {
       const r = await query('SELECT name, value FROM system_settings')
@@ -175,7 +175,10 @@ router.post('/json/restore', uploadJson.single('file'), async (req: any, res: an
       const tenantMap: Record<string, number> = {}
       for (const t of tenants) {
         if (!t.slug) continue
-        const r = await query("INSERT INTO tenants (name, slug) VALUES ($1,$2) ON CONFLICT (slug) DO UPDATE SET name=EXCLUDED.name RETURNING id", [t.name, t.slug])
+        const r = await query(
+          "INSERT INTO tenants (name, slug, logo_url, signature_url) VALUES ($1,$2,$3,$4) ON CONFLICT (slug) DO UPDATE SET name=EXCLUDED.name, logo_url=EXCLUDED.logo_url, signature_url=EXCLUDED.signature_url RETURNING id",
+          [t.name, t.slug, t.logo_url || null, t.signature_url || null]
+        )
         tenantMap[t.slug] = r.rows[0].id
       }
 

@@ -60,7 +60,7 @@ export default function DocumentList({ docs, settings, currentUser, users, tenan
     
     setUploadingAttachmentFor(targetBarcode)
     try {
-      const uploaded = await apiClient.uploadFile(file)
+      const uploaded = await apiClient.uploadFile(file, 3, 'documents')
       await apiClient.addAttachment(targetBarcode, uploaded)
       // Fetch updated document and update local state (avoid full page reload)
       const updated = await apiClient.getDocumentByBarcode(targetBarcode)

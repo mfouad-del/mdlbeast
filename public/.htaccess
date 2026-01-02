@@ -1,23 +1,21 @@
+DirectoryIndex index.html
+
 <IfModule mod_rewrite.c>
 RewriteEngine On
 
 # Block any requests to wp-includes to prevent 404 errors
 RewriteRule ^wp-includes/ - [R=404,L]
 
-# ❌ Prevent any Redirect or Rewrite on Next files
+# Never rewrite Next assets
 RewriteRule ^_next/ - [L]
-RewriteRule ^archive/_next/ - [L]
 
-# ❌ Prevent converting or redirecting www on Next files
-RewriteCond %{REQUEST_URI} ^/(archive/)?_next/ [NC]
-RewriteRule .* - [L]
-</IfModule>
+# Serve existing files/directories as-is
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
 
-# Force canonical host: redirect www to non-www (preserve path)
-<IfModule mod_rewrite.c>
-  RewriteEngine On
-  RewriteCond %{HTTP_HOST} ^www\.zaco\.sa$ [NC]
-  RewriteRule ^(.*)$ https://zaco.sa/$1 [R=301,L]
+# Fallback (helps when a user opens /dashboard without trailing slash on some hosts)
+RewriteRule ^ index.html [L]
 </IfModule>
 
 # Security: prevent directory listing

@@ -10,9 +10,10 @@ import { User, ApprovalRequest } from '../types';
 
 interface ApprovalsProps {
   currentUser: User;
+  tenantSignatureUrl?: string;
 }
 
-export default function Approvals({ currentUser }: ApprovalsProps) {
+export default function Approvals({ currentUser, tenantSignatureUrl }: ApprovalsProps) {
   const [activeTab, setActiveTab] = useState<'my-requests' | 'for-approval'>('my-requests');
   const [myRequests, setMyRequests] = useState<ApprovalRequest[]>([]);
   const [pendingApprovals, setPendingApprovals] = useState<ApprovalRequest[]>([]);
@@ -75,7 +76,7 @@ export default function Approvals({ currentUser }: ApprovalsProps) {
   const handleFileUpload = async (file: File) => {
     setIsSubmitting(true);
     try {
-      const result = await apiClient.uploadFile(file);
+      const result = await apiClient.uploadFile(file, 3, 'approvals');
       setNewRequest(prev => ({ ...prev, attachment_url: result.url || result.file?.url }));
       toast({ title: "تم الرفع", description: "تم رفع الملف بنجاح" });
     } catch (error) {
@@ -135,20 +136,12 @@ export default function Approvals({ currentUser }: ApprovalsProps) {
   };
 
   const handleApprove = async () => {
-    // In a real implementation, this would involve the canvas signature merging.
-    // For now, we'll simulate it by just updating the status.
-    // The signature merging logic would go here (uploading the signed file then calling update).
-    
     if (!selectedRequest) return;
     
     setIsSubmitting(true);
     try {
-      // Simulate signed file url (in real app, this comes from the canvas merge result)
-      const signedUrl = selectedRequest.attachment_url; 
-      
       await apiClient.updateApprovalRequest(selectedRequest.id, {
-        status: 'APPROVED',
-        signed_attachment_url: signedUrl
+        status: 'APPROVED'
       });
       
       toast({ title: "تم الاعتماد", description: "تم اعتماد الطلب وتوقيعه بنجاح" });
@@ -471,7 +464,7 @@ export default function Approvals({ currentUser }: ApprovalsProps) {
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h3 className="text-xl font-black text-slate-900">اعتماد وتوقيع</h3>
-                <p className="text-slate-500 text-sm font-bold">سيتم إضافة توقيعك وختمك على المستند</p>
+                <p className="text-slate-500 text-sm font-bold">سيتم إضافة التوقيع على المستند (توقيع المؤسسة/توقيعك) حسب المتوفر</p>
               </div>
               <button onClick={() => setShowSignModal(false)} className="text-slate-400 hover:text-red-500"><XCircle size={24}/></button>
             </div>
@@ -484,6 +477,12 @@ export default function Approvals({ currentUser }: ApprovalsProps) {
                 <p className="text-xs text-slate-400 mt-2">في النسخة الكاملة، سيظهر هنا المستند مع إمكانية سحب وإفلات التوقيع</p>
                 
                 <div className="mt-8 flex justify-center gap-4">
+                  {tenantSignatureUrl && (
+                    <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
+                      <img src={tenantSignatureUrl} alt="Tenant Signature" className="h-12 object-contain" />
+                      <p className="text-[10px] text-center mt-2 text-slate-400 font-bold">توقيع المؤسسة</p>
+                    </div>
+                  )}
                   {currentUser.signature_url && (
                     <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
                       <img src={currentUser.signature_url} alt="Signature" className="h-12 object-contain" />

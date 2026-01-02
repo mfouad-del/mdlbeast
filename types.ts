@@ -29,6 +29,7 @@ export interface Company {
   nameEn: string;
   logoUrl: string;
   registrationNumber?: string;
+  signatureUrl?: string;
 }
 
 export interface User {

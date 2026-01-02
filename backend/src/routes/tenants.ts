@@ -10,8 +10,11 @@ router.use(authenticateToken)
 // Create tenant
 router.post("/", isAdmin, async (req: Request, res: Response) => {
   try {
-    const { name, slug, logo_url } = req.body
-    const ins = await query("INSERT INTO tenants (name, slug, logo_url) VALUES ($1,$2,$3) RETURNING *", [name, slug, logo_url])
+    const { name, slug, logo_url, signature_url } = req.body
+    const ins = await query(
+      "INSERT INTO tenants (name, slug, logo_url, signature_url) VALUES ($1,$2,$3,$4) RETURNING *",
+      [name, slug, logo_url, signature_url]
+    )
     res.status(201).json(ins.rows[0])
   } catch (err: any) {
     console.error("Create tenant error:", err)
@@ -34,8 +37,11 @@ router.get("/", async (_req: Request, res: Response) => {
 router.put('/:id', isAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params
-    const { name, slug, logo_url } = req.body
-    const r = await query('UPDATE tenants SET name = $1, slug = $2, logo_url = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING *', [name, slug, logo_url, id])
+    const { name, slug, logo_url, signature_url } = req.body
+    const r = await query(
+      'UPDATE tenants SET name = $1, slug = $2, logo_url = $3, signature_url = $4, updated_at = CURRENT_TIMESTAMP WHERE id = $5 RETURNING *',
+      [name, slug, logo_url, signature_url, id]
+    )
     if (r.rows.length === 0) return res.status(404).json({ error: 'Tenant not found' })
     res.json(r.rows[0])
   } catch (err: any) {

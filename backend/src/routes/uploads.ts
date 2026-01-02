@@ -18,7 +18,14 @@ const storage = multer.diskStorage({
 })
 
 const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 }, fileFilter: (req: any, file: any, cb: (err: Error | null, accept?: boolean) => void) => {
-  if (file.mimetype !== 'application/pdf') return cb(new Error('Only PDF allowed'))
+  const ok = [
+    'application/pdf',
+    'image/png',
+    'image/jpeg',
+    'image/jpg',
+    'image/webp',
+  ].includes(String(file.mimetype || '').toLowerCase())
+  if (!ok) return cb(new Error('Only PDF or image files are allowed'))
   cb(null, true)
 }})
 
@@ -26,6 +33,20 @@ router.post('/', upload.single('file'), async (req: Request, res: Response) => {
   try {
     const f: any = (req as any).file
     if (!f) return res.status(400).json({ error: 'No file' })
+
+    // Optional folder selection: documents | approvals | signatures | ...
+    // Keep it safe: only allow a-z 0-9 _ - /
+    const rawFolder = String((req as any).query?.folder || '').trim()
+    const safeFolder = rawFolder && /^[a-z0-9\/_-]+$/i.test(rawFolder) ? rawFolder.replace(/^\/+|\/+$/g, '') : ''
+
+    const mt = String(f.mimetype || '').toLowerCase()
+    const isPdf = mt === 'application/pdf'
+
+    // Defaults:
+    // - PDFs default to "documents" unless folder specified
+    // - Images default to "signatures" unless folder specified
+    const defaultFolder = isPdf ? 'documents' : 'signatures'
+    const folder = safeFolder || defaultFolder
 
     // Storage decision: prefer R2 when configured OR when USE_R2_ONLY is enabled
     const { USE_R2_ONLY, R2_CONFIGURED, preferR2 } = await import('../config/storage')
@@ -40,7 +61,7 @@ router.post('/', upload.single('file'), async (req: Request, res: Response) => {
         const body = fs.readFileSync(f.path)
         const ext = path.extname(f.originalname || f.filename || '') || ''
         const safeBase = `${Date.now()}-${Math.random().toString(36).slice(2,9)}`
-        const key = `uploads/${safeBase}${ext}`
+        const key = `uploads/${folder}/${safeBase}${ext}`
         console.log('Uploading to R2 with key=', key, 'originalName=', f.originalname)
         const url = await uploadBuffer(key, body, f.mimetype, 'public, max-age=0')
         try { fs.unlinkSync(f.path) } catch (e) {}

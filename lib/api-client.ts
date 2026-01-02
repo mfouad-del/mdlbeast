@@ -472,11 +472,13 @@ class ApiClient {
   }
 
   // File upload (multipart/form-data) with retry and longer timeout for flaky networks
-  async uploadFile(file: File, maxAttempts = 3) {
+  async uploadFile(file: File, maxAttempts = 3, folder?: string) {
     const form = new FormData()
     form.append('file', file)
     const headers: any = {}
     if (this.token) headers['Authorization'] = `Bearer ${this.token}`
+
+    const qp = folder ? `?folder=${encodeURIComponent(folder)}` : ''
 
     const attemptUpload = async (attempt: number): Promise<any> => {
       const controller = new AbortController()
@@ -484,7 +486,7 @@ class ApiClient {
       const timeoutMs = 60_000
       const timeout = setTimeout(() => controller.abort(), timeoutMs)
       try {
-        const res = await fetch(`${API_BASE_URL}/uploads`, { method: 'POST', body: form, headers, signal: controller.signal })
+        const res = await fetch(`${API_BASE_URL}/uploads${qp}`, { method: 'POST', body: form, headers, signal: controller.signal })
         const body = await res.json().catch(() => null)
         if (!res.ok) {
           let msg = 'Upload failed'
@@ -540,14 +542,14 @@ class ApiClient {
     })
   }
 
-  async createTenant(payload: { name: string; slug: string; logo_url?: string }) {
+  async createTenant(payload: { name: string; slug: string; logo_url?: string; signature_url?: string }) {
     return this.request<any>(`/tenants`, {
       method: 'POST',
       body: JSON.stringify(payload),
     })
   }
 
-  async updateTenant(id: number | string, payload: { name?: string; slug?: string; logo_url?: string }) {
+  async updateTenant(id: number | string, payload: { name?: string; slug?: string; logo_url?: string; signature_url?: string }) {
     return this.request<any>(`/tenants/${id}`, {
       method: 'PUT',
       body: JSON.stringify(payload),

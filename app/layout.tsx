@@ -11,7 +11,7 @@ const tajawal = Tajawal({
 })
 
 export const metadata: Metadata = {
-  title: "نظام الأرشفة الموحد - زوايا البناء",
+  title: "مركز الإتصالات الإدارية",
   description: "نظام إدارة المراسلات والأرشفة الرقمية",
   generator: "v0.app",
   icons: {

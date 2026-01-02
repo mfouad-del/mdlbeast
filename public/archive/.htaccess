@@ -1,37 +1,19 @@
-# .htaccess for the /archive static export folder
-# - Serve index directly and keep Next assets untouched
-
 DirectoryIndex index.html
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
-  # Prevent any redirect or rewrite on archive's Next assets
+  # Never rewrite Next assets
   RewriteRule ^_next/ - [L]
-  RewriteRule ^archive/_next/ - [L]
 
-  # If requests come to root /_next or /static, rewrite them internally to /archive
-  RewriteCond %{REQUEST_URI} ^/_next/ [OR]
-  RewriteCond %{REQUEST_URI} ^/static/ [OR]
-  RewriteCond %{REQUEST_URI} \.(css|js|png|jpg|jpeg|gif|svg|woff2|woff|ttf|otf|eot|ico)$ [NC]
-  RewriteRule ^(.*)$ /archive/$1 [L]
+  # Serve existing files/directories as-is
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Fallback
+  RewriteRule ^ index.html [L]
 </IfModule>
-
-# CORS for fonts and JS/CSS — explicit origin (Bluehost safe)
-<IfModule mod_headers.c>
-<FilesMatch "\.(woff2|woff|ttf|otf|eot|js|css)$">
-  Header always set Access-Control-Allow-Origin "https://zaco.sa"
-  Header always set Access-Control-Allow-Methods "GET, OPTIONS"
-</FilesMatch>
-</IfModule>
-
-# Prevent directory listing
-<IfModule mod_autoindex.c>
-  Options -Indexes
-</IfModule>
-
-# Note: removed mod_headers directives to avoid 500s on shared hosts.
-# If your host allows setting headers, configure them at the host control panel or server config.
 
 # Prevent directory listing
 <IfModule mod_autoindex.c>

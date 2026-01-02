@@ -157,7 +157,7 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
         // upload file to backend and get URL
         // import apiClient dynamically to avoid circular import issues in some builds
         const { apiClient } = await import("../lib/api-client")
-        const uploaded = await apiClient.uploadFile(file as File)
+        const uploaded = await apiClient.uploadFile(file as File, 3, 'documents')
         // Include key/bucket/storage when available so server can access the object directly (R2/Supabase)
         pdfFile = { name: uploaded.name, size: uploaded.size, url: uploaded.url, key: uploaded.key, bucket: uploaded.bucket, storage: uploaded.storage }
       }

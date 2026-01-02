@@ -11,6 +11,7 @@ import barcodeRoutes from "./routes/barcodes"
 import reportRoutes from "./routes/reports"
 import tenantRoutes from "./routes/tenants"
 import snapshotRoutes from "./routes/snapshots"
+import approvalRoutes from "./routes/approvals"
 import { errorHandler } from "./middleware/errorHandler"
 import { query } from "./config/database"
 import { logBuffer } from "./lib/logBuffer"
@@ -79,6 +80,7 @@ app.use('/api/barcodes', barcodeRoutes)
 app.use('/api/reports', reportRoutes)
 app.use('/api/tenants', tenantRoutes)
 app.use('/api/snapshots', snapshotRoutes)
+app.use('/api/approvals', approvalRoutes)
 
 // Uploads route (accepts PDF via multipart/form-data)
 import uploadRoutes from './routes/uploads'

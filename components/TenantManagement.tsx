@@ -10,25 +10,37 @@ interface TenantManagementProps {
 }
 
 export default function TenantManagement({ companies, onUpdate }: TenantManagementProps) {
-  const [newCompany, setNewCompany] = useState({ nameAr: '', nameEn: '', logoUrl: 'https://www.zaco.sa/logo2.png' });
+  const [newCompany, setNewCompany] = useState({ nameAr: '', nameEn: '', logoUrl: 'https://www.zaco.sa/logo2.png', signatureUrl: '' });
   const [editingCompanyId, setEditingCompanyId] = useState<string | null>(null);
 
   const startEditCompany = (company: Company) => {
     setEditingCompanyId(company.id);
-    setNewCompany({ nameAr: company.nameAr, nameEn: company.nameEn, logoUrl: company.logoUrl });
+    setNewCompany({ nameAr: company.nameAr, nameEn: company.nameEn, logoUrl: company.logoUrl, signatureUrl: company.signatureUrl || '' });
   };
+
+  const handleSignatureUpload = async (file: File) => {
+    try {
+      const result = await apiClient.uploadFile(file, 3, 'signatures')
+      const url = result?.url || result?.file?.url
+      if (!url) throw new Error('Upload did not return a URL')
+      setNewCompany(prev => ({ ...prev, signatureUrl: url }))
+    } catch (err) {
+      console.error('Tenant signature upload failed', err)
+      alert('فشل رفع توقيع المؤسسة')
+    }
+  }
 
   const handleAddOrUpdateCompany = async () => {
     if (!newCompany.nameAr) return;
     try {
       const slug = newCompany.nameAr.toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, '-').replace(/--+/g, '-')
       if (editingCompanyId) {
-        await apiClient.updateTenant(editingCompanyId, { name: newCompany.nameAr, slug, logo_url: newCompany.logoUrl })
+        await apiClient.updateTenant(editingCompanyId, { name: newCompany.nameAr, slug, logo_url: newCompany.logoUrl, signature_url: newCompany.signatureUrl || undefined })
         setEditingCompanyId(null)
       } else {
-        await apiClient.createTenant({ name: newCompany.nameAr, slug, logo_url: newCompany.logoUrl })
+        await apiClient.createTenant({ name: newCompany.nameAr, slug, logo_url: newCompany.logoUrl, signature_url: newCompany.signatureUrl || undefined })
       }
-      setNewCompany({ nameAr: '', nameEn: '', logoUrl: 'https://www.zaco.sa/logo2.png' });
+      setNewCompany({ nameAr: '', nameEn: '', logoUrl: 'https://www.zaco.sa/logo2.png', signatureUrl: '' });
       onUpdate();
     } catch (err) {
       console.error('Tenant upsert failed', err);
@@ -86,6 +98,26 @@ export default function TenantManagement({ companies, onUpdate }: TenantManageme
                 onChange={e => setNewCompany({...newCompany, logoUrl: e.target.value})} 
               />
             </div>
+
+            <div className="space-y-2">
+              <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">توقيع المؤسسة (اختياري)</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0]
+                    if (f) handleSignatureUpload(f)
+                    e.currentTarget.value = ''
+                  }}
+                  className="block w-full text-xs font-bold text-slate-600 file:mr-3 file:rounded-xl file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-white file:font-black hover:file:bg-black"
+                />
+                {newCompany.signatureUrl && (
+                  <img src={newCompany.signatureUrl} alt="Tenant signature" className="h-12 w-28 object-contain border border-slate-200 rounded-xl bg-white" />
+                )}
+              </div>
+              <div className="text-[10px] text-slate-400 font-bold">سيُستخدم في التوقيع على الطلبات/الاعتمادات.</div>
+            </div>
             <button 
               onClick={handleAddOrUpdateCompany} 
               className="w-full bg-slate-900 text-white py-4 md:py-6 rounded-[1.5rem] font-black text-base md:text-lg shadow-xl hover:bg-black transition-all flex items-center justify-center gap-3 active:scale-95"
@@ -95,7 +127,7 @@ export default function TenantManagement({ companies, onUpdate }: TenantManageme
             
             {editingCompanyId && (
               <button 
-                onClick={() => { setEditingCompanyId(null); setNewCompany({ nameAr: '', nameEn: '', logoUrl: 'https://www.zaco.sa/logo2.png' }); }}
+                onClick={() => { setEditingCompanyId(null); setNewCompany({ nameAr: '', nameEn: '', logoUrl: 'https://www.zaco.sa/logo2.png', signatureUrl: '' }); }}
                 className="w-full bg-slate-100 text-slate-500 py-3 rounded-[1rem] font-bold text-sm hover:bg-slate-200 transition-all"
               >
                 إلغاء التعديل
@@ -116,6 +148,11 @@ export default function TenantManagement({ companies, onUpdate }: TenantManageme
                     <div>
                       <div className="font-black text-sm md:text-base text-slate-900">{c.nameAr}</div>
                       <div className="text-[10px] font-black text-slate-400 uppercase mt-1">{c.nameEn}</div>
+                      {c.signatureUrl && (
+                        <div className="mt-2">
+                          <img src={c.signatureUrl} alt="Signature" className="h-8 object-contain border border-slate-200 rounded-lg bg-white" />
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="flex gap-2 w-full md:w-auto justify-end">

@@ -52,7 +52,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, c
   const handleFileUpload = async (file: File, type: 'signature' | 'stamp', isEdit: boolean) => {
     setIsUploading(true);
     try {
-      const result = await apiClient.uploadFile(file);
+      const result = await apiClient.uploadFile(file, 3, 'signatures');
       const url = result.url || result.file?.url;
       
       if (isEdit) {

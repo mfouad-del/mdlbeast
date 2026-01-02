@@ -31,11 +31,24 @@ export default function DashboardPage() {
   const [loadingStep, setLoadingStep] = useState<string | null>(null)
   const [loadingError, setLoadingError] = useState<string | null>(null)
   const [loadStartedAt, setLoadStartedAt] = useState<number | null>(null)
-  const [newTenant, setNewTenant] = useState({ name: '', slug: '', logo_url: '' })
+  const [newTenant, setNewTenant] = useState({ name: '', slug: '', logo_url: '', signature_url: '' })
+
+  const uploadTenantSignature = async (file: File, tenantId?: number | string) => {
+    const result = await apiClient.uploadFile(file, 3, 'signatures')
+    const url = result?.url || result?.file?.url
+    if (!url) throw new Error('Upload did not return a URL')
+
+    if (tenantId) {
+      await apiClient.updateTenant(tenantId, { signature_url: url })
+      setTenants(await apiClient.getTenants())
+    } else {
+      setNewTenant(prev => ({ ...prev, signature_url: url }))
+    }
+  }
 
   const [settings] = useState<SystemSettings>({
     primaryColor: "#0f172a",
-    footerText: "نظام الأرشفة الموحد - جميع الحقوق محفوظة © 2025",
+    footerText: "مركز الإتصالات الإدارية - جميع الحقوق محفوظة © 2025",
     showStamp: true,
     orgName: "زوايا البناء للإستشارات الهندسية",
     orgNameEn: "ZAWAYA ALBINA ENGINEERING",
@@ -383,12 +396,40 @@ export default function DashboardPage() {
                   <div className="space-y-3">
                     <input value={newTenant.name} onChange={e => setNewTenant({...newTenant, name: e.target.value})} placeholder="اسم المؤسسة" className="w-full p-3 border rounded" />
                     <input value={newTenant.logo_url} onChange={e => setNewTenant({...newTenant, logo_url: e.target.value})} placeholder="رابط الشعار" className="w-full p-3 border rounded" />
+
+                    <div className="p-3 border rounded bg-slate-50">
+                      <div className="text-xs font-black text-slate-700 mb-2">توقيع المؤسسة (اختياري)</div>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="block w-full text-xs font-bold text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-900 file:px-3 file:py-2 file:text-white file:font-black hover:file:bg-black"
+                          onChange={async (e) => {
+                            const f = e.target.files?.[0]
+                            if (!f) return
+                            try {
+                              await uploadTenantSignature(f)
+                            } catch (err) {
+                              console.error(err)
+                              alert('فشل رفع توقيع المؤسسة')
+                            } finally {
+                              e.currentTarget.value = ''
+                            }
+                          }}
+                        />
+                        {newTenant.signature_url && (
+                          <img src={newTenant.signature_url} className="h-10 w-28 object-contain border rounded bg-white" alt="signature" />
+                        )}
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-2">سيظهر للتوقيع داخل الطلبات والاعتمادات.</div>
+                    </div>
+
                     <AsyncButton className="bg-slate-900 text-white px-6 py-3 rounded" onClickAsync={async () => {
                       try {
                         const slug = (newTenant.name || '').toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, '-').replace(/--+/g,'-')
-                        await apiClient.createTenant({ name: newTenant.name, slug, logo_url: newTenant.logo_url })
+                        await apiClient.createTenant({ name: newTenant.name, slug, logo_url: newTenant.logo_url, signature_url: newTenant.signature_url || undefined })
                         const t = await apiClient.getTenants(); setTenants(t)
-                        setNewTenant({name:'',slug:'',logo_url:''})
+                        setNewTenant({name:'',slug:'',logo_url:'', signature_url:''})
                       } catch (err) { console.error(err); alert('فشل الإنشاء') }
                     }}>إنشاء مؤسسة</AsyncButton>
                     <div className="text-xs text-slate-500 mt-2">ملاحظة: <strong>اختر المؤسسة من الأعلى</strong> لتقييد عرض وإنشاء المعاملات لتلك المؤسسة.</div>
@@ -402,9 +443,34 @@ export default function DashboardPage() {
                             <div>
                               <div className="font-black">{t.name}</div>
                               <div className="text-xs text-slate-400">{t.slug}</div>
+                              {t.signature_url && (
+                                <div className="mt-1">
+                                  <img src={t.signature_url} className="h-7 object-contain border rounded bg-white" alt="signature" />
+                                </div>
+                              )}
                             </div>
                           </div>
                           <div>
+                            <label className="text-slate-700 text-xs font-black mr-2 cursor-pointer inline-flex items-center gap-2 px-2 py-1 rounded bg-slate-100 hover:bg-slate-200">
+                              رفع توقيع
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={async (e) => {
+                                  const f = e.target.files?.[0]
+                                  if (!f) return
+                                  try {
+                                    await uploadTenantSignature(f, t.id)
+                                  } catch (err) {
+                                    console.error(err)
+                                    alert('فشل رفع توقيع المؤسسة')
+                                  } finally {
+                                    e.currentTarget.value = ''
+                                  }
+                                }}
+                              />
+                            </label>
                             <AsyncButton className="text-red-500" variant="ghost" size="sm" onClickAsync={async () => { if (!confirm('حذف؟')) return; await apiClient.deleteTenant(t.id); setTenants(await apiClient.getTenants()); }}>حذف</AsyncButton>
                           </div>
                         </div>
