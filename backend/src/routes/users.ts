@@ -16,10 +16,10 @@ router.get("/", isManager, async (req: AuthRequest, res: Response) => {
     const hasEmail = (await query("SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'email' LIMIT 1")).rows.length > 0
     const hasName = (await query("SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'name' LIMIT 1")).rows.length > 0
 
-    let select = "id, username AS username, full_name AS full_name, role, created_at"
-    if (hasEmail && hasName) select = "id, email AS username, name AS full_name, role, created_at"
-    else if (hasEmail) select = "id, email AS username, full_name AS full_name, role, created_at"
-    else if (hasName) select = "id, username AS username, name AS full_name, role, created_at"
+    let select = "id, username AS username, full_name AS full_name, role, created_at, manager_id, signature_url, stamp_url"
+    if (hasEmail && hasName) select = "id, email AS username, name AS full_name, role, created_at, manager_id, signature_url, stamp_url"
+    else if (hasEmail) select = "id, email AS username, full_name AS full_name, role, created_at, manager_id, signature_url, stamp_url"
+    else if (hasName) select = "id, username AS username, name AS full_name, role, created_at, manager_id, signature_url, stamp_url"
 
     // Always include username if it exists in the table, even if we aliased email to username above
     // This fixes the issue where 'username' column is not returned when 'email' column exists
@@ -61,16 +61,19 @@ router.post("/", isManager, async (req: AuthRequest, res: Response) => {
 router.put('/:id', isManager, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params
-    const { full_name, role, password } = req.body
+    const { full_name, role, password, manager_id, signature_url, stamp_url } = req.body
     const parts: string[] = []
     const values: any[] = []
     let idx = 1
-    if (full_name) { parts.push(`full_name = $${idx++}`); values.push(full_name) }
-    if (role) { parts.push(`role = $${idx++}`); values.push(role) }
+    if (full_name !== undefined) { parts.push(`full_name = $${idx++}`); values.push(full_name) }
+    if (role !== undefined) { parts.push(`role = $${idx++}`); values.push(role) }
     if (password) { const h = await import('bcrypt').then(b => b.hash(password, 10)); parts.push(`password = $${idx++}`); values.push(h) }
+    if (manager_id !== undefined) { parts.push(`manager_id = $${idx++}`); values.push(manager_id || null) }
+    if (signature_url !== undefined) { parts.push(`signature_url = $${idx++}`); values.push(signature_url) }
+    if (stamp_url !== undefined) { parts.push(`stamp_url = $${idx++}`); values.push(stamp_url) }
     if (!parts.length) return res.status(400).json({ error: 'No updates provided' })
     values.push(id)
-    const q = `UPDATE users SET ${parts.join(', ')} WHERE id = $${idx} RETURNING id, username, full_name, role, created_at`
+    const q = `UPDATE users SET ${parts.join(', ')} WHERE id = $${idx} RETURNING id, username, full_name, role, created_at, manager_id, signature_url, stamp_url`
     const r = await query(q, values)
     if (r.rows.length === 0) return res.status(404).json({ error: 'User not found' })
     res.json(r.rows[0])
