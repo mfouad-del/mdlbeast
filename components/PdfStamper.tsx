@@ -161,24 +161,24 @@ export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) 
               } cursor-grab rounded-lg flex flex-col items-center justify-center p-2 z-50 transition-all duration-75 select-none`}
             >
               {/* Header */}
-              <div className="text-[8px] font-bold text-slate-900 mb-1 text-center leading-tight w-full border-b border-slate-100 pb-1">
+              <div className="text-[6px] font-bold text-slate-900 mb-0.5 text-center leading-tight w-full border-b border-slate-100 pb-0.5 overflow-hidden text-ellipsis whitespace-nowrap">
                 {settings?.orgName || "نظام الأرشفة الإلكتروني"}
               </div>
 
               {/* Barcode */}
               <img
                 src={barcodeUrl}
-                style={{ height: '30px', objectFit: 'contain' }}
+                style={{ height: '24px', objectFit: 'contain' }}
                 className="w-full pointer-events-none select-none mix-blend-multiply"
                 alt="barcode"
               />
 
               {/* Footer */}
-              <div className="text-[10px] font-black font-mono mt-1 text-slate-900 tracking-widest">
+              <div className="text-[8px] font-black font-mono mt-0.5 text-slate-900 tracking-widest">
                 {doc.barcode}
               </div>
               
-              <div className="w-full flex justify-between items-center mt-1 pt-1 border-t border-slate-100 text-[6px] text-slate-500 font-medium">
+              <div className="w-full flex justify-between items-center mt-0.5 pt-0.5 border-t border-slate-100 text-[5px] text-slate-500 font-medium">
                  <span>{new Date().toLocaleDateString('en-GB')}</span>
                  <span>{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
               </div>
@@ -203,17 +203,21 @@ export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) 
 
           <div className="flex gap-4 items-center">
             <div className="flex items-center gap-6">
-              <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
-                <label className="text-[11px] font-black text-slate-500 uppercase tracking-tight">حجم الختم</label>
-                <input 
-                  type="range" 
-                  min={50} 
-                  max={500} 
-                  step={5}
-                  value={stampWidth} 
-                  onChange={(e) => setStampWidth(Number(e.target.value))} 
-                  className="w-32 accent-slate-900" 
-                />
+              <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100 group hover:border-blue-200 transition-colors">
+                <Scan size={16} className="text-slate-400 group-hover:text-blue-500 transition-colors" />
+                <div className="flex flex-col">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">حجم الختم</label>
+                    <input 
+                      type="range" 
+                      min={50} 
+                      max={500} 
+                      step={5}
+                      value={stampWidth} 
+                      onChange={(e) => setStampWidth(Number(e.target.value))} 
+                      className="w-32 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-slate-900 hover:accent-blue-600 transition-all" 
+                    />
+                </div>
+                <span className="text-[10px] font-bold text-slate-500 w-8 text-center">{stampWidth}px</span>
               </div>
 
               <div className="flex flex-col">
