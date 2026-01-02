@@ -606,7 +606,20 @@ class ApiClient {
     return this.request<any[]>("/approvals/pending")
   }
 
-  async updateApprovalRequest(id: number | string, payload: { status: 'APPROVED' | 'REJECTED'; rejection_reason?: string; signed_attachment_url?: string }) {
+  async updateApprovalRequest(id: number | string, payload: { 
+    status: 'APPROVED' | 'REJECTED'; 
+    rejection_reason?: string; 
+    signed_attachment_url?: string;
+    signature_type?: 'signature' | 'stamp';
+    signature_position?: {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      containerWidth: number;
+      containerHeight: number;
+    };
+  }) {
     return this.request<any>(`/approvals/${id}`, {
       method: 'PUT',
       body: JSON.stringify(payload),

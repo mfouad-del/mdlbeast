@@ -7,6 +7,7 @@ import {
 import { apiClient } from '../lib/api-client';
 import { useToast } from '../hooks/use-toast';
 import { User, ApprovalRequest } from '../types';
+import ApprovalSigner from './ApprovalSigner';
 
 interface ApprovalsProps {
   currentUser: User;
@@ -584,67 +585,22 @@ export default function Approvals({ currentUser, tenantSignatureUrl }: Approvals
         </div>
       )}
 
-      {/* Sign Modal (Simplified for now) */}
+      {/* Approval Signer Modal */}
       {showSignModal && selectedRequest && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-2xl animate-in zoom-in-95 duration-300 h-[80vh] flex flex-col">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h3 className="text-xl font-black text-slate-900">اعتماد وتوقيع</h3>
-                <p className="text-slate-500 text-sm font-bold">سيتم إضافة التوقيع على المستند (توقيع المؤسسة/توقيعك) حسب المتوفر</p>
-              </div>
-              <button onClick={() => setShowSignModal(false)} className="text-slate-400 hover:text-red-500"><XCircle size={24}/></button>
-            </div>
-            
-            <div className="flex-1 bg-slate-100 rounded-2xl overflow-hidden relative mb-6 flex flex-col border border-slate-200">
-              {/* PDF Preview */}
-              <div className="flex-1 overflow-auto">
-                {previewUrl ? (
-                  <iframe
-                    src={previewUrl}
-                    className="w-full h-full min-h-[500px]"
-                    title="معاينة المستند"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center">
-                      <FileSignature size={48} className="mx-auto text-slate-300 mb-4 animate-pulse" />
-                      <p className="text-slate-500 font-bold">جاري تحميل المعاينة...</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              {/* Signatures Display */}
-              <div className="p-4 bg-white border-t border-slate-200">
-                <p className="text-xs text-slate-500 font-bold mb-3 text-center">سيتم استخدام أحد التوقيعات التالية (حسب الأولوية):</p>
-                <div className="flex justify-center gap-4">
-                  {tenantSignatureUrl && (
-                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 shadow-sm">
-                      <img src={tenantSignatureUrl} alt="Tenant Signature" className="h-10 object-contain" />
-                      <p className="text-[10px] text-center mt-2 text-slate-400 font-bold">توقيع المؤسسة (أولوية 1)</p>
-                    </div>
-                  )}
-                  {currentUser.signature_url && (
-                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 shadow-sm">
-                      <img src={currentUser.signature_url} alt="Signature" className="h-10 object-contain" />
-                      <p className="text-[10px] text-center mt-2 text-slate-400 font-bold">توقيعك (أولوية 2)</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex justify-end">
-              <button 
-                onClick={handleApprove}
-                className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black hover:bg-slate-800 transition-all shadow-lg shadow-slate-200 flex items-center gap-2"
-              >
-                <CheckCircle2 size={20} /> تأكيد الاعتماد
-              </button>
-            </div>
-          </div>
-        </div>
+        <ApprovalSigner
+          approvalId={selectedRequest.id}
+          approvalTitle={selectedRequest.title}
+          approvalDescription={selectedRequest.description}
+          attachmentUrl={selectedRequest.attachment_url}
+          signatureUrl={currentUser.signature_url}
+          stampUrl={currentUser.stamp_url}
+          onSuccess={() => {
+            setShowSignModal(false);
+            setSelectedRequest(null);
+            fetchData();
+          }}
+          onCancel={() => setShowSignModal(false)}
+        />
       )}
     </div>
   );

@@ -6,6 +6,7 @@ import { query } from '../config/database'
 import { authenticateToken } from '../middleware/auth'
 import type { AuthRequest } from '../types'
 import { logAudit } from '../services/auditService'
+import { sendEmail, generateApprovalRequestEmail } from '../services/emailService'
 
 const router = express.Router()
 router.use(authenticateToken)
@@ -79,6 +80,14 @@ async function signPdfAndUpload(params: {
   approvalId: number
   attachmentUrl: string
   signatureUrl: string
+  signaturePosition?: {
+    x: number
+    y: number
+    width: number
+    height: number
+    containerWidth: number
+    containerHeight: number
+  }
 }): Promise<{ signedUrl: string; key: string }>
 {
   const pdfBytes = await loadPdfBytesFromAttachmentUrl(params.attachmentUrl)
@@ -97,29 +106,51 @@ async function signPdfAndUpload(params: {
     sigImage = await pdfDoc.embedJpg(sigBytes)
   }
 
-  const { width, height } = page.getSize()
+  const { width: pdfWidth, height: pdfHeight } = page.getSize()
 
-  // Place signature bottom-left with fixed max width
-  const margin = 36
-  const maxW = Math.min(180, width * 0.35)
-  const scale = maxW / sigImage.width
-  const drawW = sigImage.width * scale
-  const drawH = sigImage.height * scale
+  let x: number, y: number, drawW: number, drawH: number
 
-  const x = margin
-  const y = Math.max(margin, margin) // keep above bottom margin
+  // If position data provided, use it (interactive mode)
+  if (params.signaturePosition) {
+    const pos = params.signaturePosition
+    // Convert from container coordinates to PDF coordinates
+    const scaleX = pdfWidth / pos.containerWidth
+    const scaleY = pdfHeight / pos.containerHeight
+    
+    x = pos.x * scaleX
+    // PDF coordinates are from bottom-left, so we need to flip Y
+    y = pdfHeight - ((pos.y + pos.height) * scaleY)
+    drawW = pos.width * scaleX
+    drawH = pos.height * scaleY
+    
+    console.log('Using interactive signature placement:', { x, y, drawW, drawH, pdfWidth, pdfHeight })
+  } else {
+    // Fallback to default placement (bottom-left)
+    const margin = 36
+    const maxW = Math.min(180, pdfWidth * 0.35)
+    const scale = maxW / sigImage.width
+    drawW = sigImage.width * scale
+    drawH = sigImage.height * scale
+    x = margin
+    y = margin
+    
+    console.log('Using default signature placement:', { x, y, drawW, drawH })
+  }
 
-  // Optional baseline line + timestamp for traceability
-  const lineY = y + drawH + 8
-  page.drawLine({
-    start: { x, y: lineY },
-    end: { x: x + drawW, y: lineY },
-    thickness: 1,
-    color: rgb(0.15, 0.15, 0.15),
-    opacity: 0.3,
-  })
-
+  // Draw signature/stamp
   page.drawImage(sigImage, { x, y, width: drawW, height: drawH })
+
+  // Optional: Add timestamp line (only for default placement)
+  if (!params.signaturePosition) {
+    const lineY = y + drawH + 8
+    page.drawLine({
+      start: { x, y: lineY },
+      end: { x: x + drawW, y: lineY },
+      thickness: 1,
+      color: rgb(0.15, 0.15, 0.15),
+      opacity: 0.3,
+    })
+  }
 
   const out = Buffer.from(await pdfDoc.save())
 
@@ -164,6 +195,36 @@ router.post('/', async (req: AuthRequest, res: Response) => {
       ipAddress: req.ip || req.socket.remoteAddress,
       userAgent: req.get('user-agent')
     })
+    
+    // Send email notification to manager
+    try {
+      const requesterData = await query('SELECT full_name FROM users WHERE id=$1 LIMIT 1', [requesterId])
+      const managerData = await query('SELECT full_name, email FROM users WHERE id=$1 LIMIT 1', [manager_id])
+      
+      if (managerData.rows[0]?.email) {
+        const dashboardUrl = process.env.FRONTEND_URL || 'https://mahmoudalyyt.com/archive'
+        
+        const emailHtml = generateApprovalRequestEmail({
+          managerName: managerData.rows[0].full_name || 'المدير',
+          requesterName: requesterData.rows[0]?.full_name || 'مستخدم',
+          requestTitle: title,
+          requestDescription: description || undefined,
+          requestNumber: approvalNumber,
+          dashboardUrl
+        })
+        
+        await sendEmail({
+          to: managerData.rows[0].email,
+          subject: `طلب اعتماد جديد: ${title}`,
+          html: emailHtml
+        })
+        
+        console.log(`[Approvals] Email notification sent to manager ${manager_id}`)
+      }
+    } catch (emailErr) {
+      // Don't fail the request if email fails
+      console.error('[Approvals] Failed to send email notification:', emailErr)
+    }
     
     return res.status(201).json(ins.rows[0])
   } catch (err: any) {
@@ -223,7 +284,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
     if (!canApprove(req)) return res.status(403).json({ error: 'Forbidden' })
     const id = Number(req.params.id)
     const actorId = Number(req.user?.id)
-    const { status, rejection_reason } = req.body || {}
+    const { status, rejection_reason, signature_type, signature_position } = req.body || {}
 
     const existing = await query('SELECT * FROM approval_requests WHERE id = $1 LIMIT 1', [id])
     if (existing.rows.length === 0) return res.status(404).json({ error: 'Approval request not found' })
@@ -263,37 +324,55 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
 
     if (status !== 'APPROVED') return res.status(400).json({ error: 'Invalid status' })
 
-    // Resolve tenant signature first; fallback to manager signature (single optimized query)
-    let signatureUrl: string | null = null
-    try {
-      const sig = await query(`
-        SELECT 
-          COALESCE(t.signature_url, reqU.signature_url, mgrU.signature_url) as signature
-        FROM approval_requests ar
-        LEFT JOIN users reqU ON reqU.id = ar.requester_id
-        LEFT JOIN tenants t ON t.id = reqU.tenant_id
-        LEFT JOIN users mgrU ON mgrU.id = ar.manager_id
-        WHERE ar.id = $1
-      `, [id])
-      signatureUrl = sig.rows[0]?.signature || null
-      console.log('Signature resolution for approval', id, ':', {
-        found: !!signatureUrl,
-        signatureUrl,
-        row: sig.rows[0]
-      })
-    } catch (e) {
-      console.error('Signature resolution error:', e)
+    // Get manager's signature and stamp from database
+    const managerData = await query(
+      'SELECT signature_url, stamp_url FROM users WHERE id = $1',
+      [actorId]
+    )
+    
+    if (managerData.rows.length === 0) {
+      return res.status(400).json({ error: 'لم يتم العثور على بيانات المدير' })
     }
 
+    const manager = managerData.rows[0]
+    
+    // Determine which signature/stamp to use based on signature_type
+    let signatureUrl: string | null = null
+    
+    if (signature_type === 'stamp' && manager.stamp_url) {
+      signatureUrl = manager.stamp_url
+    } else if (signature_type === 'signature' && manager.signature_url) {
+      signatureUrl = manager.signature_url
+    } else if (manager.signature_url) {
+      // Fallback to signature if type not specified
+      signatureUrl = manager.signature_url
+    } else if (manager.stamp_url) {
+      // Fallback to stamp if signature not available
+      signatureUrl = manager.stamp_url
+    }
+    
+    console.log('Signature selection for approval', id, ':', {
+      actorId,
+      signature_type,
+      hasSignature: !!manager.signature_url,
+      hasStamp: !!manager.stamp_url,
+      selected: signatureUrl
+    })
+
     if (!signatureUrl) {
-      console.error('No signature found for approval', id, '- requester_id:', row.requester_id, 'manager_id:', row.manager_id)
-      return res.status(400).json({ error: 'لا يوجد توقيع مُعد (للمؤسسة أو المستخدم). الرجاء رفع توقيع أولاً.' })
+      console.error('No signature/stamp found for manager', actorId)
+      return res.status(400).json({ error: 'لا يوجد توقيع أو ختم مُعد. الرجاء رفع توقيع أو ختم أولاً.' })
     }
 
     // Use transaction to ensure consistency
     await query('BEGIN')
     try {
-      const { signedUrl } = await signPdfAndUpload({ approvalId: id, attachmentUrl: row.attachment_url, signatureUrl })
+      const { signedUrl } = await signPdfAndUpload({ 
+        approvalId: id, 
+        attachmentUrl: row.attachment_url, 
+        signatureUrl,
+        signaturePosition: signature_position
+      })
 
       // Check if seen_by_requester column exists
       const hasSeenCol = await query(
