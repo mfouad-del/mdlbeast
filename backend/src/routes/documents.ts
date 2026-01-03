@@ -203,24 +203,17 @@ router.get("/", async (req: AuthRequest, res: Response) => {
       paramCount++
     }
 
-    // Scope results according to role: members see only their own docs; supervisors/managers see tenant docs; admin sees all
+    // Scope results: all roles see only their own documents, except admin sees everything
     if (!user) return res.status(401).json({ error: 'Not authenticated' })
-    if (user.role === 'member') {
+    
+    // Only admin can see all documents, everyone else sees their own only
+    if (user.role !== 'admin') {
       queryText += ` AND d.user_id = $${paramCount}`
       queryParams.push(user.id)
       paramCount++
-    } else if (user.role === 'supervisor' || user.role === 'manager') {
-      // If supervisor/manager has no tenant_id, show only their own documents (fallback to member behavior)
-      if (user.tenant_id) {
-        queryText += ` AND d.tenant_id = $${paramCount}`
-        queryParams.push(user.tenant_id)
-        paramCount++
-      } else {
-        console.log('[Documents] Supervisor/Manager with no tenant_id, showing own documents only')
-        queryText += ` AND d.user_id = $${paramCount}`
-        queryParams.push(user.id)
-        paramCount++
-      }
+      console.log('[Documents] Non-admin user - showing own documents only:', user.id)
+    } else {
+      console.log('[Documents] Admin user - showing all documents')
     }
 
     if (search) {
