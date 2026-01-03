@@ -113,7 +113,8 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, c
         username: newUser.email,
         password: newUser.password,
         full_name: newUser.name,
-        role: newUser.role
+        role: newUser.role,
+        email: newUser.email
       });
 
       if (createdUser && createdUser.id && (newUser.manager_id || newUser.signature_url || newUser.stamp_url)) {
@@ -185,6 +186,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdateUsers, c
       
       if (editUser.email) {
         updates.email = editUser.email;
+        updates.username = editUser.email; // Keep username in sync with email
       }
 
       await apiClient.updateUser(String(editingUserId), updates);
