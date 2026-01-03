@@ -13,7 +13,7 @@ router.use(authenticateToken)
 router.post('/:barcode/stamp', async (req, res) => {
   try {
     const { barcode } = req.params
-    const { x = 20, y = 20, containerWidth, containerHeight, stampWidth = 180, page: pageIndex = 0 } = req.body || {}
+    const { x = 20, y = 20, containerWidth, containerHeight, stampWidth = 180, page: pageIndex = 0, attachmentIndex = 0 } = req.body || {}
 
     const d = await query('SELECT * FROM documents WHERE barcode = $1 LIMIT 1', [barcode])
     if (d.rows.length === 0) return res.status(404).json({ error: 'Document not found' })
@@ -24,9 +24,10 @@ router.post('/:barcode/stamp', async (req, res) => {
     const { canAccessDocument } = await import('../lib/rbac')
     if (!canAccessDocument(user, doc)) return res.status(403).json({ error: 'Forbidden' })
 
-    // find pdf url in attachments (first attachment)
+    // find pdf url in attachments (use the specified attachment index)
     const attachments = doc.attachments || []
-    const pdf = Array.isArray(attachments) && attachments.length ? attachments[0] : null
+    const targetIndex = Math.min(Math.max(0, attachmentIndex), attachments.length - 1)
+    const pdf = Array.isArray(attachments) && attachments.length > targetIndex ? attachments[targetIndex] : null
     if (!pdf || !pdf.url) return res.status(400).json({ error: 'No PDF attached to stamp' })
 
     // fetch pdf bytes (support R2, local uploads, or external URL)
@@ -682,12 +683,12 @@ router.post('/:barcode/stamp', async (req, res) => {
           }
 
           const stampedAt = new Date().toISOString()
-          attachments[0] = { ...(attachments[0] || {}), url: signedUrl || (getPublicUrl(finalKey) || ''), size: outBuf.length, key: finalKey, bucket: process.env.CF_R2_BUCKET || targetBucket, stampedAt }
+          attachments[targetIndex] = { ...(attachments[targetIndex] || {}), url: signedUrl || (getPublicUrl(finalKey) || ''), size: outBuf.length, key: finalKey, bucket: process.env.CF_R2_BUCKET || targetBucket, stampedAt }
           const upd = await query('UPDATE documents SET attachments = $1 WHERE id = $2 RETURNING *', [JSON.stringify(attachments), doc.id])
           const updatedDoc = upd.rows[0]
           const parsedAttachments = Array.isArray(updatedDoc.attachments) ? updatedDoc.attachments : JSON.parse(String(updatedDoc.attachments || '[]'))
-          const pdfFile = parsedAttachments && parsedAttachments.length ? parsedAttachments[0] : null
-          const previewUrl = signedUrl || `${attachments[0].url}?t=${Date.now()}`
+          const pdfFile = parsedAttachments && parsedAttachments.length > targetIndex ? parsedAttachments[targetIndex] : null
+          const previewUrl = signedUrl || `${attachments[targetIndex].url}?t=${Date.now()}`
           return res.json({ ...updatedDoc, attachments: parsedAttachments, pdfFile, previewUrl })
         } catch (e: any) {
           console.error('Stamp: R2 upload path failed:', e)
@@ -765,14 +766,14 @@ router.post('/:barcode/stamp', async (req, res) => {
           console.info('Stamp: VERIFY_UPLOADS not enabled — skipping synchronous verification for Supabase upload')
         }
 
-        // update attachments[0] url, size, key and mark stamp time
+        // update attachments[targetIndex] url, size, key and mark stamp time
         const stampedAt = new Date().toISOString()
-        attachments[0] = { ...(attachments[0] || {}), url: newUrl, size: outBuf.length, key: targetKey, bucket: targetBucket, stampedAt }
+        attachments[targetIndex] = { ...(attachments[targetIndex] || {}), url: newUrl, size: outBuf.length, key: targetKey, bucket: targetBucket, stampedAt }
         const upd = await query('UPDATE documents SET attachments = $1 WHERE id = $2 RETURNING *', [JSON.stringify(attachments), doc.id])
         const updatedDoc = upd.rows[0]
         // attach pdfFile convenience property
         const parsedAttachments = Array.isArray(updatedDoc.attachments) ? updatedDoc.attachments : JSON.parse(String(updatedDoc.attachments || '[]'))
-        const pdfFile = parsedAttachments && parsedAttachments.length ? parsedAttachments[0] : null
+        const pdfFile = parsedAttachments && parsedAttachments.length > targetIndex ? parsedAttachments[targetIndex] : null
         // provide signedUrl and a short-lived preview URL to the client so they can open the fresh copy immediately
         const previewUrl = signedUrl || `${newUrl}?t=${Date.now()}`
         return res.json({ ...updatedDoc, attachments: parsedAttachments, pdfFile, previewUrl })
@@ -784,11 +785,11 @@ router.post('/:barcode/stamp', async (req, res) => {
         const fp = path.join(uploadsDir, pdf.url.replace('/uploads/', ''))
         fs.writeFileSync(fp, outBuf)
         // update size and mark stamp time
-        attachments[0] = { ...(attachments[0] || {}), size: outBytes.length, stampedAt: new Date().toISOString() }
+        attachments[targetIndex] = { ...(attachments[targetIndex] || {}), size: outBytes.length, stampedAt: new Date().toISOString() }
         const upd = await query('UPDATE documents SET attachments = $1 WHERE id = $2 RETURNING *', [JSON.stringify(attachments), doc.id])
         const updatedDoc = upd.rows[0]
         const parsedAttachments = Array.isArray(updatedDoc.attachments) ? updatedDoc.attachments : JSON.parse(String(updatedDoc.attachments || '[]'))
-        const pdfFile = parsedAttachments && parsedAttachments.length ? parsedAttachments[0] : null
+        const pdfFile = parsedAttachments && parsedAttachments.length > targetIndex ? parsedAttachments[targetIndex] : null
         const previewUrl = pdfFile?.url ? `${pdfFile.url}?t=${Date.now()}` : null
         return res.json({ ...updatedDoc, attachments: parsedAttachments, pdfFile, previewUrl })
       }
@@ -800,11 +801,11 @@ router.post('/:barcode/stamp', async (req, res) => {
       const outPath = path.join(uploadsDir, filename)
       fs.writeFileSync(outPath, outBuf)
       const url = `/uploads/${filename}`
-      attachments[0] = { name: filename, url, size: outBuf.length, stampedAt: new Date().toISOString() }
+      attachments[targetIndex] = { name: filename, url, size: outBuf.length, stampedAt: new Date().toISOString() }
       const upd = await query('UPDATE documents SET attachments = $1 WHERE id = $2 RETURNING *', [JSON.stringify(attachments), doc.id])
       const updatedDoc = upd.rows[0]
       const parsedAttachments = Array.isArray(updatedDoc.attachments) ? updatedDoc.attachments : JSON.parse(String(updatedDoc.attachments || '[]'))
-      const pdfFile = parsedAttachments && parsedAttachments.length ? parsedAttachments[0] : null
+      const pdfFile = parsedAttachments && parsedAttachments.length > targetIndex ? parsedAttachments[targetIndex] : null
       const previewUrl = pdfFile?.url ? `${pdfFile.url}?t=${Date.now()}` : null
       return res.json({ ...updatedDoc, attachments: parsedAttachments, pdfFile, previewUrl })
     } catch (e: any) {
