@@ -3,6 +3,7 @@ import cors from "cors"
 import helmet from "helmet"
 import morgan from "morgan"
 import dotenv from "dotenv"
+import rateLimit from "express-rate-limit"
 import authRoutes from "./routes/auth"
 import auditRoutes from "./routes/audit"
 import documentRoutes from "./routes/documents"
@@ -56,6 +57,34 @@ console.info('CONFIG: r2 configured=', Boolean(R2_CONFIGURED))
 const app = express()
 const PORT = process.env.PORT || 3001
 
+// Rate Limiters
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 requests per window
+  message: { error: 'Too many login attempts. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // 100 requests per window
+  message: { error: 'Too many requests. Please slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const uploadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30, // 30 uploads per window
+  message: { error: 'Too many upload requests. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Store in app.locals so auth route can access
+app.locals.loginLimiter = loginLimiter;
+
 // Middleware
 app.use(helmet())
 app.use(
@@ -67,6 +96,9 @@ app.use(
 app.use(morgan("dev"))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
+
+// Apply general API rate limiting
+app.use('/api/', apiLimiter);
 
 // Mount API routes
 app.use('/api/auth', authRoutes)
@@ -82,14 +114,14 @@ app.use('/api/tenants', tenantRoutes)
 app.use('/api/snapshots', snapshotRoutes)
 app.use('/api/approvals', approvalRoutes)
 
-// Uploads route (accepts PDF via multipart/form-data)
+// Uploads route (accepts PDF via multipart/form-data) with rate limiting
 import uploadRoutes from './routes/uploads'
 import stampRoutes from './routes/stamp'
 import * as pathModule from 'path'
 import * as fsModule from 'fs'
 const uploadsDirStartup = pathModule.resolve(process.cwd(), 'uploads')
 if (!fsModule.existsSync(uploadsDirStartup)) fsModule.mkdirSync(uploadsDirStartup, { recursive: true })
-app.use('/api/uploads', uploadRoutes)
+app.use('/api/uploads', uploadLimiter, uploadRoutes)
 app.use('/uploads', express.static(uploadsDirStartup))
 
 // Stamp endpoint

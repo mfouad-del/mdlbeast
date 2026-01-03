@@ -411,15 +411,53 @@ export default function Approvals({ currentUser, tenantSignatureUrl }: Approvals
                     </div>
                     
                     {req.status === 'APPROVED' && req.signed_attachment_url && (
-                      <a 
-                        href={req.signed_attachment_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={async () => {
+                          try {
+                            // Extract R2 key and get signed URL
+                            const url = req.signed_attachment_url;
+                            if (!url) {
+                              toast({ 
+                                title: "خطأ", 
+                                description: "لا يوجد ملف معتمد", 
+                                variant: "destructive" 
+                              });
+                              return;
+                            }
+                            
+                            let key = '';
+                            
+                            if (url.includes('r2.cloudflarestorage.com')) {
+                              const urlObj = new URL(url);
+                              let pathname = urlObj.pathname.replace(/^\//, '');
+                              const bucket = 'zaco';
+                              if (pathname.startsWith(bucket + '/')) {
+                                pathname = pathname.slice(bucket.length + 1);
+                              }
+                              key = pathname;
+                            } else {
+                              key = url;
+                            }
+                            
+                            // Get signed URL
+                            const { url: signedUrl } = await apiClient.getSignedUrl(key);
+                            
+                            // Open in new tab
+                            window.open(signedUrl, '_blank');
+                          } catch (error) {
+                            console.error('Failed to download:', error);
+                            toast({ 
+                              title: "خطأ", 
+                              description: "فشل تحميل الملف", 
+                              variant: "destructive" 
+                            });
+                          }
+                        }}
                         className="p-3 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition-colors"
                         title="تحميل الملف المعتمد"
                       >
                         <Download size={18} />
-                      </a>
+                      </button>
                     )}
 
                     {req.status === 'REJECTED' && (

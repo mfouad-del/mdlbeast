@@ -32,25 +32,63 @@ export default function ApprovalSigner({
   const [zoom, setZoom] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewUrl, setPreviewUrl] = useState('');
+  const [signedSignatureUrl, setSignedSignatureUrl] = useState('');
+  const [signedStampUrl, setSignedStampUrl] = useState('');
+  const [gridSnap, setGridSnap] = useState(false);
   
   const pdfContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  // Fetch signed URL for preview
+  // Convert R2 URL to signed URL
+  const getSignedUrlFromR2 = async (r2Url: string): Promise<string> => {
+    try {
+      if (!r2Url || !r2Url.includes('r2.cloudflarestorage.com')) {
+        return r2Url; // Already signed or not R2
+      }
+      
+      const urlObj = new URL(r2Url);
+      let pathname = urlObj.pathname.replace(/^\//, '');
+      const bucket = 'zaco';
+      if (pathname.startsWith(bucket + '/')) {
+        pathname = pathname.slice(bucket.length + 1);
+      }
+      
+      const response = await apiClient.getSignedUrl(pathname);
+      return response.url;
+    } catch (error) {
+      console.error('Failed to get signed URL:', error);
+      return r2Url; // Fallback to original
+    }
+  };
+
+  // Fetch signed URLs for images and PDF preview
   useEffect(() => {
-    const fetchPreview = async () => {
+    const fetchUrls = async () => {
       try {
+        // Fetch PDF preview
         const { url } = await apiClient.getApprovalAttachmentUrl(approvalId);
         setPreviewUrl(url);
+        
+        // Convert signature URL
+        if (signatureUrl) {
+          const signed = await getSignedUrlFromR2(signatureUrl);
+          setSignedSignatureUrl(signed);
+        }
+        
+        // Convert stamp URL
+        if (stampUrl) {
+          const signed = await getSignedUrlFromR2(stampUrl);
+          setSignedStampUrl(signed);
+        }
       } catch (error) {
-        console.error('Failed to fetch preview:', error);
+        console.error('Failed to fetch URLs:', error);
         toast({ title: "خطأ", description: "فشل تحميل المعاينة", variant: "destructive" });
       }
     };
-    fetchPreview();
-  }, [approvalId]);
+    fetchUrls();
+  }, [approvalId, signatureUrl, stampUrl]);
 
-  const currentImageUrl = selectedType === 'signature' ? signatureUrl : stampUrl;
+  const currentImageUrl = selectedType === 'signature' ? signedSignatureUrl : signedStampUrl;
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!pdfContainerRef.current) return;
@@ -78,14 +116,36 @@ export default function ApprovalSigner({
     if (!isDragging || !pdfContainerRef.current) return;
     
     const rect = pdfContainerRef.current.getBoundingClientRect();
-    const x = (e.clientX - rect.left - dragOffset.x * zoom) / zoom;
-    const y = (e.clientY - rect.top - dragOffset.y * zoom) / zoom;
+    let x = (e.clientX - rect.left - dragOffset.x * zoom) / zoom;
+    let y = (e.clientY - rect.top - dragOffset.y * zoom) / zoom;
+    
+    // Apply grid snapping if enabled
+    if (gridSnap) {
+      const gridSize = 20;
+      x = Math.round(x / gridSize) * gridSize;
+      y = Math.round(y / gridSize) * gridSize;
+    }
+    
+    // Keep within bounds
+    const maxX = rect.width / zoom - signSize;
+    const maxY = rect.height / zoom - signSize;
+    x = Math.max(0, Math.min(x, maxX));
+    y = Math.max(0, Math.min(y, maxY));
     
     setSignPosition({ x, y });
   };
 
   const handleMouseUp = () => {
     setIsDragging(false);
+  };
+  
+  // Center the signature/stamp
+  const handleCenter = () => {
+    if (!pdfContainerRef.current) return;
+    const rect = pdfContainerRef.current.getBoundingClientRect();
+    const centerX = (rect.width / zoom - signSize) / 2;
+    const centerY = (rect.height / zoom - signSize) / 2;
+    setSignPosition({ x: centerX, y: centerY });
   };
 
   const handleFinalize = async () => {
@@ -200,6 +260,23 @@ export default function ApprovalSigner({
               >
                 <RotateCcw size={18} />
               </button>
+              <div className="h-6 w-px bg-slate-300 mx-2" />
+              <button
+                onClick={handleCenter}
+                className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-xs font-bold"
+                title="توسيط التوقيع"
+              >
+                توسيط
+              </button>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={gridSnap}
+                  onChange={(e) => setGridSnap(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 rounded"
+                />
+                <span className="text-xs font-bold text-slate-600">محاذاة تلقائية</span>
+              </label>
               <div className="flex-1" />
               <Move size={18} className="text-slate-400" />
               <span className="text-xs text-slate-500 font-bold">اسحب التوقيع/الختم</span>
@@ -273,7 +350,7 @@ export default function ApprovalSigner({
                 اختر نوع الاعتماد
               </label>
               <div className="space-y-2">
-                {signatureUrl && (
+                {signedSignatureUrl && (
                   <button
                     onClick={() => setSelectedType('signature')}
                     className={`w-full p-3 rounded-xl border-2 transition-all ${
@@ -283,12 +360,12 @@ export default function ApprovalSigner({
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <img src={signatureUrl} alt="التوقيع" className="h-10 w-20 object-contain" />
+                      <img src={signedSignatureUrl} alt="التوقيع" className="h-10 w-20 object-contain" />
                       <span className="font-bold text-sm">التوقيع</span>
                     </div>
                   </button>
                 )}
-                {stampUrl && (
+                {signedStampUrl && (
                   <button
                     onClick={() => setSelectedType('stamp')}
                     className={`w-full p-3 rounded-xl border-2 transition-all ${
@@ -298,10 +375,15 @@ export default function ApprovalSigner({
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <img src={stampUrl} alt="الختم" className="h-10 w-20 object-contain" />
+                      <img src={signedStampUrl} alt="الختم" className="h-10 w-20 object-contain" />
                       <span className="font-bold text-sm">ختم القسم</span>
                     </div>
                   </button>
+                )}
+                {!signedSignatureUrl && !signedStampUrl && (
+                  <div className="text-center py-4 text-slate-400 text-sm">
+                    <p className="font-bold">جاري التحميل...</p>
+                  </div>
                 )}
               </div>
             </div>
@@ -327,19 +409,23 @@ export default function ApprovalSigner({
               </div>
             </div>
 
-            {/* Position Info */}
+            {/* Position & Size Info */}
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
               <label className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3 block">
-                الموضع الحالي
+                معلومات التوضيع
               </label>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="bg-white p-2 rounded-lg">
                   <span className="text-slate-400">X:</span>{' '}
-                  <span className="font-bold">{Math.round(signPosition.x)}</span>
+                  <span className="font-bold">{Math.round(signPosition.x)} بكسل</span>
                 </div>
                 <div className="bg-white p-2 rounded-lg">
                   <span className="text-slate-400">Y:</span>{' '}
-                  <span className="font-bold">{Math.round(signPosition.y)}</span>
+                  <span className="font-bold">{Math.round(signPosition.y)} بكسل</span>
+                </div>
+                <div className="bg-white p-2 rounded-lg col-span-2">
+                  <span className="text-slate-400">الحجم:</span>{' '}
+                  <span className="font-bold">{signSize} × {signSize} بكسل</span>
                 </div>
               </div>
             </div>

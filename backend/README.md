@@ -21,23 +21,25 @@ cp .env.example .env
 
 الملف `.env` يحتوي على الإعدادات الصحيحة بالفعل:
 ```env
-DATABASE_URL=postgresql://zacodb_user:ToKNTzF4XsvJHTxLqYYqCeyk7YAMjICO@dpg-d54jrg6mcj7s73esp1i0-a.oregon-postgres.render.com/zacodb
-JWT_SECRET=JWT_7aP!Q9#xL$4M@Wc2KZr8NfD0m
+DATABASE_URL=postgresql://username:password@host:port/database
+JWT_SECRET=your-jwt-secret-key-here
+REFRESH_TOKEN_SECRET=your-refresh-token-secret-here
 PORT=3001
 NODE_ENV=production
 FRONTEND_URL=https://zaco.sa
 ```
 
+**ملاحظة أمنية**: استبدل القيم أعلاه بالقيم الفعلية من ملف `.env` أو من لوحة التحكم على Render.
+
 ### 3. تشغيل SQL Scripts
 قم بتنفيذ السكريبتات لإنشاء قاعدة البيانات:
 
 ```bash
-# الطريقة 1: استخدام psql
-PGPASSWORD=ToKNTzF4XsvJHTxLqYYqCeyk7YAMjICO psql -h dpg-d54jrg6mcj7s73esp1i0-a.oregon-postgres.render.com -U zacodb_user zacodb -f ../scripts/01_create_tables.sql
+# استخدام psql مع متغيرات بيئية
+psql $DATABASE_URL -f ../scripts/01_create_tables.sql
+psql $DATABASE_URL -f ../scripts/02_seed_data.sql
 
-PGPASSWORD=ToKNTzF4XsvJHTxLqYYqCeyk7YAMjICO psql -h dpg-d54jrg6mcj7s73esp1i0-a.oregon-postgres.render.com -U zacodb_user zacodb -f ../scripts/02_seed_data.sql
-
-# الطريقة 2: من داخل psql
+# أو من داخل psql
 psql $DATABASE_URL
 \i ../scripts/01_create_tables.sql
 \i ../scripts/02_seed_data.sql
