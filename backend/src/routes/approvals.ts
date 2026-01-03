@@ -6,7 +6,7 @@ import { query } from '../config/database'
 import { authenticateToken } from '../middleware/auth'
 import type { AuthRequest } from '../types'
 import { logAudit } from '../services/auditService'
-import { sendEmail, generateApprovalRequestEmail } from '../services/emailService'
+import { sendEmail, generateApprovalRequestEmail, generateApprovalApprovedEmail, generateApprovalRejectedEmail } from '../services/emailService'
 
 const router = express.Router()
 router.use(authenticateToken)
@@ -117,13 +117,24 @@ async function signPdfAndUpload(params: {
     const scaleX = pdfWidth / pos.containerWidth
     const scaleY = pdfHeight / pos.containerHeight
     
+    // Use average scale to maintain aspect ratio
+    const avgScale = (scaleX + scaleY) / 2
+    
     x = pos.x * scaleX
     // PDF coordinates are from bottom-left, so we need to flip Y
     y = pdfHeight - ((pos.y + pos.height) * scaleY)
-    drawW = pos.width * scaleX
-    drawH = pos.height * scaleY
     
-    console.log('Using interactive signature placement:', { x, y, drawW, drawH, pdfWidth, pdfHeight })
+    // Apply average scale to both width and height to maintain aspect ratio
+    drawW = pos.width * avgScale
+    drawH = pos.height * avgScale
+    
+    console.log('Using interactive signature placement:', { 
+      x, y, drawW, drawH, 
+      pdfWidth, pdfHeight, 
+      scaleX, scaleY, avgScale,
+      containerSize: `${pos.containerWidth}x${pos.containerHeight}`,
+      signSize: `${pos.width}x${pos.height}`
+    })
   } else {
     // Fallback to default placement (bottom-left)
     const margin = 36
@@ -322,6 +333,36 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
         userAgent: req.get('user-agent')
       })
       
+      // Send rejection email to requester
+      try {
+        const requesterData = await query('SELECT full_name, email FROM users WHERE id=$1 LIMIT 1', [row.requester_id])
+        const managerData = await query('SELECT full_name FROM users WHERE id=$1 LIMIT 1', [actorId])
+        
+        if (requesterData.rows[0]?.email) {
+          const baseUrl = process.env.FRONTEND_URL || 'https://zaco.sa'
+          const dashboardUrl = `${baseUrl}/dashboard`
+          
+          const emailHtml = generateApprovalRejectedEmail({
+            requesterName: requesterData.rows[0].full_name || 'المستخدم',
+            managerName: managerData.rows[0]?.full_name || 'المدير',
+            requestTitle: row.title,
+            requestNumber: row.approval_number,
+            rejectionReason: rejection_reason,
+            dashboardUrl
+          })
+          
+          await sendEmail({
+            to: requesterData.rows[0].email,
+            subject: `تم رفض طلب الاعتماد: ${row.title}`,
+            html: emailHtml
+          })
+          
+          console.log(`[Approvals] Rejection email sent to requester ${row.requester_id}`)
+        }
+      } catch (emailErr) {
+        console.error('[Approvals] Failed to send rejection email:', emailErr)
+      }
+      
       return res.json(upd.rows[0])
     }
 
@@ -403,6 +444,36 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
       })
 
       await query('COMMIT')
+      
+      // Send approval email to requester
+      try {
+        const requesterData = await query('SELECT full_name, email FROM users WHERE id=$1 LIMIT 1', [row.requester_id])
+        const managerData = await query('SELECT full_name FROM users WHERE id=$1 LIMIT 1', [actorId])
+        
+        if (requesterData.rows[0]?.email) {
+          const baseUrl = process.env.FRONTEND_URL || 'https://zaco.sa'
+          const dashboardUrl = `${baseUrl}/dashboard`
+          
+          const emailHtml = generateApprovalApprovedEmail({
+            requesterName: requesterData.rows[0].full_name || 'المستخدم',
+            managerName: managerData.rows[0]?.full_name || 'المدير',
+            requestTitle: row.title,
+            requestNumber: row.approval_number,
+            dashboardUrl
+          })
+          
+          await sendEmail({
+            to: requesterData.rows[0].email,
+            subject: `تم اعتماد طلبك: ${row.title}`,
+            html: emailHtml
+          })
+          
+          console.log(`[Approvals] Approval email sent to requester ${row.requester_id}`)
+        }
+      } catch (emailErr) {
+        console.error('[Approvals] Failed to send approval email:', emailErr)
+      }
+      
       return res.json(upd.rows[0])
     } catch (err) {
       await query('ROLLBACK')

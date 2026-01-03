@@ -109,11 +109,14 @@ export default function ApprovalSigner({
         x: x - signPosition.x, 
         y: y - signPosition.y 
       });
+      e.preventDefault(); // Prevent text selection
     }
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging || !pdfContainerRef.current) return;
+    
+    e.preventDefault(); // Prevent default drag behavior
     
     const rect = pdfContainerRef.current.getBoundingClientRect();
     let x = (e.clientX - rect.left - dragOffset.x * zoom) / zoom;
@@ -136,6 +139,11 @@ export default function ApprovalSigner({
   };
 
   const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+  
+  // Also handle mouse leave to prevent stuck dragging
+  const handleMouseLeave = () => {
     setIsDragging(false);
   };
   
@@ -285,12 +293,12 @@ export default function ApprovalSigner({
             {/* PDF Container with Signature/Stamp Overlay */}
             <div 
               ref={pdfContainerRef}
-              className="flex-1 bg-slate-100 rounded-2xl overflow-hidden relative border-2 border-slate-200"
+              className="flex-1 bg-slate-100 rounded-2xl overflow-auto relative border-2 border-slate-200"
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
-              style={{ cursor: isDragging ? 'grabbing' : 'default' }}
+              onMouseLeave={handleMouseLeave}
+              style={{ cursor: isDragging ? 'grabbing' : 'default', userSelect: 'none' }}
             >
               <div 
                 style={{ 
@@ -303,8 +311,9 @@ export default function ApprovalSigner({
               >
                 {previewUrl ? (
                   <iframe
-                    src={previewUrl}
-                    className="w-full h-full"
+                    src={`${previewUrl}#view=FitH`}
+                    className="w-full min-h-[842px]"
+                    style={{ height: '100vh' }}
                     title="معاينة المستند"
                   />
                 ) : (
