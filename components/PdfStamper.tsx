@@ -15,13 +15,13 @@ interface PdfStamperProps {
 }
 
 export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) {
-  const BASE_STAMP_WIDTH = 220
+  const BASE_STAMP_WIDTH = 160
   const [pos, setPos] = useState({ x: 400, y: 20 })
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [isSaving, setIsSaving] = useState(false)
   // stampWidth is the *visual* target width in px (we scale a fixed base layout to this value)
-  const [stampWidth, setStampWidth] = useState<number>(180)
+  const [stampWidth, setStampWidth] = useState<number>(120)
   const [zoom, setZoom] = useState<number>(1)
   const [pageIndex, setPageIndex] = useState<number>(0)
   const [attachmentIndex, setAttachmentIndex] = useState<number>(0)
@@ -164,7 +164,7 @@ export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) 
               </div>
             )}
 
-            {/* Professional Stamp Design - با حجم وتناسق أفضل */}
+            {/* Compact Professional Stamp - High Precision */}
             <div
               ref={stampRef}
               onMouseDown={handleMouseDown}
@@ -172,43 +172,43 @@ export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) 
                 left: pos.x,
                 top: pos.y,
                 width: BASE_STAMP_WIDTH,
-                transform: `scale(${Math.max(0.3, Math.min(2.5, stampWidth / BASE_STAMP_WIDTH))})`,
+                transform: `scale(${Math.max(0.4, Math.min(2, stampWidth / BASE_STAMP_WIDTH))})`,
                 transformOrigin: 'top left',
                 willChange: 'transform',
               }}
-              className={`absolute bg-white border-[3px] ${
+              className={`absolute bg-white border-[2px] ${
                 isDragging
-                  ? "border-blue-600 ring-4 ring-blue-500/20 cursor-grabbing shadow-2xl"
-                  : "border-slate-900 shadow-xl"
-              } cursor-grab rounded-xl flex flex-col items-center justify-center p-3 z-50 transition-[border-color,box-shadow] duration-100 select-none`}
+                  ? "border-blue-600 ring-2 ring-blue-500/20 cursor-grabbing shadow-xl"
+                  : "border-slate-800 shadow-lg"
+              } cursor-grab rounded-lg flex flex-col items-center justify-center p-2 z-50 transition-[border-color,box-shadow] duration-100 select-none`}
             >
-              {/* Header - اسم الشركة بحجم مناسب */}
-              <div className="text-[7px] font-black text-slate-900 mb-1 text-center leading-tight w-full border-b-2 border-slate-200 pb-1 overflow-hidden text-ellipsis whitespace-nowrap px-1">
-                {settings?.orgName || "نظام الأرشفة الإلكتروني"}
+              {/* اسم الشركة بالعربي */}
+              <div className="text-[8px] font-black text-slate-900 text-center leading-[1.1] w-full border-b border-slate-300 pb-0.5 mb-0.5">
+                {settings?.orgName || "زوايا البناء للهندسة"}
               </div>
 
-              {/* Barcode */}
+              {/* Barcode - Compact */}
               <img
                 src={barcodeUrl}
-                style={{ height: '28px', objectFit: 'contain' }}
-                className="w-full pointer-events-none select-none mix-blend-multiply my-1"
+                style={{ height: '20px', width: '100%', objectFit: 'contain' }}
+                className="pointer-events-none select-none mix-blend-multiply my-0.5"
                 alt="barcode"
               />
 
-              {/* Footer - رقم المعرف */}
-              <div className="text-[9px] font-black font-mono mt-1 text-slate-900 tracking-wider">
+              {/* رقم الباركود */}
+              <div className="text-[7px] font-black font-mono text-slate-900 tracking-wide">
                 {doc.barcode}
               </div>
               
-              {/* التاريخ والوقت بحجم متناسق */}
-              <div className="w-full flex justify-between items-center mt-1 pt-1 border-t-2 border-slate-200 text-[6px] text-slate-600 font-bold px-1">
-                 <span>{new Date().toLocaleDateString('en-GB')}</span>
-                 <span>{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+              {/* التاريخ والوقت */}
+              <div className="w-full flex justify-between items-center mt-0.5 pt-0.5 border-t border-slate-300 text-[5.5px] text-slate-600 font-bold">
+                 <span dir="ltr">{new Date().toLocaleDateString('en-GB')}</span>
+                 <span dir="ltr">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
               </div>
 
-              {/* Drag Handle Indicator */}
-              <div className="absolute -top-3 -right-3 w-6 h-6 bg-blue-600 rounded-full border-3 border-white shadow-lg flex items-center justify-center text-white">
-                <Scan size={12} />
+              {/* Drag Handle - Smaller */}
+              <div className="absolute -top-2 -right-2 w-5 h-5 bg-blue-600 rounded-full border-2 border-white shadow-md flex items-center justify-center text-white">
+                <MousePointer2 size={10} />
               </div>
             </div>
 
@@ -233,9 +233,9 @@ export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) 
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">حجم الختم</label>
                     <input 
                       type="range" 
-                      min={80} 
-                      max={400} 
-                      step={10}
+                      min={60} 
+                      max={300} 
+                      step={5}
                       value={stampWidth} 
                       onChange={(e) => setStampWidth(Number(e.target.value))} 
                       className="w-40 h-2 bg-gradient-to-r from-slate-200 via-blue-100 to-slate-200 rounded-full appearance-none cursor-pointer accent-slate-900 hover:accent-blue-600 transition-all" 
