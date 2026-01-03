@@ -58,9 +58,8 @@ export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) 
     const stampW = stampRect?.width ?? stampWidth
     const stampH = stampRect?.height ?? Math.max(60, stampWidth * 0.45)
 
-    // Apply zoom to position calculation for accurate placement
-    const newX = Math.max(0, Math.min((e.clientX - rect.left - dragOffset.x) / zoom, rect.width / zoom - stampW / zoom))
-    const newY = Math.max(0, Math.min((e.clientY - rect.top - dragOffset.y) / zoom, rect.height / zoom - stampH / zoom))
+    const newX = Math.max(0, Math.min(e.clientX - rect.left - dragOffset.x, rect.width - stampW))
+    const newY = Math.max(0, Math.min(e.clientY - rect.top - dragOffset.y, rect.height - stampH))
 
     setPos({ x: newX, y: newY })
   }
@@ -83,15 +82,14 @@ export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) 
       const containerWidth = rect?.width || 800
       const containerHeight = rect?.height || 1131
       
-      // Account for zoom when calculating position
       const actualX = pos.x
       const actualY = pos.y
       
       const payload = {
         x: Math.round(actualX),
         y: Math.round(actualY),
-        containerWidth: Math.round(containerWidth / zoom),
-        containerHeight: Math.round(containerHeight / zoom),
+        containerWidth: Math.round(containerWidth),
+        containerHeight: Math.round(containerHeight),
         stampWidth: Math.round(stampWidth),
         page: pageIndex,
         attachmentIndex: attachmentIndex,
@@ -149,42 +147,13 @@ export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) 
         </header>
 
         <div className="flex-1 overflow-auto bg-[#F1F5F9] p-8 lg:p-16 flex justify-center relative shadow-inner">
-          <div className="relative">
-            {/* Zoom controls */}
-            <div className="absolute top-4 right-4 z-50 bg-white rounded-xl shadow-lg border border-slate-200 p-2 flex flex-col gap-2">
-              <button
-                onClick={() => setZoom(z => Math.min(3, z + 0.25))}
-                className="px-4 py-2 bg-slate-900 text-white rounded-lg font-bold text-xs hover:bg-slate-800 transition-all"
-              >
-                + تكبير
-              </button>
-              <div className="text-center text-xs font-black text-slate-600">
-                {Math.round(zoom * 100)}%
-              </div>
-              <button
-                onClick={() => setZoom(z => Math.max(0.5, z - 0.25))}
-                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-bold text-xs hover:bg-slate-200 transition-all"
-              >
-                - تصغير
-              </button>
-              <button
-                onClick={() => setZoom(1)}
-                className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg font-bold text-xs hover:bg-blue-100 transition-all"
-              >
-                ↻ إعادة
-              </button>
-            </div>
-
+          <div className="relative w-full max-w-[800px]">
             <div
               ref={containerRef}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseUp}
-              style={{
-                transform: `scale(${zoom})`,
-                transformOrigin: 'center center',
-              }}
-              className="w-full max-w-[800px] aspect-[1/1.414] bg-white shadow-[0_40px_80px_-20px_rgba(0,0,0,0.3)] relative cursor-crosshair border border-slate-200 overflow-hidden transition-transform duration-200"
+              className="w-full aspect-[1/1.414] bg-white shadow-[0_40px_80px_-20px_rgba(0,0,0,0.3)] relative cursor-crosshair border border-slate-200 overflow-hidden"
             >
             {doc.pdfFile ? (
               <SignedPdfPreview barcode={doc.barcode} fallbackUrl={doc.pdfFile.url} attachmentIndex={attachmentIndex} />
