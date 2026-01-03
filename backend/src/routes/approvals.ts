@@ -220,6 +220,8 @@ router.post('/', async (req: AuthRequest, res: Response) => {
         const requesterData = await query('SELECT full_name FROM users WHERE id=$1 LIMIT 1', [requesterId])
         const managerData = await query('SELECT full_name, email FROM users WHERE id=$1 LIMIT 1', [manager_id])
         
+        console.log('[Approvals] Manager email check:', { managerId: manager_id, email: managerData.rows[0]?.email, hasEmail: !!managerData.rows[0]?.email })
+        
         if (managerData.rows[0]?.email) {
         const baseUrl = process.env.FRONTEND_URL || 'https://zaco.sa'
         const dashboardUrl = `${baseUrl}/dashboard`
@@ -357,6 +359,8 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
         const requesterData = await query('SELECT full_name, email FROM users WHERE id=$1 LIMIT 1', [row.requester_id])
         const managerData = await query('SELECT full_name FROM users WHERE id=$1 LIMIT 1', [actorId])
         
+        console.log('[Approvals] Requester email check for rejection:', { requesterId: row.requester_id, email: requesterData.rows[0]?.email, hasEmail: !!requesterData.rows[0]?.email })
+        
         if (requesterData.rows[0]?.email) {
           const baseUrl = process.env.FRONTEND_URL || 'https://zaco.sa'
           const dashboardUrl = `${baseUrl}/dashboard`
@@ -377,6 +381,8 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
           })
           
           console.log(`[Approvals] Rejection email sent to requester ${row.requester_id}`)
+        } else {
+          console.log(`[Approvals] Requester ${row.requester_id} has no email address. Skipping notification.`)
         }
       } catch (emailErr) {
         console.error('[Approvals] Failed to send rejection email:', emailErr)
@@ -479,6 +485,8 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
         const requesterData = await query('SELECT full_name, email FROM users WHERE id=$1 LIMIT 1', [row.requester_id])
         const managerData = await query('SELECT full_name FROM users WHERE id=$1 LIMIT 1', [actorId])
         
+        console.log('[Approvals] Requester email check for approval:', { requesterId: row.requester_id, email: requesterData.rows[0]?.email, hasEmail: !!requesterData.rows[0]?.email })
+        
         if (requesterData.rows[0]?.email) {
           const baseUrl = process.env.FRONTEND_URL || 'https://zaco.sa'
           const dashboardUrl = `${baseUrl}/dashboard`
@@ -498,6 +506,8 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
           })
           
           console.log(`[Approvals] Approval email sent to requester ${row.requester_id}`)
+        } else {
+          console.log(`[Approvals] Requester ${row.requester_id} has no email address. Skipping notification.`)
         }
       } catch (emailErr) {
         console.error('[Approvals] Failed to send approval email:', emailErr)
