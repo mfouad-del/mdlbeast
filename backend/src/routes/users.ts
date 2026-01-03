@@ -78,14 +78,24 @@ router.get("/", isManager, async (req: AuthRequest, res: Response) => {
 // Create user (manager or admin only)
 router.post("/", isManager, async (req: AuthRequest, res: Response) => {
   try {
-    const { username, password, full_name, role } = req.body
+    const { username, password, full_name, role, email } = req.body
     if (!username || !password || !full_name || !role) return res.status(400).json({ error: 'Missing fields' })
 
     const exists = await query('SELECT id FROM users WHERE username = $1 LIMIT 1', [username])
     if (exists.rows.length) return res.status(400).json({ error: 'Username exists' })
 
     const hashed = await import('bcrypt').then(b => b.hash(password, 10))
-    const ins = await query('INSERT INTO users (username, password, full_name, role) VALUES ($1,$2,$3,$4) RETURNING id, username, full_name, role, created_at', [username, hashed, full_name, role])
+    
+    // Check if email column exists
+    const hasEmail = (await query("SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'email' LIMIT 1")).rows.length > 0
+    
+    let ins
+    if (hasEmail && email) {
+      ins = await query('INSERT INTO users (username, password, full_name, role, email) VALUES ($1,$2,$3,$4,$5) RETURNING id, username, full_name, role, email, created_at', [username, hashed, full_name, role, email])
+    } else {
+      ins = await query('INSERT INTO users (username, password, full_name, role) VALUES ($1,$2,$3,$4) RETURNING id, username, full_name, role, created_at', [username, hashed, full_name, role])
+    }
+    
     res.status(201).json(ins.rows[0])
   } catch (err: any) {
     console.error('Create user error:', err)
@@ -97,13 +107,15 @@ router.post("/", isManager, async (req: AuthRequest, res: Response) => {
 router.put('/:id', isManager, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params
-    const { full_name, role, password, manager_id, signature_url, stamp_url } = req.body
+    const { full_name, role, password, email, username, manager_id, signature_url, stamp_url } = req.body
     const parts: string[] = []
     const values: any[] = []
     let idx = 1
     if (full_name !== undefined) { parts.push(`full_name = $${idx++}`); values.push(full_name) }
     if (role !== undefined) { parts.push(`role = $${idx++}`); values.push(role) }
     if (password) { const h = await import('bcrypt').then(b => b.hash(password, 10)); parts.push(`password = $${idx++}`); values.push(h) }
+    if (email !== undefined) { parts.push(`email = $${idx++}`); values.push(email) }
+    if (username !== undefined) { parts.push(`username = $${idx++}`); values.push(username) }
     if (manager_id !== undefined) { parts.push(`manager_id = $${idx++}`); values.push(manager_id || null) }
     if (signature_url !== undefined) { parts.push(`signature_url = $${idx++}`); values.push(signature_url) }
     if (stamp_url !== undefined) { parts.push(`stamp_url = $${idx++}`); values.push(stamp_url) }
