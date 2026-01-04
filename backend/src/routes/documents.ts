@@ -587,8 +587,7 @@ router.put("/:barcode", async (req: Request, res: Response) => {
     const authReq = req as any
     const user = authReq.user
     
-    // Allow document owner or admin to edit
-    // Owner can add attachments, admin can do full edits
+    // Allow document owner, manager, or admin to edit
     const isOwner = doc.user_id && user?.id && Number(doc.user_id) === Number(user.id)
     const isAdmin = user?.role === 'admin'
     const isManager = user?.role === 'manager'
@@ -597,22 +596,7 @@ router.put("/:barcode", async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Only document owner, manager, or administrator can edit this document' })
     }
     
-    // If not admin/manager and trying to edit fields other than attachments, deny
-    const isOnlyAddingAttachments = 
-      type === undefined && 
-      sender === undefined && 
-      receiver === undefined && 
-      date === undefined && 
-      subject === undefined && 
-      priority === undefined && 
-      status === undefined && 
-      classification === undefined && 
-      notes === undefined &&
-      incomingAttachments !== undefined
-    
-    if (!isAdmin && !isManager && !isOnlyAddingAttachments) {
-      return res.status(403).json({ error: 'Only administrators and managers can modify document fields' })
-    }
+    // Document owner can now edit all fields of their own document
 
     const { canAccessDocument } = await import('../lib/rbac')
     if (!canAccessDocument(user, doc)) return res.status(403).json({ error: 'Forbidden' })
