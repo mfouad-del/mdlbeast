@@ -361,12 +361,15 @@ export default function DocumentList({ docs, settings, currentUser, users, tenan
                                   onClick={() => {
                                     setEditingDoc(doc)
                                     setEditFormData({
-                                      subject: doc.subject || doc.title,
-                                      sender: doc.sender,
-                                      recipient: doc.recipient || doc.receiver,
-                                      type: doc.type,
-                                      date: doc.date,
-                                      attachmentCount: doc.attachmentCount || 0
+                                      subject: doc.subject || doc.title || '',
+                                      sender: doc.sender || '',
+                                      receiver: doc.receiver || doc.recipient || '',
+                                      type: doc.type || '',
+                                      date: doc.date || '',
+                                      priority: doc.priority || 'عاديه',
+                                      classification: doc.security || 'عادي',
+                                      notes: doc.notes || '',
+                                      attachmentCount: doc.attachmentCount || '0'
                                     })
                                   }}
                                   className="w-7 h-7 flex items-center justify-center bg-blue-50 border border-blue-100 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm"
@@ -505,12 +508,15 @@ export default function DocumentList({ docs, settings, currentUser, users, tenan
                           onClick={() => {
                             setEditingDoc(doc)
                             setEditFormData({
-                              subject: doc.subject || doc.title,
-                              sender: doc.sender,
-                              recipient: doc.recipient || doc.receiver,
-                              type: doc.type,
-                              date: doc.date,
-                              attachmentCount: doc.attachmentCount || 0
+                              subject: doc.subject || doc.title || '',
+                              sender: doc.sender || '',
+                              receiver: doc.receiver || doc.recipient || '',
+                              type: doc.type || '',
+                              date: doc.date || '',
+                              priority: doc.priority || 'عاديه',
+                              classification: doc.security || 'عادي',
+                              notes: doc.notes || '',
+                              attachmentCount: doc.attachmentCount || '0'
                             })
                           }}
                           className="p-2 bg-blue-50 text-blue-600 rounded-lg"
