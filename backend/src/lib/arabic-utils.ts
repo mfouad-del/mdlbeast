@@ -30,17 +30,20 @@ export function processArabicText(text: string): string {
     if (bidi && levels) {
       // If length matches, use original levels (best for mixed text)
       if (reshaped.length === text.length) {
-        return bidi.getReorderedString(reshaped, levels);
+        const reordered = bidi.getReorderedString(reshaped, levels);
+        // 4. Wrap with LTR override to force pdf-lib to NOT reorder the text again
+        // U+202D = LEFT-TO-RIGHT OVERRIDE, U+202C = POP DIRECTIONAL FORMATTING
+        return '\u202D' + reordered + '\u202C';
       } else {
         // If length changed (ligatures), we must recalculate levels on reshaped string
-        // This might fail for some mixed text if bidi-js doesn't know Presentation Forms,
-        // but it's the best fallback if lengths differ.
         const reshapedLevels = bidi.getEmbeddingLevels(reshaped, 'rtl');
-        return bidi.getReorderedString(reshaped, reshapedLevels);
+        const reordered = bidi.getReorderedString(reshaped, reshapedLevels);
+        return '\u202D' + reordered + '\u202C';
       }
     } else {
       // Fallback if bidi-js fails: simple reverse (will break numbers)
-      return reshaped.split('').reverse().join('');
+      const reversed = reshaped.split('').reverse().join('');
+      return '\u202D' + reversed + '\u202C';
     }
   } catch (error) {
     console.error('Error processing Arabic text:', error);
