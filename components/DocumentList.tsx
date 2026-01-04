@@ -355,7 +355,7 @@ export default function DocumentList({ docs, settings, currentUser, users, tenan
                             <BarcodePrinter doc={doc} settings={settings} />
                             <OfficialReceipt doc={doc} settings={settings} />
 
-                            {currentUser?.role === 'admin' && (
+                            {(currentUser?.role === 'admin' || currentUser?.role === 'manager' || doc.user_id === currentUser?.id) && (
                               <>
                                 <button
                                   onClick={() => {
@@ -498,7 +498,7 @@ export default function DocumentList({ docs, settings, currentUser, users, tenan
                       </button>
                     </div>
 
-                    {currentUser?.role === 'admin' && (
+                    {(currentUser?.role === 'admin' || currentUser?.role === 'manager' || doc.user_id === currentUser?.id) && (
                       <div className="flex gap-2">
                         <button
                           onClick={() => {
