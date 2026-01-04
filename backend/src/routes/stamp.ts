@@ -10,19 +10,60 @@ import { processArabicText } from '../lib/arabic-utils'
 const router = express.Router()
 router.use(authenticateToken)
 
-function drawRtlText(page: any, text: string, xRight: number, y: number, size: number, font: any, color: any) {
-  // Draw text right-to-left by positioning each glyph manually.
-  // Keep the string order as-is; RTL is achieved by decreasing x.
-  let cursorX = xRight;
-  for (const ch of Array.from(text || '')) {
-    let w = 0;
-    try {
-      w = font.widthOfTextAtSize(ch, size);
-    } catch {
-      w = size * 0.5;
+// Split string into grapheme-ish clusters: base + combining marks.
+// This avoids separating Arabic marks/diacritics during measuring and drawing.
+function splitClusters(str: string): string[] {
+  if (!str) return []
+  const chars = Array.from(str)
+  const clusters: string[] = []
+  const combiningRe = /\p{M}/u
+
+  for (const ch of chars) {
+    if (clusters.length === 0) {
+      clusters.push(ch)
+      continue
     }
-    cursorX -= w;
-    page.drawText(ch, { x: cursorX, y, size, font, color });
+    if (combiningRe.test(ch)) clusters[clusters.length - 1] += ch
+    else clusters.push(ch)
+  }
+  return clusters
+}
+
+function measureRtlTextWidth(text: string, size: number, font: any): number {
+  const s = String(text || '').normalize('NFC')
+  const clusters = splitClusters(s)
+  let total = 0
+  for (const cluster of clusters) {
+    try {
+      total += font.widthOfTextAtSize(cluster, size)
+    } catch {
+      total += Math.max(size * 0.45, cluster.length * (size * 0.5))
+    }
+  }
+  return total
+}
+
+/**
+ * Robust RTL drawer:
+ * - expects `text` to already be in visual-ready order (shaped + BiDi applied)
+ * - draws clusters from right to left
+ */
+function drawRtlText(page: any, text: string, xRight: number, y: number, size: number, font: any, color: any) {
+  if (!text) return
+  const s = String(text).normalize('NFC')
+  const clusters = splitClusters(s)
+  let cursorX = xRight
+
+  for (let i = clusters.length - 1; i >= 0; i--) {
+    const cluster = clusters[i]
+    let w = 0
+    try {
+      w = font.widthOfTextAtSize(cluster, size)
+    } catch {
+      w = Math.max(size * 0.45, cluster.length * (size * 0.5))
+    }
+    cursorX -= w
+    page.drawText(cluster, { x: cursorX, y, size, font, color })
   }
 }
 
@@ -407,7 +448,7 @@ router.post('/:barcode/stamp', async (req, res) => {
 
     // Reduce stamp/barcode height to make the overall stamp less tall.
     // Keep width unchanged; only scale vertically.
-    const heightScale = 0.72
+    const heightScale = 0.50
     heightPdf = heightPdf * heightScale
 
     // compute coordinates: x,y are in pixels from top-left of preview; convert to PDF coords
@@ -533,7 +574,7 @@ router.post('/:barcode/stamp', async (req, res) => {
     const attachmentText = attachmentTextRaw.replace(/[0-9]/g, (d) => arabicIndicDigits[Number(d)])
     // NOTE: For RTL manual drawing, a space AFTER ':' tends to show up as a space BEFORE ':' visually.
     // So we avoid the space after ':' here.
-    const rawAttachmentLabel = `نوعية المرفقات:${attachmentText}`
+    const rawAttachmentLabel = `نوعية المرفقات: ${attachmentText}`
     
     // Use the new robust Arabic processing utility
     // const { processArabicText } = await import('../lib/arabic-utils')
@@ -566,11 +607,11 @@ router.post('/:barcode/stamp', async (req, res) => {
     const gap = Math.round(4 * scaleFactor)
 
     // Recompute widths with chosen fonts
-    const companyWidth = helvBold.widthOfTextAtSize(displayCompanyText, companySize)
+    const companyWidth = measureRtlTextWidth(displayCompanyText, companySize, helvBold)
     const typeWidth = helv.widthOfTextAtSize(docTypeText || '', typeSize)
     const barcodeWidth2 = helv.widthOfTextAtSize(displayBarcodeLatin, barcodeSize2)
     const dateWidth2 = helv.widthOfTextAtSize(displayEnglishDate, dateSize2)
-    const attachmentWidth = helv.widthOfTextAtSize(displayAttachmentCount, attachmentSize)
+    const attachmentWidth = measureRtlTextWidth(displayAttachmentCount, attachmentSize, helvBold)
 
     const centerX2 = xPdf + widthPdf / 2
 
