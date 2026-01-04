@@ -22,9 +22,9 @@ export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) 
   const [isSaving, setIsSaving] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [hasPreview, setHasPreview] = useState(false)
-  // Predefined stamp sizes: tiny, small, medium, large
-  const STAMP_SIZES = { tiny: 70, small: 100, medium: 140, large: 200 }
-  const [stampSize, setStampSize] = useState<'tiny' | 'small' | 'medium' | 'large'>('small')
+  // Predefined stamp sizes: small and default (medium)
+  const STAMP_SIZES = { small: 100, default: 140 }
+  const [stampSize, setStampSize] = useState<'small' | 'default'>('default')
   const stampWidth = STAMP_SIZES[stampSize]
   const [zoom, setZoom] = useState<number>(1)
   const [pageIndex, setPageIndex] = useState<number>(0)
@@ -309,21 +309,11 @@ export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) 
               <div className="flex items-center gap-3 bg-slate-50 px-4 py-3 rounded-xl border border-slate-100">
                 <Scan size={16} className="text-slate-400" />
                 <div className="flex flex-col gap-2">
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">حجم الختم</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-tight">حجم الختم</label>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => setStampSize('tiny')}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                          stampSize === 'tiny' 
-                            ? 'bg-slate-900 text-white shadow-md' 
-                            : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                        }`}
-                      >
-                        صغير جداً
-                      </button>
-                      <button
                         onClick={() => setStampSize('small')}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
                           stampSize === 'small' 
                             ? 'bg-slate-900 text-white shadow-md' 
                             : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
@@ -332,56 +322,64 @@ export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) 
                         صغير
                       </button>
                       <button
-                        onClick={() => setStampSize('medium')}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                          stampSize === 'medium' 
+                        onClick={() => setStampSize('default')}
+                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                          stampSize === 'default' 
                             ? 'bg-slate-900 text-white shadow-md' 
                             : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
                         }`}
                       >
-                        متوسط
-                      </button>
-                      <button
-                        onClick={() => setStampSize('large')}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                          stampSize === 'large' 
-                            ? 'bg-slate-900 text-white shadow-md' 
-                            : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                        }`}
-                      >
-                        كبير
+                        افتراضي
                       </button>
                     </div>
                 </div>
               </div>
 
-              <div className="flex flex-col">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-tight mr-1">المرفق</label>
-                <select value={attachmentIndex} onChange={(e) => { setAttachmentIndex(Number(e.target.value)); setPageIndex(0); }} className="p-2.5 rounded-xl border bg-white text-sm font-black outline-none focus:ring-2 focus:ring-blue-500/20">
-                  {(doc.attachments || []).map((_, i) => (
-                    <option key={i} value={i}>مرفق {i+1}</option>
-                  ))}
-                  {(!doc.attachments || doc.attachments.length === 0) && <option value={0}>مرفق 1</option>}
-                </select>
-              </div>
+              <div className="flex items-center gap-4 bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-sm">
+                <div className="flex flex-col">
+                  <label className="text-[10px] font-bold text-slate-500 mb-1">المرفق</label>
+                  <select 
+                    value={attachmentIndex} 
+                    onChange={(e) => { setAttachmentIndex(Number(e.target.value)); setPageIndex(0); }} 
+                    className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  >
+                    {(doc.attachments || []).map((_, i) => (
+                      <option key={i} value={i}>مرفق {i+1}</option>
+                    ))}
+                    {(!doc.attachments || doc.attachments.length === 0) && <option value={0}>مرفق 1</option>}
+                  </select>
+                </div>
 
-              <div className="flex flex-col">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-tight mr-1">تدوير</label>
-                <select value={pageRotation} onChange={(e) => setPageRotation(Number(e.target.value) as any)} className="p-2.5 rounded-xl border bg-white text-sm font-black outline-none focus:ring-2 focus:ring-blue-500/20">
-                  <option value={0}>0°</option>
-                  <option value={90}>90°</option>
-                  <option value={180}>180°</option>
-                  <option value={270}>270°</option>
-                </select>
-              </div>
+                <div className="h-8 w-px bg-slate-200"></div>
 
-              <div className="flex flex-col">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-tight mr-1">صفحة ({pagesCount})</label>
-                <select value={pageIndex} onChange={(e) => setPageIndex(Number(e.target.value))} className="p-2.5 rounded-xl border bg-white text-sm font-black outline-none focus:ring-2 focus:ring-blue-500/20">
-                  {Array.from({ length: Math.max(1, pagesCount) }, (_, i) => i).map((i) => (
-                    <option key={i} value={i}>صفحة {i+1}</option>
-                  ))}
-                </select>
+                <div className="flex flex-col">
+                  <label className="text-[10px] font-bold text-slate-500 mb-1">صفحة ({pagesCount})</label>
+                  <select 
+                    value={pageIndex} 
+                    onChange={(e) => setPageIndex(Number(e.target.value))} 
+                    className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  >
+                    {Array.from({ length: Math.max(1, pagesCount) }, (_, i) => i).map((i) => (
+                      <option key={i} value={i}>صفحة {i+1}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="h-8 w-px bg-slate-200"></div>
+
+                <div className="flex flex-col">
+                  <label className="text-[10px] font-bold text-slate-500 mb-1">تدوير الملف</label>
+                  <select 
+                    value={pageRotation} 
+                    onChange={(e) => setPageRotation(Number(e.target.value) as any)} 
+                    className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  >
+                    <option value={0}>0°</option>
+                    <option value={90}>90°</option>
+                    <option value={180}>180°</option>
+                    <option value={270}>270°</option>
+                  </select>
+                </div>
               </div>
             </div>
 
