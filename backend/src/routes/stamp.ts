@@ -444,9 +444,9 @@ router.post('/:barcode/stamp', async (req, res) => {
         }
       }
       // fallback to configured org name or a sensible default
-      if (!companyNameEnglish) companyNameEnglish = process.env.ORG_NAME_EN || 'زوايا البناء للإستشارات الهندسيه'
+      if (!companyNameEnglish) companyNameEnglish = process.env.ORG_NAME_EN || 'Zaco'
     } catch (e) {
-      companyNameEnglish = process.env.ORG_NAME_EN || 'زوايا البناء للإستشارات الهندسيه'
+      companyNameEnglish = process.env.ORG_NAME_EN || 'Zaco'
     }
 
     // Smart date: if doc.date is date-only (YYYY-MM-DD) it becomes midnight; merge with created_at time when available
@@ -522,7 +522,7 @@ router.post('/:barcode/stamp', async (req, res) => {
     const displayBarcodeLatin = String(barcode || '')
 
     // Force English company name (avoid Arabic font issues)
-    const displayCompanyText = String(companyNameEnglish || process.env.ORG_NAME_EN || 'زوايا البناء للإستشارات الهندسيه')
+    const displayCompanyText = String(companyNameEnglish || process.env.ORG_NAME_EN || 'Zaco')
 
     // Do not render Arabic incoming/outgoing label to avoid font/shaping issues; keep empty or English if required
     let docTypeText = ''
