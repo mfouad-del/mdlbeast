@@ -365,7 +365,8 @@ export default function DocumentList({ docs, settings, currentUser, users, tenan
                                       sender: doc.sender,
                                       recipient: doc.recipient || doc.receiver,
                                       type: doc.type,
-                                      date: doc.date
+                                      date: doc.date,
+                                      attachmentCount: doc.attachmentCount || 0
                                     })
                                   }}
                                   className="w-7 h-7 flex items-center justify-center bg-blue-50 border border-blue-100 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm"
@@ -508,7 +509,8 @@ export default function DocumentList({ docs, settings, currentUser, users, tenan
                               sender: doc.sender,
                               recipient: doc.recipient || doc.receiver,
                               type: doc.type,
-                              date: doc.date
+                              date: doc.date,
+                              attachmentCount: doc.attachmentCount || 0
                             })
                           }}
                           className="p-2 bg-blue-50 text-blue-600 rounded-lg"
@@ -581,6 +583,7 @@ export default function DocumentList({ docs, settings, currentUser, users, tenan
                     priority: editFormData.priority,
                     notes: editFormData.notes,
                     classification: editFormData.classification,
+                    attachmentCount: editFormData.attachmentCount,
                   }
                   await apiClient.updateDocument(editingDoc.barcode, payload)
                   const updated = await apiClient.getDocumentByBarcode(editingDoc.barcode)
@@ -658,6 +661,18 @@ export default function DocumentList({ docs, settings, currentUser, users, tenan
                     <option value="عاجل">أولوية عالية</option>
                   </select>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-black text-slate-700 block">عدد المرفقات</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={editFormData.attachmentCount || 0}
+                  onChange={(e) => setEditFormData({...editFormData, attachmentCount: parseInt(e.target.value) || 0})}
+                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all font-bold"
+                  placeholder="عدد المرفقات"
+                />
               </div>
 
               <div className="space-y-2">
