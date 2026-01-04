@@ -598,7 +598,7 @@ export default function DocumentList({ docs, settings, currentUser, users, tenan
                     setLocalDocs((prev:any[]) => prev.map((d:any) => (d.barcode === editingDoc.barcode ? updated : d)))
                   }
                   // Also refresh the main documents list to ensure consistency
-                  onRefresh()
+                  if (onRefresh) onRefresh()
                   setEditingDoc(null)
                   alert('تم حفظ التعديلات بنجاح')
                 } catch (err: any) {

@@ -88,7 +88,8 @@ export interface Correspondence {
   dateGregorian?: string
   archiveDate?: string
   status: string // 'وارد' | 'صادر' | 'محفوظ'
-  security: string
+  security: string // Security classification (may be legacy field)
+  classification?: string // Classification level (newer field, preferred over security)
   priority: string
   category?: string
   physicalLocation?: string
