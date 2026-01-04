@@ -520,6 +520,10 @@ router.post('/:barcode/stamp', async (req, res) => {
     const displayEnglishDate = String(engFmt)
     // Ensure we have a Latin-digit barcode for machine-readability
     const displayBarcodeLatin = String(barcode || '')
+    
+    // Count attachments for display
+    const attachmentCount = Array.isArray(doc.attachments) ? doc.attachments.length : 0
+    const displayAttachmentCount = `Attachments: ${attachmentCount}`
 
     // Force English company name (avoid Arabic font issues)
     const displayCompanyText = String(companyNameEnglish || process.env.ORG_NAME_EN || 'Zaco')
@@ -542,6 +546,7 @@ router.post('/:barcode/stamp', async (req, res) => {
     const typeSize = Math.round(10 * scaleFactor)
     const barcodeSize2 = Math.round(9 * scaleFactor)
     const dateSize2 = Math.round(9 * scaleFactor)
+    const attachmentSize = Math.round(8 * scaleFactor)
     const gap = Math.round(4 * scaleFactor)
 
     // Recompute widths with chosen fonts
@@ -549,6 +554,7 @@ router.post('/:barcode/stamp', async (req, res) => {
     const typeWidth = helv.widthOfTextAtSize(docTypeText || '', typeSize)
     const barcodeWidth2 = helv.widthOfTextAtSize(displayBarcodeLatin, barcodeSize2)
     const dateWidth2 = helv.widthOfTextAtSize(displayEnglishDate, dateSize2)
+    const attachmentWidth = helv.widthOfTextAtSize(displayAttachmentCount, attachmentSize)
 
     const centerX2 = xPdf + widthPdf / 2
 
@@ -563,15 +569,18 @@ router.post('/:barcode/stamp', async (req, res) => {
     let barcodeY = yPdf - barcodeSize2 - gap
     let dateX = centerX2 - (dateWidth2 / 2)
     let dateY = barcodeY - dateSize2 - 2
+    let attachmentX = centerX2 - (attachmentWidth / 2)
+    let attachmentY = dateY - attachmentSize - 2
 
     // If text is off-canvas at bottom, move barcode texts above the image (between company and image)
-    if (barcodeY < 0) {
+    if (barcodeY < 0 || attachmentY < 0) {
       // place barcode text immediately above image
       barcodeY = yPdf + heightPdf + gap + 2
       dateY = barcodeY + dateSize2 + 2
+      attachmentY = dateY + attachmentSize + 2
       // if company or type would collide, push company up
-      if (typeY <= barcodeY) {
-        companyY = barcodeY + companySize + typeSize + gap + 4
+      if (typeY <= attachmentY) {
+        companyY = attachmentY + companySize + typeSize + gap + 4
         typeY = companyY - companySize - 2
       }
     }
@@ -591,6 +600,9 @@ router.post('/:barcode/stamp', async (req, res) => {
 
     // Draw English Gregorian date centered near the barcode for readability
     page.drawText(displayEnglishDate, { x: dateX, y: dateY, size: dateSize2, font: helv, color: rgb(0,0,0) })
+
+    // Draw attachment count below date
+    page.drawText(displayAttachmentCount, { x: attachmentX, y: attachmentY, size: attachmentSize, font: helv, color: rgb(0,0,0) })
 
     const outBytes = await pdfDoc.save()
     // normalize to Buffer for consistency when uploading/verifying
