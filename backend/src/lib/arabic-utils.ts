@@ -3,25 +3,25 @@ import ArabicReshaper from 'arabic-reshaper';
 /**
  * Process Arabic text for PDF rendering.
  * 
- * pdf-lib automatically handles BiDi text reordering, so we only need to:
+ * pdf-lib renders text left-to-right, but Arabic needs right-to-left display.
+ * So we need to:
  * 1. Reshape Arabic letters (connect isolated forms into proper glyphs)
- * 2. Return the reshaped text WITHOUT reordering
- * 
- * pdf-lib will handle the RTL display correctly.
- * 
- * IMPORTANT: Do NOT use bidi-js or any reordering here - pdf-lib does it automatically!
- * Previous versions caused double-reversal by reordering before pdf-lib's internal handling.
+ * 2. REVERSE the string so when pdf-lib draws LTR, it appears RTL visually
  */
 export function processArabicText(text: string): string {
   if (!text) return '';
 
   try {
-    // Only reshape Arabic letters - DO NOT reorder!
-    // pdf-lib handles BiDi text direction automatically
+    // Step 1: Reshape Arabic letters (connect glyphs)
     const convert = (ArabicReshaper as any).convertArabic || (ArabicReshaper as any).reshape || ((s: string) => s);
     const reshaped = convert(String(text));
-    console.debug('processArabicText:', { input: text, output: reshaped });
-    return reshaped;
+    
+    // Step 2: Reverse the string for RTL display in pdf-lib
+    // pdf-lib draws left-to-right, so we reverse to make it appear right-to-left
+    const reversed = [...reshaped].reverse().join('');
+    
+    console.debug('processArabicText:', { input: text, reshaped, reversed });
+    return reversed;
   } catch (error) {
     console.error('Error processing Arabic text:', error);
     return text;
