@@ -1,0 +1,1 @@
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS attachment_count VARCHAR(255) DEFAULT '0';

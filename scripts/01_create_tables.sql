@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS documents (
   classification VARCHAR(100),
   notes TEXT,
   attachments JSONB DEFAULT '[]'::jsonb,
+  attachment_count VARCHAR(255) DEFAULT '0',
   user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

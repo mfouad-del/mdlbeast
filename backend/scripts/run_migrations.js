@@ -15,7 +15,8 @@ const DATABASE_URL = process.env.DATABASE_URL ||
 const migrations = [
   'scripts/03_create_modules_tables.sql',
   'scripts/15_add_tenant_signature.sql', 
-  'scripts/14_create_approvals_system.sql'
+  'scripts/14_create_approvals_system.sql',
+  'scripts/19_add_attachment_count.sql'
 ];
 
 async function runMigrations() {
