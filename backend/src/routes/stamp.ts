@@ -5,6 +5,7 @@ import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
 import fs from 'fs'
 import path from 'path'
 import { authenticateToken } from '../middleware/auth'
+import { processArabicText } from '../lib/arabic-utils'
 
 const router = express.Router()
 router.use(authenticateToken)
@@ -478,20 +479,7 @@ router.post('/:barcode/stamp', async (req, res) => {
     }
 
     // Attempt Arabic shaping/bi-di for proper glyph forms when possible
-    function shapeArabicText(s: string) {
-      try {
-        const reshaper = require('arabic-reshaper')
-        // Fix: use convertArabic which is the correct method in v1.1.0
-        const convert = reshaper.convertArabic || reshaper.reshape
-        let r = convert ? convert(String(s)) : String(s)
-        
-        // Simple reverse for RTL (pdf-lib draws LTR)
-        // This is a basic approximation. For full Bidi support we'd need a complex library.
-        return r.split('').reverse().join('')
-      } catch (e) {
-        return String(s)
-      }
-    }
+    // Using processArabicText from lib/arabic-utils instead of local function
 
     // Convert digits for display to Arabic-Indic numerals
     const arabicIndicDigits = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩']
@@ -522,10 +510,13 @@ router.post('/:barcode/stamp', async (req, res) => {
     // Get attachment count/description from the attachment_count field (can be text like "1 اسطوانة")
     const attachmentText = String(doc.attachment_count || '0')
     const rawAttachmentLabel = `نوعية المرفقات: ${attachmentText}`
-    const displayAttachmentCount = shapeArabicText(rawAttachmentLabel)
+    
+    // Use the new robust Arabic processing utility
+    // const { processArabicText } = await import('../lib/arabic-utils')
+    const displayAttachmentCount = processArabicText(rawAttachmentLabel)
 
     // Use Arabic company name
-    const displayCompanyText = shapeArabicText("زوايا البناء للإستشارات الهندسيه")
+    const displayCompanyText = processArabicText("زوايا البناء للإستشارات الهندسيه")
 
     // Do not render Arabic incoming/outgoing label to avoid font/shaping issues; keep empty or English if required
     let docTypeText = ''

@@ -273,7 +273,7 @@ router.get("/", async (req: AuthRequest, res: Response) => {
         }
       } catch (e) { /* ignore and leave original date */ }
 
-      return { ...r, attachments, pdfFile, displayDate }
+      return { ...r, attachments, pdfFile, displayDate, attachmentCount: r.attachment_count }
     })
     
     console.log('[Documents] Returning', rows.length, 'documents to user', user?.id)
@@ -353,7 +353,7 @@ router.get("/:barcode", async (req: Request, res: Response) => {
       }
     } catch (e) {}
 
-    res.json({ ...row, attachments, pdfFile, displayDate })
+    res.json({ ...row, attachments, pdfFile, displayDate, attachmentCount: row.attachment_count })
   } catch (error) {
     console.error("Get document error:", error)
     res.status(500).json({ error: "Failed to fetch document" })
@@ -627,7 +627,7 @@ router.put("/:barcode", async (req: Request, res: Response) => {
     const newStatus = status !== undefined ? status : doc.status
     const newClassification = classification !== undefined ? classification : doc.classification
     const newNotes = notes !== undefined ? notes : doc.notes
-    const newAttachmentCount = attachmentCount !== undefined ? attachmentCount : doc.attachmentCount
+    const newAttachmentCount = attachmentCount !== undefined ? attachmentCount : doc.attachment_count
     
     // Handle attachments carefully
     let currentAttachments = doc.attachments
