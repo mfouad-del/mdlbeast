@@ -255,6 +255,7 @@ export default function DashboardPage() {
         notes: data.description,
         statement: data.statement || null,
         attachments: data.pdfFile ? [data.pdfFile] : [],
+        attachmentCount: data.attachmentCount,
         tenant_id: selectedTenantId,
       }
 

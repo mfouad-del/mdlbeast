@@ -517,7 +517,7 @@ export default function DocumentList({ docs, settings, currentUser, users, tenan
                               priority: doc.priority || 'عادي',
                               classification: doc.classification || doc.security || 'عادي',
                               notes: doc.notes || '',
-                              attachmentCount: doc.attachmentCount || '0'
+                              attachmentCount: doc.attachmentCount || doc.attachment_count || '0'
                             })
                           }}
                           className="p-2 bg-blue-50 text-blue-600 rounded-lg"
@@ -673,7 +673,7 @@ export default function DocumentList({ docs, settings, currentUser, users, tenan
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-black text-slate-700 block">عدد المرفقات</label>
+                <label className="text-sm font-black text-slate-700 block">نوعية المرفقات</label>
                 <input
                   type="text"
                   value={editFormData.attachmentCount || ''}
