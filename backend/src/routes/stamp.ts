@@ -67,26 +67,24 @@ function measureRtlTextWidth(text: string, size: number, font: any): number {
 /**
  * Draw visual-order text:
  * - expects `text` to already be in visual-ready order (shaped + BiDi applied)
- * - draws clusters from left to right (forward) since processArabicText returns visual order
+ * - draws the entire text at once to preserve Arabic letter connections
+ * - only removes BiDi control characters that shouldn't render
  */
 function drawVisualText(page: any, text: string, xLeft: number, y: number, size: number, font: any, color: any) {
   if (!text) return
   const s = String(text).normalize('NFC')
+  
+  // Remove BiDi control characters for clean rendering, but keep the text as one string
+  let cleanText = ''
   const clusters = splitClusters(s)
-  let cursorX = xLeft
-
-  for (let i = 0; i < clusters.length; i++) {
-    const cluster = clusters[i]
-    if (isSkippableBidiControl(cluster)) continue
-    let w = 0
-    try {
-      w = font.widthOfTextAtSize(cluster, size)
-    } catch {
-      w = Math.max(size * 0.45, cluster.length * (size * 0.5))
+  for (const cluster of clusters) {
+    if (!isSkippableBidiControl(cluster)) {
+      cleanText += cluster
     }
-    page.drawText(cluster, { x: cursorX, y, size, font, color })
-    cursorX += w
   }
+  
+  // Draw the entire text at once (not cluster by cluster) to preserve Arabic letter connections
+  page.drawText(cleanText, { x: xLeft, y, size, font, color })
 }
 
 // POST /:barcode/stamp { x, y, containerWidth, containerHeight, stampWidth, preview }
