@@ -521,8 +521,8 @@ router.post('/:barcode/stamp', async (req, res) => {
     // Ensure we have a Latin-digit barcode for machine-readability
     const displayBarcodeLatin = String(barcode || '')
     
-    // Count attachments for display
-    const attachmentCount = Array.isArray(doc.attachments) ? doc.attachments.length : 0
+    // Get attachment count from the attachmentCount field (manually entered)
+    const attachmentCount = doc.attachmentCount || 0
     const displayAttachmentCount = `Attachments: ${attachmentCount}`
 
     // Force English company name (avoid Arabic font issues)
