@@ -580,8 +580,13 @@ router.post('/:barcode/stamp', async (req, res) => {
     console.debug('Stamp: computed_text', { displayCompanyText, docTypeText, displayBarcodeLatin, displayEnglishDate })
     console.debug('Stamp: coords', { xPdf, yPdf, widthPdf, heightPdf, companyX, companyY, typeX, typeY, barcodeX, barcodeY, dateX, dateY })
 
+    // Draw Arabic text character by character to prevent pdf-lib from reordering
     if (displayCompanyText) {
-      page.drawText(displayCompanyText, { x: companyX, y: companyY, size: companySize, font: helvBold, color: rgb(0,0,0) })
+      const { getGlyphPositions } = await import('../lib/arabic-utils')
+      const glyphs = getGlyphPositions(displayCompanyText.replace(/[\u202D\u202C]/g, ''), helvBold, companySize, companyX, companyY)
+      for (const glyph of glyphs) {
+        page.drawText(glyph.char, { x: glyph.x, y: glyph.y, size: companySize, font: helvBold, color: rgb(0,0,0) })
+      }
     }
     if (docTypeText) {
       page.drawText(docTypeText, { x: typeX, y: typeY, size: typeSize, font: helv, color: rgb(0,0,0) })
@@ -593,8 +598,12 @@ router.post('/:barcode/stamp', async (req, res) => {
     // Draw English Gregorian date centered near the barcode for readability
     page.drawText(displayEnglishDate, { x: dateX, y: dateY, size: dateSize2, font: helv, color: rgb(0,0,0) })
 
-    // Draw attachment count below date (use bold font for better Arabic rendering)
-    page.drawText(displayAttachmentCount, { x: attachmentX, y: attachmentY, size: attachmentSize, font: helvBold, color: rgb(0,0,0) })
+    // Draw attachment count character by character to prevent pdf-lib from reordering
+    const { getGlyphPositions } = await import('../lib/arabic-utils')
+    const attachmentGlyphs = getGlyphPositions(displayAttachmentCount.replace(/[\u202D\u202C]/g, ''), helvBold, attachmentSize, attachmentX, attachmentY)
+    for (const glyph of attachmentGlyphs) {
+      page.drawText(glyph.char, { x: glyph.x, y: glyph.y, size: attachmentSize, font: helvBold, color: rgb(0,0,0) })
+    }
 
     const outBytes = await pdfDoc.save()
     // normalize to Buffer for consistency when uploading/verifying

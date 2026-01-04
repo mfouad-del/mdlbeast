@@ -30,23 +30,42 @@ export function processArabicText(text: string): string {
     if (bidi && levels) {
       // If length matches, use original levels (best for mixed text)
       if (reshaped.length === text.length) {
-        const reordered = bidi.getReorderedString(reshaped, levels);
-        // 4. Wrap with LTR override to force pdf-lib to NOT reorder the text again
-        // U+202D = LEFT-TO-RIGHT OVERRIDE, U+202C = POP DIRECTIONAL FORMATTING
-        return '\u202D' + reordered + '\u202C';
+        return bidi.getReorderedString(reshaped, levels);
       } else {
         // If length changed (ligatures), we must recalculate levels on reshaped string
         const reshapedLevels = bidi.getEmbeddingLevels(reshaped, 'rtl');
-        const reordered = bidi.getReorderedString(reshaped, reshapedLevels);
-        return '\u202D' + reordered + '\u202C';
+        return bidi.getReorderedString(reshaped, reshapedLevels);
       }
     } else {
       // Fallback if bidi-js fails: simple reverse (will break numbers)
-      const reversed = reshaped.split('').reverse().join('');
-      return '\u202D' + reversed + '\u202C';
+      return reshaped.split('').reverse().join('');
     }
   } catch (error) {
     console.error('Error processing Arabic text:', error);
     return text;
   }
+}
+
+// Export function to split text into individual glyphs with positions
+// This is used to manually position each character in the PDF
+export function getGlyphPositions(text: string, font: any, fontSize: number, baseX: number, baseY: number): Array<{char: string, x: number, y: number}> {
+  const processed = processArabicText(text);
+  const positions: Array<{char: string, x: number, y: number}> = [];
+  let currentX = baseX;
+  
+  for (let i = 0; i < processed.length; i++) {
+    const char = processed[i];
+    positions.push({ char, x: currentX, y: baseY });
+    
+    // Calculate the width of this character to position the next one
+    try {
+      const charWidth = font.widthOfTextAtSize(char, fontSize);
+      currentX += charWidth;
+    } catch (e) {
+      // If character width calculation fails, use a default spacing
+      currentX += fontSize * 0.5;
+    }
+  }
+  
+  return positions;
 }
