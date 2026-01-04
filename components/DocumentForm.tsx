@@ -105,8 +105,7 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type: inputType } = e.target
-    const parsed = (name === 'attachmentCount') ? (value === '' ? '' : Number(value)) : value
-    setFormData((prev) => ({ ...prev, [name]: parsed }))
+    setFormData((prev) => ({ ...prev, [name]: value }))
   }, [])
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -281,12 +280,12 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
                 عدد المرفقات
               </label>
               <input
-                type="number"
-                min={0}
+                type="text"
                 name="attachmentCount"
                 value={formData.attachmentCount}
                 onChange={(e) => handleInputChange(e as any)}
                 className="w-full p-4 bg-white border border-slate-200 rounded-2xl outline-none focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 transition-all text-slate-900 font-bold text-sm placeholder:text-slate-300 shadow-sm"
+                placeholder="مثال: 1 اسطوانة"
               />
             </div>
           </div>

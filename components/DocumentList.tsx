@@ -666,12 +666,11 @@ export default function DocumentList({ docs, settings, currentUser, users, tenan
               <div className="space-y-2">
                 <label className="text-sm font-black text-slate-700 block">عدد المرفقات</label>
                 <input
-                  type="number"
-                  min="0"
-                  value={editFormData.attachmentCount || 0}
-                  onChange={(e) => setEditFormData({...editFormData, attachmentCount: parseInt(e.target.value) || 0})}
+                  type="text"
+                  value={editFormData.attachmentCount || ''}
+                  onChange={(e) => setEditFormData({...editFormData, attachmentCount: e.target.value})}
                   className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all font-bold"
-                  placeholder="عدد المرفقات"
+                  placeholder="مثال: 1 اسطوانة"
                 />
               </div>
 
