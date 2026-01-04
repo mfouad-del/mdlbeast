@@ -481,20 +481,13 @@ router.post('/:barcode/stamp', async (req, res) => {
     function shapeArabicText(s: string) {
       try {
         const reshaper = require('arabic-reshaper')
-        let r = reshaper.reshape(String(s))
-        try {
-          const bidi = require('bidi-js')
-          if (typeof bidi.get_display === 'function') {
-            r = bidi.get_display(r)
-          } else if (typeof bidi.getSorted === 'function') {
-            r = (bidi.getSorted(r) || []).join('')
-          } else {
-            r = r.split('').reverse().join('')
-          }
-        } catch (e) {
-          r = r.split('').reverse().join('')
-        }
-        return r
+        // Fix: use convertArabic which is the correct method in v1.1.0
+        const convert = reshaper.convertArabic || reshaper.reshape
+        let r = convert ? convert(String(s)) : String(s)
+        
+        // Simple reverse for RTL (pdf-lib draws LTR)
+        // This is a basic approximation. For full Bidi support we'd need a complex library.
+        return r.split('').reverse().join('')
       } catch (e) {
         return String(s)
       }
@@ -528,10 +521,11 @@ router.post('/:barcode/stamp', async (req, res) => {
     
     // Get attachment count/description from the attachment_count field (can be text like "1 اسطوانة")
     const attachmentText = String(doc.attachment_count || '0')
-    const displayAttachmentCount = `نوعية المرفقات: ${attachmentText}`
+    const rawAttachmentLabel = `نوعية المرفقات: ${attachmentText}`
+    const displayAttachmentCount = shapeArabicText(rawAttachmentLabel)
 
-    // Force English company name (avoid Arabic font issues)
-    const displayCompanyText = String(companyNameEnglish || process.env.ORG_NAME_EN || 'Zaco')
+    // Use Arabic company name
+    const displayCompanyText = shapeArabicText("زوايا البناء للإستشارات الهندسيه")
 
     // Do not render Arabic incoming/outgoing label to avoid font/shaping issues; keep empty or English if required
     let docTypeText = ''
