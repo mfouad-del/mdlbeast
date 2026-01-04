@@ -445,6 +445,7 @@ router.post(
         notes,
         attachments = [],
         tenant_id = null,
+        attachmentCount,
       } = req.body
 
       // Accept pdfFile as a shortcut from client (if provided during create)
@@ -532,8 +533,8 @@ router.post(
       // Insert document with optional tenant_id
       const dbType = (typeof type === 'string' && type) ? type : (direction || 'UNKNOWN')
       const result = await query(
-        `INSERT INTO documents (barcode, type, sender, receiver, date, subject, priority, status, classification, notes, attachments, user_id, tenant_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        `INSERT INTO documents (barcode, type, sender, receiver, date, subject, priority, status, classification, notes, attachments, user_id, tenant_id, attachmentCount)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
          RETURNING *`,
         [
           barcode,
@@ -549,6 +550,7 @@ router.post(
           JSON.stringify(attachments || []),
           creatorId,
           tenant_id,
+          attachmentCount || '0',
         ],
       )
 
@@ -583,7 +585,7 @@ router.post(
 router.put("/:barcode", async (req: Request, res: Response) => {
   try {
     const { barcode } = req.params
-    const { type, sender, receiver, date, subject, priority, status, classification, notes, attachments: incomingAttachments } = req.body
+    const { type, sender, receiver, date, subject, priority, status, classification, notes, attachments: incomingAttachments, attachmentCount } = req.body
 
     // Fetch existing to enforce access
     const existing = await query("SELECT * FROM documents WHERE lower(barcode) = lower($1) LIMIT 1", [barcode])
@@ -614,6 +616,7 @@ router.put("/:barcode", async (req: Request, res: Response) => {
     const newStatus = status !== undefined ? status : doc.status
     const newClassification = classification !== undefined ? classification : doc.classification
     const newNotes = notes !== undefined ? notes : doc.notes
+    const newAttachmentCount = attachmentCount !== undefined ? attachmentCount : doc.attachmentCount
     
     // Handle attachments carefully
     let currentAttachments = doc.attachments
@@ -628,8 +631,8 @@ router.put("/:barcode", async (req: Request, res: Response) => {
     const result = await query(
       `UPDATE documents 
        SET type = $1, sender = $2, receiver = $3, date = $4, subject = $5, 
-           priority = $6, status = $7, classification = $8, notes = $9, attachments = $10
-       WHERE barcode = $11
+           priority = $6, status = $7, classification = $8, notes = $9, attachments = $10, attachmentCount = $11
+       WHERE barcode = $12
        RETURNING *`,
       [
         newType,
@@ -642,6 +645,7 @@ router.put("/:barcode", async (req: Request, res: Response) => {
         newClassification,
         newNotes,
         JSON.stringify(newAttachments),
+        newAttachmentCount,
         barcode,
       ],
     )
