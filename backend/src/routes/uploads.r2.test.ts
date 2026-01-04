@@ -10,6 +10,13 @@ jest.mock('../lib/r2-storage', () => ({
   getPublicUrl: jest.fn((k: string) => `https://r2.example.com/${k}`),
 }))
 
+jest.mock('../middleware/auth', () => ({ 
+  authenticateToken: (req: any, _res: any, next: any) => {
+    req.user = { id: 1, role: 'admin' }
+    next()
+  } 
+}))
+
 import uploadsRouter from './uploads'
 
 describe('uploads (R2-only)', () => {

@@ -32,7 +32,12 @@ const mockQuery = jest.fn(async (q: string, params?: any[]) => {
 
 jest.mock('../config/database', () => ({ query: (q: string, p?: any[]) => mockQuery(q, p) }))
 
-jest.mock('../middleware/auth', () => ({ authenticateToken: (_req: any, _res: any, next: any) => next() }))
+jest.mock('../middleware/auth', () => ({ 
+  authenticateToken: (req: any, _res: any, next: any) => {
+    req.user = { id: 1, role: 'admin' }
+    next()
+  } 
+}))
 
 jest.mock('../lib/rbac', () => ({ canAccessDocument: jest.fn(() => true) }))
 
