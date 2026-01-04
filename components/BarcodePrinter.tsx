@@ -38,9 +38,25 @@ export default function BarcodePrinter({ doc, settings }: BarcodePrinterProps) {
       ctx.font = "bold 52px Monospace"
       ctx.fillText(doc.barcode, 500, 390)
 
+      // Format date with time
+      const dateObj = new Date(doc.date || doc.created_at || new Date())
+      const dateStr = dateObj.toLocaleString('en-GB', { 
+        day: '2-digit', 
+        month: 'short', 
+        year: 'numeric', 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      })
+      
+      // Count attachments
+      const attachmentCount = Array.isArray(doc.attachments) ? doc.attachments.length : 0
+
       ctx.font = "bold 26px Arial"
       ctx.fillStyle = "#666666"
-      ctx.fillText(`${doc.date} | ${doc.type === "INCOMING" ? "وارد" : "صادر"}`, 500, 450)
+      ctx.fillText(`${dateStr} | ${doc.type === "INCOMING" ? "وارد" : "صادر"}`, 500, 440)
+      
+      ctx.font = "bold 22px Arial"
+      ctx.fillText(`Attachments: ${attachmentCount}`, 500, 470)
 
       const link = document.createElement("a")
       link.download = `STICKER-${doc.barcode}.png`
@@ -57,6 +73,19 @@ export default function BarcodePrinter({ doc, settings }: BarcodePrinterProps) {
       doc.barcode
     }&scale=4&rotate=N&includetext=false`
 
+    // Format date with time
+    const dateObj = new Date(doc.date || doc.created_at || new Date())
+    const dateStr = dateObj.toLocaleString('en-GB', { 
+      day: '2-digit', 
+      month: 'short', 
+      year: 'numeric', 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    })
+    
+    // Count attachments
+    const attachmentCount = Array.isArray(doc.attachments) ? doc.attachments.length : 0
+
     p.document.write(`
       <html>
         <head>
@@ -72,6 +101,7 @@ export default function BarcodePrinter({ doc, settings }: BarcodePrinterProps) {
             .barcode-img { width: 100%; height: auto; margin: 8px 0; }
             .id-text { font-family: monospace; font-size: 24px; font-weight: 900; margin-top: 8px; display: block; letter-spacing: 1px; }
             .footer-text { font-size: 11px; color: #000; margin-top: 12px; font-weight: 900; border-top: 1px solid #eee; padding-top: 8px; }
+            .attachment-text { font-size: 10px; color: #666; margin-top: 6px; font-weight: 700; }
           </style>
         </head>
         <body>
@@ -79,7 +109,8 @@ export default function BarcodePrinter({ doc, settings }: BarcodePrinterProps) {
             <div class="title">${settings?.orgName || "زوايا البناء للإستشارات الهندسيه"}</div>
             <img class="barcode-img" src="${barcode}">
             <span class="id-text">${doc.barcode}</span>
-            <div class="footer-text">${doc.date} | ${doc.type === "INCOMING" ? "وارد" : "صادر"}</div>
+            <div class="footer-text">${dateStr} | ${doc.type === "INCOMING" ? "وارد" : "صادر"}</div>
+            <div class="attachment-text">Attachments: ${attachmentCount}</div>
           </div>
           <script>window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 600); }</script>
         </body>
