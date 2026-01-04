@@ -10,6 +10,13 @@ import { processArabicText } from '../lib/arabic-utils'
 const router = express.Router()
 router.use(authenticateToken)
 
+const BIDI_CONTROL_RE = /[\u200E\u200F\u202A-\u202E\u2066-\u2069]/u
+
+function isSkippableBidiControl(cluster: string): boolean {
+  if (!cluster) return true
+  return cluster.replace(BIDI_CONTROL_RE, '') === ''
+}
+
 // Split string into grapheme-ish clusters: base + combining marks.
 // This avoids separating Arabic marks/diacritics during measuring and drawing.
 function splitClusters(str: string): string[] {
@@ -46,6 +53,7 @@ function measureRtlTextWidth(text: string, size: number, font: any): number {
   const clusters = splitClusters(s)
   let total = 0
   for (const cluster of clusters) {
+    if (isSkippableBidiControl(cluster)) continue
     try {
       total += font.widthOfTextAtSize(cluster, size)
     } catch {
@@ -68,6 +76,7 @@ function drawRtlText(page: any, text: string, xRight: number, y: number, size: n
 
   for (let i = clusters.length - 1; i >= 0; i--) {
     const cluster = clusters[i]
+    if (isSkippableBidiControl(cluster)) continue
     let w = 0
     try {
       w = font.widthOfTextAtSize(cluster, size)

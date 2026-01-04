@@ -179,7 +179,9 @@ router.use(authenticateToken)
 // Get all documents
 router.get("/", async (req: AuthRequest, res: Response) => {
   try {
-    const { status, type, search, limit = 100, offset = 0 } = req.query
+    const { status, type, search } = req.query
+    const limitNum = Math.max(1, Math.min(1000, Number(req.query.limit ?? 100) || 100))
+    const offsetNum = Math.max(0, Number(req.query.offset ?? 0) || 0)
 
     const user = (req as any).user
     
@@ -242,13 +244,17 @@ router.get("/", async (req: AuthRequest, res: Response) => {
       paramCount++
     }
 
-    queryText += ` ORDER BY created_at DESC LIMIT $${paramCount} OFFSET $${paramCount + 1}`
-    queryParams.push(limit, offset)
+    const limitParamIndex = paramCount
+    const offsetParamIndex = paramCount + 1
+    queryText += ` ORDER BY created_at DESC LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}`
+    queryParams.push(limitNum, offsetNum)
     
     console.log('[Documents] Query:', { 
       queryText: queryText.substring(0, 200) + '...', 
-      paramCount, 
-      paramsLength: queryParams.length 
+      placeholderCount: offsetParamIndex,
+      paramsLength: queryParams.length,
+      limit: limitNum,
+      offset: offsetNum,
     })
 
     const result = await query(queryText, queryParams)
