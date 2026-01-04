@@ -514,9 +514,11 @@ router.post('/:barcode/stamp', async (req, res) => {
     // Use the new robust Arabic processing utility
     // const { processArabicText } = await import('../lib/arabic-utils')
     const displayAttachmentCount = processArabicText(rawAttachmentLabel)
+    console.debug('Stamp: attachment text processed:', { raw: rawAttachmentLabel, processed: displayAttachmentCount, hex: displayAttachmentCount.split('').map(c => c.charCodeAt(0).toString(16)).join(' ') })
 
     // Use Arabic company name
     const displayCompanyText = processArabicText("زوايا البناء للإستشارات الهندسيه")
+    console.debug('Stamp: company text processed:', { processed: displayCompanyText, hex: displayCompanyText.split('').map(c => c.charCodeAt(0).toString(16)).join(' ') })
 
     // Do not render Arabic incoming/outgoing label to avoid font/shaping issues; keep empty or English if required
     let docTypeText = ''
@@ -591,8 +593,8 @@ router.post('/:barcode/stamp', async (req, res) => {
     // Draw English Gregorian date centered near the barcode for readability
     page.drawText(displayEnglishDate, { x: dateX, y: dateY, size: dateSize2, font: helv, color: rgb(0,0,0) })
 
-    // Draw attachment count below date
-    page.drawText(displayAttachmentCount, { x: attachmentX, y: attachmentY, size: attachmentSize, font: helv, color: rgb(0,0,0) })
+    // Draw attachment count below date (use bold font for better Arabic rendering)
+    page.drawText(displayAttachmentCount, { x: attachmentX, y: attachmentY, size: attachmentSize, font: helvBold, color: rgb(0,0,0) })
 
     const outBytes = await pdfDoc.save()
     // normalize to Buffer for consistency when uploading/verifying
