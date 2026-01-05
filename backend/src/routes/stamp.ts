@@ -13,13 +13,17 @@ router.use(authenticateToken)
 const BIDI_CONTROL_RE = /[\u200E\u200F\u202A-\u202E\u2066-\u2069]/u
 
 /**
- * Render Arabic text to PNG image using canvas
+ * Render Arabic text to PNG image using canvas with high DPI for sharp rendering
  * This solves the Arabic text shaping issue by using canvas which handles Arabic correctly
  */
 async function renderArabicTextToImage(text: string, fontSize: number, fontWeight: 'bold' | 'normal' = 'bold'): Promise<Buffer> {
-  // Estimate canvas size based on text length
-  const estimatedWidth = Math.max(300, text.length * fontSize * 0.7)
-  const height = Math.ceil(fontSize * 2)
+  // Use 4x scale for high resolution rendering
+  const scale = 4
+  const scaledFontSize = fontSize * scale
+  
+  // Estimate canvas size based on text length (with scale)
+  const estimatedWidth = Math.max(300, text.length * scaledFontSize * 0.7)
+  const height = Math.ceil(scaledFontSize * 2)
   
   const canvas = createCanvas(estimatedWidth, height)
   const ctx = canvas.getContext('2d')
@@ -27,30 +31,30 @@ async function renderArabicTextToImage(text: string, fontSize: number, fontWeigh
   // Set transparent background
   ctx.clearRect(0, 0, estimatedWidth, height)
   
-  // Configure text rendering
-  ctx.font = `${fontWeight} ${fontSize}px "Noto Sans Arabic", Arial, sans-serif`
+  // Configure text rendering with scaled font
+  ctx.font = `${fontWeight} ${scaledFontSize}px "Noto Sans Arabic", Arial, sans-serif`
   ctx.fillStyle = 'black'
   ctx.textAlign = 'right'
   ctx.textBaseline = 'top'
   ctx.direction = 'rtl'
   
   // Draw text (RTL will be handled automatically by canvas)
-  ctx.fillText(text, estimatedWidth - 10, fontSize * 0.2)
+  ctx.fillText(text, estimatedWidth - 10, scaledFontSize * 0.2)
   
   // Get actual text width
   const metrics = ctx.measureText(text)
   const actualWidth = Math.ceil(metrics.width + 20)
   
-  // Create a properly sized canvas
+  // Create a properly sized canvas with scaled dimensions
   const finalCanvas = createCanvas(actualWidth, height)
   const finalCtx = finalCanvas.getContext('2d')
   finalCtx.clearRect(0, 0, actualWidth, height)
-  finalCtx.font = `${fontWeight} ${fontSize}px "Noto Sans Arabic", Arial, sans-serif`
+  finalCtx.font = `${fontWeight} ${scaledFontSize}px "Noto Sans Arabic", Arial, sans-serif`
   finalCtx.fillStyle = 'black'
   finalCtx.textAlign = 'right'
   finalCtx.textBaseline = 'top'
   finalCtx.direction = 'rtl'
-  finalCtx.fillText(text, actualWidth - 10, fontSize * 0.2)
+  finalCtx.fillText(text, actualWidth - 10, scaledFontSize * 0.2)
   
   return finalCanvas.toBuffer('image/png')
 }
@@ -65,9 +69,13 @@ async function drawRtlTextAsImage(pdfDoc: any, page: any, text: string, xRight: 
     const imageBuffer = await renderArabicTextToImage(text, size, 'bold')
     const pngImage = await pdfDoc.embedPng(imageBuffer)
     
-    const { width, height } = pngImage.scale(1)
+    // Image is rendered at 4x scale, so we need to scale it down to original size
+    const scale = 4
+    const { width: scaledWidth, height: scaledHeight } = pngImage.scale(1)
+    const width = scaledWidth / scale
+    const height = scaledHeight / scale
     
-    // Draw image right-aligned
+    // Draw image right-aligned with proper scaling
     page.drawImage(pngImage, {
       x: xRight - width,
       y: y - height * 0.2, // Adjust for baseline
