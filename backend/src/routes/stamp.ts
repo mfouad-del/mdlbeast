@@ -67,22 +67,23 @@ function measureRtlTextWidth(text: string, size: number, font: any): number {
 /**
  * drawRtlTextFinal
  * - expects `text` to be **visual-order** (result of processArabicText)
- * - draws the clusters left-to-right but aligned to the provided right edge
- * - this ensures Arabic text renders correctly without double-reversal
+ * - calculates total width to align text from right edge
+ * - draws entire text at once to preserve Arabic letter connections
  */
 function drawRtlTextFinal(page: any, text: string, xRight: number, y: number, size: number, font: any, color: any) {
   if (!text) return
   const s = String(text).normalize('NFC')
   const clusters = splitClusters(s)
 
-  // Skip BiDi control characters and precompute widths
-  const filteredClusters: string[] = []
-  const widths: number[] = []
+  // Build clean text (remove BiDi controls) and calculate total width
+  let cleanText = ''
   let totalWidth = 0
   
   for (const cl of clusters) {
     // Skip BiDi controls
     if (isSkippableBidiControl(cl)) continue
+    
+    cleanText += cl
     
     let w = 0
     try {
@@ -91,28 +92,23 @@ function drawRtlTextFinal(page: any, text: string, xRight: number, y: number, si
     } catch (e) {
       w = Math.max(size * 0.45, cl.length * (size * 0.5))
     }
-    filteredClusters.push(cl)
-    widths.push(w)
     totalWidth += w
   }
 
   // Starting X such that the text's right edge is at xRight
-  let cursorX = xRight - totalWidth
+  const startX = xRight - totalWidth
 
   console.debug('drawRtlTextFinal:', { 
     text: text.substring(0, 50), 
     xRight, 
     totalWidth, 
-    startX: cursorX, 
-    clusterCount: filteredClusters.length 
+    startX, 
+    cleanTextLength: cleanText.length 
   })
 
-  // Draw clusters left-to-right (visual order)
-  for (let i = 0; i < filteredClusters.length; i++) {
-    const cl = filteredClusters[i]
-    const w = widths[i] || (size * 0.5)
-    page.drawText(cl, { x: cursorX, y, size, font, color })
-    cursorX += w
+  // Draw entire text at once (not cluster by cluster) to preserve Arabic letter connections
+  if (cleanText) {
+    page.drawText(cleanText, { x: startX, y, size, font, color })
   }
 }
 
