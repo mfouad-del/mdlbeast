@@ -313,9 +313,23 @@ export default function DocumentList({ docs, settings, currentUser, users, tenan
                                       if (!confirm(`هل تريد حذف المرفق ${idx + 1}؟`)) return
                                       try {
                                         await apiClient.deleteAttachment(doc.id, idx)
+                                        // Update local state immediately without refresh
+                                        setLocalDocs((prev: any[]) => 
+                                          prev.map((d: any) => {
+                                            if (d.id === doc.id) {
+                                              const newAttachments = [...(d.attachments || [])]
+                                              newAttachments.splice(idx, 1)
+                                              return {
+                                                ...d,
+                                                attachments: newAttachments,
+                                                attachment_count: newAttachments.length,
+                                                attachmentCount: newAttachments.length
+                                              }
+                                            }
+                                            return d
+                                          })
+                                        )
                                         alert('تم حذف المرفق بنجاح')
-                                        // Refresh the document list
-                                        if (onRefresh) await onRefresh()
                                       } catch(e: any) {
                                         alert('فشل حذف المرفق: ' + (e?.message || e))
                                       }
@@ -509,8 +523,23 @@ export default function DocumentList({ docs, settings, currentUser, users, tenan
                                 if (!confirm(`هل تريد حذف المرفق ${idx + 1}؟`)) return
                                 try {
                                   await apiClient.deleteAttachment(doc.id, idx)
+                                  // Update local state immediately without refresh
+                                  setLocalDocs((prev: any[]) => 
+                                    prev.map((d: any) => {
+                                      if (d.id === doc.id) {
+                                        const newAttachments = [...(d.attachments || [])]
+                                        newAttachments.splice(idx, 1)
+                                        return {
+                                          ...d,
+                                          attachments: newAttachments,
+                                          attachment_count: newAttachments.length,
+                                          attachmentCount: newAttachments.length
+                                        }
+                                      }
+                                      return d
+                                    })
+                                  )
                                   alert('تم حذف المرفق بنجاح')
-                                  if (onRefresh) await onRefresh()
                                 } catch(e: any) {
                                   alert('فشل حذف المرفق: ' + (e?.message || e))
                                 }
