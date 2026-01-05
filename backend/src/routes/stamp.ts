@@ -98,17 +98,23 @@ function drawRtlTextFinal(page: any, text: string, xRight: number, y: number, si
   // Starting X such that the text's right edge is at xRight
   const startX = xRight - totalWidth
 
+  // CRITICAL FIX: pdf-lib applies BiDi reversal automatically on Arabic text!
+  // Since our text is already in visual order, we need to reverse it back
+  // so that when pdf-lib reverses it again, it displays correctly.
+  const reversedText = cleanText.split('').reverse().join('')
+
   console.debug('drawRtlTextFinal:', { 
     text: text.substring(0, 50), 
     xRight, 
     totalWidth, 
     startX, 
-    cleanTextLength: cleanText.length 
+    cleanTextLength: cleanText.length,
+    reversedLength: reversedText.length
   })
 
-  // Draw entire text at once (not cluster by cluster) to preserve Arabic letter connections
-  if (cleanText) {
-    page.drawText(cleanText, { x: startX, y, size, font, color })
+  // Draw reversed text - pdf-lib will reverse it back to correct visual order
+  if (reversedText) {
+    page.drawText(reversedText, { x: startX, y, size, font, color })
   }
 }
 
