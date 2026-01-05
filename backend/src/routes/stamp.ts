@@ -1,11 +1,11 @@
 import express from 'express'
 import { query } from '../config/database'
 import fetch from 'node-fetch'
-import { PDFDocument, StandardFonts, degrees, rgb } from 'pdf-lib'
+import { PDFDocument, degrees } from 'pdf-lib'
 import fs from 'fs'
 import path from 'path'
 import { authenticateToken } from '../middleware/auth'
-import { processArabicTextForPdf } from '../lib/arabic-utils'
+import { generateStampImage } from '../lib/stamp-image-generator'
 
 const router = express.Router()
 router.use(authenticateToken)
@@ -206,260 +206,37 @@ router.post('/:barcode/stamp', async (req, res) => {
       return res.status(500).json({ error: 'Failed to load PDF for stamping' })
     }
 
-    // fetch barcode image (PNG) via bwipjs public API
-    const bcUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(barcode)}&scale=2&includetext=false`
-    const imgResp = await fetch(bcUrl)
-    if (!imgResp.ok) return res.status(500).json({ error: 'Failed to generate barcode image' })
-    const imgBytes = Buffer.from(await imgResp.arrayBuffer())
-
-    // embed image and text into PDF
-    const pdfDoc = await PDFDocument.load(pdfBytes)
-    const pngImage = await pdfDoc.embedPng(imgBytes)
-    // embed readable fonts for annotations (prefer a local TTF/OTF that supports Arabic)
-    let helv: any
-    let helvBold: any
-    try {
-      // Ensure pdf-lib can use fontkit to embed custom fonts
-      let fontkitRegistered = false
+    // Find Arabic font for canvas
+    const fontDirs = [
+      path.resolve(process.cwd(), 'backend', 'assets', 'fonts'),
+      path.resolve(process.cwd(), 'assets', 'fonts'),
+      path.resolve(__dirname, '..', '..', 'assets', 'fonts'),
+      path.resolve(__dirname, '..', '..', '..', 'backend', 'assets', 'fonts'),
+    ]
+    let fontPath: string | null = null
+    for (const d of fontDirs) {
       try {
-        const fk = await import('@pdf-lib/fontkit')
-        pdfDoc.registerFontkit((fk as any).default || fk)
-        fontkitRegistered = true
-      } catch (e1) {
-        try {
-          const fk2 = await import('fontkit')
-          pdfDoc.registerFontkit((fk2 as any).default || fk2)
-          fontkitRegistered = true
-        } catch (e2) {
-          console.warn('Stamp: fontkit not available; custom font embedding may fail')
+        if (fs.existsSync(d)) {
+          const list = fs.readdirSync(d).filter((f) => /NotoSansArabic.*Bold\.ttf$/i.test(f))
+          if (list.length) {
+            fontPath = path.join(d, list[0])
+            break
+          }
         }
+      } catch (e) {
+        // ignore
       }
-
-      const fontDirs = [
-        // dev repo layout
-        path.resolve(process.cwd(), 'backend', 'assets', 'fonts'),
-        path.resolve(process.cwd(), 'assets', 'fonts'),
-        path.resolve(process.cwd(), 'assets'),
-        path.resolve(process.cwd(), 'fonts'),
-        // paths relative to compiled code (dist) on production
-        path.resolve(__dirname, '..', '..', 'assets', 'fonts'),
-        path.resolve(__dirname, '..', '..', 'assets'),
-        path.resolve(__dirname, '..', '..', '..', 'assets', 'fonts'),
-        path.resolve(__dirname, '..', '..', '..', 'backend', 'assets', 'fonts'),
-      ]
-      let fontFiles: string[] = []
-      for (const d of fontDirs) {
-        try {
-          if (fs.existsSync(d)) {
-            // include TTF/OTF/WOFF/WOFF2 files but validate magic bytes so we skip corrupted (HTML) files
-            const list = fs.readdirSync(d).filter((f) => /(\.ttf|\.otf|\.woff2?|\.woff)$/i.test(f)).map((f) => path.join(d, f))
-            const valid: string[] = []
-            for (const p of list) {
-              try {
-                const headBuf = fs.readFileSync(p)
-                const h = Buffer.from(headBuf.slice(0, 4))
-                const isTTF = h.equals(Buffer.from([0x00, 0x01, 0x00, 0x00]))
-                const isOTF = h.toString('ascii') === 'OTTO'
-                const isTTC = h.toString('ascii') === 'ttcf'
-                const isWOFF2 = h.toString('hex').startsWith('774f4632') // 'wOF2'
-                const isWOFF = h.toString('ascii').toLowerCase().startsWith('wof') || h.toString('hex').startsWith('774f4630')
-                if (isTTF || isOTF || isTTC || isWOFF || isWOFF2) {
-                  valid.push(p)
-                } else {
-                  console.warn('Stamp: skipping invalid/corrupted font file:', p, 'head=', h.toString('hex'))
-                }
-              } catch (e) {
-                // ignore read errors
-              }
-            }
-            if (valid.length) {
-              fontFiles = fontFiles.concat(valid)
-            }
-          }
-        } catch (e) {
-          // ignore
-        }
-      }
-
-      // Prefer named Arabic-support fonts if present; prefer TTF/OTF (Noto Sans Arabic) when available
-      let chosen: string | null = null
-      const preferRe = /(noto|arab|dejavu|arial|amiri|tajawal|uthman|scheherazade|sukar)/i
-      const boldRe = /(bold|bld|-b|bd)/i
-
-      if (fontFiles.length) {
-        // Prefer explicit NotoSansArabic TTF first
-        const notoTtf = fontFiles.find(f => /NotoSansArabic.*\.ttf$/i.test(path.basename(f)))
-        if (notoTtf) {
-          chosen = notoTtf
-        } else {
-          // try to find an Arabic-looking font first
-          const prefer = fontFiles.find(f => preferRe.test(path.basename(f)))
-          if (prefer) chosen = prefer
-          else chosen = fontFiles[0]
-        }
-      }
-
-      // debug: list discovered font files
-      console.debug('Stamp: discovered font files:', fontFiles)
-
-      if (chosen) {
-        console.debug('Stamp: chosen font:', chosen)
-        if (!fontkitRegistered) {
-          console.error('Stamp: cannot embed custom font because fontkit is not registered')
-          return res.status(500).json({ error: 'Server is missing the fontkit integration required to embed custom TTF/OTF fonts. Install and enable @pdf-lib/fontkit (or fontkit) on the server.' })
-        }
-        try {
-          const fontBuf = fs.readFileSync(chosen)
-          // basic sanity: check font magic bytes (TTF/OTF/ttcf/WOFF/WOFF2)
-          const head = Buffer.from(fontBuf.slice(0,4))
-          const isTTF = head.equals(Buffer.from([0x00,0x01,0x00,0x00]))
-          const isOTF = head.toString('ascii') === 'OTTO'
-          const isTTC = head.toString('ascii') === 'ttcf'
-          const isWOFF = head.toString('ascii').toLowerCase().startsWith('wof') || head.toString('hex').startsWith('774f4630')
-          const isWOFF2 = head.toString('hex').startsWith('774f4632') // 'wOF2'
-          if (!isTTF && !isOTF && !isTTC && !isWOFF && !isWOFF2) {
-            console.error('Stamp: chosen font file failed magic-byte check:', chosen, 'head=', head.toString('hex'))
-            throw new Error('Unknown font format')
-          }
-
-          // Prefer embedding TTF/OTF; if chosen is woff/woff2, still attempt but log a warning
-          if (isWOFF || isWOFF2) console.warn('Stamp: chosen font is WOFF/WOFF2; TTF/OTF preferred for reliable Arabic shaping')
-          helv = await pdfDoc.embedFont(fontBuf)
-
-          // If we embedded a WOFF/WOFF2, attempt to fetch a TTF Noto Sans Arabic as a better fallback
-          if ((isWOFF || isWOFF2) && fontkitRegistered) {
-            try {
-              const ttfUrl = 'https://github.com/googlefonts/noto-fonts/raw/main/phaseIII_only/unhinted/ttf/NotoSansArabic/NotoSansArabic-Regular.ttf'
-              const boldUrl = 'https://github.com/googlefonts/noto-fonts/raw/main/phaseIII_only/unhinted/ttf/NotoSansArabic/NotoSansArabic-Bold.ttf'
-              const r1 = await fetch(ttfUrl)
-              if (r1.ok) {
-                const buf1 = Buffer.from(await r1.arrayBuffer())
-                try {
-                  helv = await pdfDoc.embedFont(buf1)
-                  console.debug('Stamp: replaced WOFF font with runtime downloaded NotoSansArabic-Regular.ttf')
-                } catch (e) {
-                  // ignore
-                }
-              }
-              const r2 = await fetch(boldUrl)
-              if (r2.ok) {
-                const buf2 = Buffer.from(await r2.arrayBuffer())
-                try {
-                  helvBold = await pdfDoc.embedFont(buf2)
-                  console.debug('Stamp: replaced WOFF bold with runtime downloaded NotoSansArabic-Bold.ttf')
-                } catch (e) {
-                  // ignore
-                }
-              }
-            } catch (e) {
-              console.warn('Stamp: runtime TTF replacement attempt failed', e)
-            }
-          }
-        } catch (embedErr) {
-          console.error('Stamp: failed to embed chosen font file:', chosen, embedErr)
-          // attempt explicit known-file fallback (Noto files checked-in)
-          try {
-            const maybeNames = [
-              'NotoSansArabic-Regular.ttf',
-              'NotoSansArabic-Bold.ttf',
-              'NotoSansArabic-Regular.woff2',
-              'NotoSansArabic-Bold.woff2',
-              'NotoSansArabic-Regular.woff',
-              'NotoSansArabic-Bold.woff'
-            ]
-            const candidates: string[] = []
-            for (const n of maybeNames) {
-              const p1 = path.resolve(process.cwd(), 'backend', 'assets', 'fonts', n)
-              const p2 = path.resolve(__dirname, '..', '..', 'backend', 'assets', 'fonts', n)
-              if (fs.existsSync(p1)) candidates.push(p1)
-              if (fs.existsSync(p2)) candidates.push(p2)
-            }
-            if (candidates.length) {
-              console.debug('Stamp: attempting embed of checked-in Noto font at', candidates[0])
-              const fb = fs.readFileSync(candidates[0])
-              // magic check
-              const h = Buffer.from(fb.slice(0,4))
-              const isTTF_ = h.equals(Buffer.from([0x00,0x01,0x00,0x00]))
-              const isOTF_ = h.toString('ascii') === 'OTTO'
-              const isTTC_ = h.toString('ascii') === 'ttcf'
-              const isWOFF_ = h.toString('ascii') === 'wOFF'
-              const isWOFF2_ = h.toString('ascii') === 'wOF2'
-              if (!isTTF_ && !isOTF_ && !isTTC_ && !isWOFF_ && !isWOFF2_) {
-                console.error('Stamp: checked-in Noto font file is invalid/malformed:', candidates[0], 'head=', h.toString('hex'))
-                throw new Error('Unknown font format')
-              }
-              helv = await pdfDoc.embedFont(fb)
-            } else {
-              throw embedErr
-            }
-          } catch (fallbackErr) {
-            console.error('Stamp: fallback embed also failed:', fallbackErr)
-            return res.status(500).json({ error: 'Failed to embed chosen font for stamping. Ensure a UTF-8 TTF/OTF font (e.g., NotoSansArabic) is present in backend/assets/fonts and that fontkit is installed.' })
-          }
-        }
-
-        // try to find a bold TTF/OTF variant nearby (prefer TTF/OTF over WOFF)
-        const boldTtf = fontFiles.find(f => boldRe.test(path.basename(f)) && /\.(ttf|otf|ttcf)$/i.test(f))
-        const boldCandidate = boldTtf || fontFiles.find(f => boldRe.test(path.basename(f)))
-        if (boldCandidate) {
-          try { helvBold = await pdfDoc.embedFont(fs.readFileSync(boldCandidate)) } catch(e) { helvBold = helv }
-        } else {
-          helvBold = helv
-        }
-      } else {
-        // No local TTF/OTF font found. By default we require local fonts to avoid flaky runtime downloads.
-        const allowRuntime = String(process.env.ALLOW_RUNTIME_FONT_DOWNLOAD || '').toLowerCase() === 'true'
-        if (!allowRuntime) {
-          console.error('Stamp: no local TTF fonts found and runtime font download is disabled')
-          return res.status(500).json({ error: 'Missing local fonts. Place NotoSansArabic-Regular.ttf and NotoSansArabic-Bold.ttf in backend/assets/fonts or enable runtime download by setting ALLOW_RUNTIME_FONT_DOWNLOAD=true' })
-        }
-
-        console.warn('Stamp: no local TTF/OTF font found in assets; ALLOW_RUNTIME_FONT_DOWNLOAD=true so attempting runtime TTF fetch')
-        try {
-          const notoCandidates = [
-            { url: 'https://github.com/googlefonts/noto-fonts/raw/main/phaseIII_only/unhinted/ttf/NotoSansArabic/NotoSansArabic-Regular.ttf' , name: 'regular.ttf' },
-            { url: 'https://github.com/googlefonts/noto-fonts/raw/main/phaseIII_only/unhinted/ttf/NotoSansArabic/NotoSansArabic-Bold.ttf' , name: 'bold.ttf' }
-          ]
-          try {
-            for (const cand of notoCandidates) {
-              try {
-                const r = await fetch(cand.url)
-                const ct = String(r.headers.get('content-type') || '')
-                if (r.ok && /font|octet|application/i.test(ct)) {
-                  const buf = Buffer.from(await r.arrayBuffer())
-                  try {
-                    if (!helv && fontkitRegistered) helv = await pdfDoc.embedFont(buf)
-                    if (cand.name.toLowerCase().includes('bold') && fontkitRegistered) helvBold = helvBold || await pdfDoc.embedFont(buf)
-                    if (helv && helvBold) break
-                  } catch (e) {
-                    console.warn('Stamp: downloaded font candidate not embedable:', cand.url, String(e))
-                  }
-                } else {
-                  console.warn('Stamp: runtime candidate returned non-font content-type', cand.url, ct)
-                }
-              } catch (e) {
-                console.warn('Stamp: runtime candidate fetch failed', cand.url, String(e))
-              }
-            }
-          } catch (e) {
-            console.warn('Stamp: runtime font candidate loop failed', e)
-          }
-
-          // If we still don't have fonts, fail loudly so operator can add local files
-          if (!helv) {
-            console.error('Stamp: runtime font download did not produce embedable fonts')
-            return res.status(500).json({ error: 'Failed to fetch usable font files at runtime. Place NotoSansArabic TTFs in backend/assets/fonts manually.' })
-          }
-        } catch (e) {
-          console.warn('Stamp: runtime font download failed:', e)
-          return res.status(500).json({ error: 'Runtime font download failed and no local fonts available.' })
-        }
-      }
-    } catch (e) {
-      console.error('Stamp: failed to embed custom font:', e)
-      // If embedding fails (or no font present) return a helpful error so user/admin can add a UTF-8 font file
-      return res.status(500).json({ error: 'Failed to embed font for stamping. Ensure a UTF-8 TTF/OTF font (e.g., NotoSansArabic, DejaVuSans, Amiri) is present in backend/assets/fonts.' })
     }
+
+    if (!fontPath) {
+      console.error('Stamp: NotoSansArabic-Bold.ttf not found')
+      return res.status(500).json({ error: 'Missing Arabic font. Place NotoSansArabic-Bold.ttf in backend/assets/fonts' })
+    }
+
+    console.debug('Stamp: found font for canvas:', fontPath)
+
+    // Load PDF document
+    const pdfDoc = await PDFDocument.load(pdfBytes)
     const pages = pdfDoc.getPages()
     const page = pages[Math.max(0, Math.min(pageIndex, pages.length - 1))]
 
@@ -473,26 +250,22 @@ router.post('/:barcode/stamp', async (req, res) => {
     }
     const { width: pageWidth, height: pageHeight } = page.getSize()
 
-    // compute image size in PDF units based on provided stampWidth (px) and container size
+    // compute stamp image size in PDF units based on provided stampWidth (px)
+    // The PNG stamp will be generated with the exact dimensions we need
     let widthPdf: number
     let heightPdf: number
-    const imgWidth = pngImage.width || 200
-    const imgHeight = pngImage.height || 50
 
     if (containerWidth && containerHeight) {
       const cw = Number(containerWidth)
       widthPdf = (Number(stampWidth) / cw) * pageWidth
-      heightPdf = widthPdf * (imgHeight / imgWidth)
+      // Height will be determined by the PNG's aspect ratio after generation
+      // For now, use a placeholder (will be recalculated after stamp generation)
+      heightPdf = widthPdf * 0.8  // temporary aspect ratio estimate
     } else {
-      const scaled = pngImage.scale(0.6)
-      widthPdf = scaled.width
-      heightPdf = scaled.height
+      // Direct placement without container scaling
+      widthPdf = Number(stampWidth) * 0.75  // convert px to PDF points (approximate)
+      heightPdf = widthPdf * 0.8  // temporary aspect ratio estimate
     }
-
-    // Reduce stamp/barcode height to make the overall stamp less tall.
-    // Keep width unchanged; only scale vertically.
-    const heightScale = 0.50
-    heightPdf = heightPdf * heightScale
 
     // compute coordinates: x,y are in pixels from top-left of preview; convert to PDF coords
     let xPdf: number
@@ -510,217 +283,83 @@ router.post('/:barcode/stamp', async (req, res) => {
     xPdf = Math.max(0, Math.min(xPdf, pageWidth - 1))
     yPdf = Math.max(0, Math.min(yPdf, pageHeight - 1))
 
-    // draw barcode image
-    page.drawImage(pngImage, {
-      x: xPdf,
-      y: yPdf,
-      width: widthPdf,
-      height: heightPdf,
-    })
-
-    // draw centered, styled annotation (company name + barcode text + date)
-    const centerX = xPdf + widthPdf / 2
-    // Normalize and attempt to repair possible mojibake/mis-encoding for Arabic fields
-    const rawCompany = String(doc.company || doc.sender || doc.user || '')
-    function repairArabicEncoding(s: string) {
-      if (!s) return s
-      try {
-        // If it already contains Arabic chars, assume it's OK
-        const hasArabic = (s.match(/[\u0600-\u06FF]/g) || []).length > 0
-        if (hasArabic) return s.normalize('NFC')
-        const iconv = require('iconv-lite')
-        const decoded = iconv.decode(Buffer.from(String(s), 'binary'), 'windows-1256')
-        const decodedArabicCount = (decoded.match(/[\u0600-\u06FF]/g) || []).length
-        if (decodedArabicCount > 0) return decoded.normalize('NFC')
-      } catch (e) {
-        // ignore
-      }
-      return s.normalize('NFC')
-    }
-
-    const companyName = repairArabicEncoding(rawCompany)
-
-    // Prefer an English company name for the stamp when possible (avoid Arabic shaping issues)
-    let companyNameEnglish = ''
-    try {
-      // first prefer explicit English fields if present
-      companyNameEnglish = String(doc.company_en || doc.companyEn || doc.companyNameEn || '').trim()
-      // if none, try to read tenant name (may be English)
-      if (!companyNameEnglish && doc.tenant_id) {
-        try {
-          const t = await query('SELECT name FROM tenants WHERE id = $1 LIMIT 1', [doc.tenant_id])
-          if (t.rows.length) companyNameEnglish = String(t.rows[0].name || '').trim()
-        } catch (e) {
-          // ignore
-        }
-      }
-      // fallback to configured org name or a sensible default
-      if (!companyNameEnglish) companyNameEnglish = process.env.ORG_NAME_EN || 'Zaco'
-    } catch (e) {
-      companyNameEnglish = process.env.ORG_NAME_EN || 'Zaco'
-    }
-
-    // Smart date: if doc.date is date-only (YYYY-MM-DD) it becomes midnight; merge with created_at time when available
-    const dateSource = doc.date || doc.created_at || new Date().toISOString()
-    let dateStr = ''
-    try {
-      const ds = String(dateSource)
-      let dateObj = new Date(ds)
-      // treat midnight timestamps as date-only and merge with created_at time when available
-      const isMidnight = dateObj.getHours() === 0 && dateObj.getMinutes() === 0 && dateObj.getSeconds() === 0
-      if (isMidnight && doc.created_at) {
-        const c = new Date(String(doc.created_at))
-        if (!isNaN(c.getTime())) dateObj.setHours(c.getHours(), c.getMinutes(), c.getSeconds())
-      }
-
-      // Format in Arabic locale
-      let formatted = dateObj.toLocaleString('ar-EG', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-      // Convert European digits to Arabic-Indic digits (0-9 -> ٠-٩)
-      const arabicIndicDigits = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩']
-      formatted = formatted.replace(/[0-9]/g, (d) => arabicIndicDigits[Number(d)])
-      dateStr = formatted
-    } catch (e) {
-      dateStr = String(dateSource)
-    }
-
-    // Arabic rendering: pdf-lib doesn't do shaping/BiDi, so we pre-process via processArabicText.
-
-    // Convert digits for display to Arabic-Indic numerals
-    const arabicIndicDigits = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩']
-    const displayBarcode = String(barcode || '').replace(/[0-9]/g, (d) => arabicIndicDigits[Number(d)])
-
-    // Recompute date object to format both Gregorian and Hijri representations
-    let dateObjForLabel: Date
-    try { dateObjForLabel = new Date(String(dateSource)) } catch (e) { dateObjForLabel = new Date() }
-
-    // If date was stored as date-only at midnight, attempt to merge created_at time (same as earlier logic)
-    if (dateObjForLabel.getHours() === 0 && dateObjForLabel.getMinutes() === 0 && dateObjForLabel.getSeconds() === 0 && doc.created_at) {
-      const c = new Date(String(doc.created_at))
-      if (!isNaN(c.getTime())) dateObjForLabel.setHours(c.getHours(), c.getMinutes(), c.getSeconds())
-    }
-
-    const gregFmt = new Intl.DateTimeFormat('ar-EG', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(dateObjForLabel)
-    const hijriFmt = new Intl.DateTimeFormat('ar-SA-u-ca-islamic', { day: '2-digit', month: 'short', year: 'numeric' }).format(dateObjForLabel)
-
-    const displayGregorian = String(gregFmt).replace(/[0-9]/g, (d) => arabicIndicDigits[Number(d)])
-    const displayHijri = String(hijriFmt).replace(/[0-9]/g, (d) => arabicIndicDigits[Number(d)])
-
-    // Ensure there is an English date string for the sticker as well
-    const engFmt = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(dateObjForLabel)
-    const displayEnglishDate = String(engFmt)
-    // Ensure we have a Latin-digit barcode for machine-readability
-    const displayBarcodeLatin = String(barcode || '')
+    // Prepare data for stamp image generation
+    const fixedCompanyName = 'زوايا البناء للإستشارات الهندسيه'
     
     // Get attachment count/description from attachment_count (can be text like "1 اسطوانة")
-    // Convert any Latin digits to Arabic-Indic digits to avoid mixed-direction rendering issues.
     const attachmentTextRaw = String(doc.attachment_count || '0')
-    const attachmentText = attachmentTextRaw.replace(/[0-9]/g, (d) => arabicIndicDigits[Number(d)])
-    // NOTE: For RTL manual drawing, a space AFTER ':' tends to show up as a space BEFORE ':' visually.
-    // So we avoid the space after ':' here.
-    const rawAttachmentLabel = `نوعية المرفقات: ${attachmentText}`
+    const attachmentLabel = `نوعية المرفقات: ${attachmentTextRaw}`
     
-    // Use the new robust Arabic processing utility
-    // const { processArabicText } = await import('../lib/arabic-utils')
-    const anchoredAttachmentLabel = anchorNeutralPunctuationForArabic(rawAttachmentLabel)
-    const displayAttachmentCount = processArabicTextForPdf(anchoredAttachmentLabel)
-    console.debug('Stamp: attachment text processed:', {
-      raw: rawAttachmentLabel,
-      anchored: anchoredAttachmentLabel,
-      processed: displayAttachmentCount,
-      anchoredHex: Array.from(anchoredAttachmentLabel).map(c => c.charCodeAt(0).toString(16)).join(' '),
-      hex: Array.from(displayAttachmentCount).map(c => c.charCodeAt(0).toString(16)).join(' ')
-    })
-
-    // Use a fixed Arabic company name on the stamp (as requested)
-    const fixedCompanyName = 'زوايا البناء للإستشارات الهندسيه'
-    const anchoredCompanyName = anchorNeutralPunctuationForArabic(fixedCompanyName)
-    const displayCompanyText = processArabicTextForPdf(anchoredCompanyName)
-    console.debug('Stamp: company text processed:', {
-      companyName: fixedCompanyName,
-      anchoredCompanyName,
-      processed: displayCompanyText,
-      anchoredHex: Array.from(anchoredCompanyName).map(c => c.charCodeAt(0).toString(16)).join(' '),
-      hex: Array.from(displayCompanyText).map(c => c.charCodeAt(0).toString(16)).join(' ')
-    })
-
-    // Do not render Arabic incoming/outgoing label to avoid font/shaping issues; keep empty or English if required
-    let docTypeText = ''
-    // If you want an English direction label, enable the block below and adjust as needed
-    // try {
-    //   const t = String((doc.type || doc.direction || doc.kind || '').toLowerCase())
-    //   if (t === 'incoming' || t === 'in') docTypeText = 'IN'
-    //   else if (t === 'outgoing' || t === 'out') docTypeText = 'OUT'
-    // } catch (e) {
-    //   docTypeText = ''
-    // }
-
-    // sizes - scale proportionally with stampWidth
-    const baseStampWidth = 180 // base size for font calculations
-    const scaleFactor = Number(stampWidth || baseStampWidth) / baseStampWidth
-    const companySize = Math.round(11 * scaleFactor)
-    const typeSize = Math.round(10 * scaleFactor)
-    const barcodeSize2 = Math.round(9 * scaleFactor)
-    const dateSize2 = Math.round(9 * scaleFactor)
-    const attachmentSize = Math.round(8 * scaleFactor)
-    const gap = Math.round(4 * scaleFactor)
-
-    // Recompute widths with chosen fonts
-    const companyWidth = measureRtlTextWidth(displayCompanyText, companySize, helvBold)
-    const typeWidth = helv.widthOfTextAtSize(docTypeText || '', typeSize)
-    const barcodeWidth2 = helv.widthOfTextAtSize(displayBarcodeLatin, barcodeSize2)
-    const dateWidth2 = helv.widthOfTextAtSize(displayEnglishDate, dateSize2)
-    const attachmentWidth = measureRtlTextWidth(displayAttachmentCount, attachmentSize, helvBold)
-
-    const centerX2 = xPdf + widthPdf / 2
-
-    // Start stacking above the barcode image: company -> type (if any)
-    let companyX = centerX2 - (companyWidth / 2)
-    let companyY = yPdf + heightPdf + gap
-    let typeX = centerX2 - (typeWidth / 2)
-    let typeY = companyY - companySize - 2
-
-    // Barcode text and date below image (preferred), but if there's no room, place them above image
-    let barcodeX = centerX2 - (barcodeWidth2 / 2)
-    let barcodeY = yPdf - barcodeSize2 - gap
-    let dateX = centerX2 - (dateWidth2 / 2)
-    let dateY = barcodeY - dateSize2 - 2
-    let attachmentX = centerX2 - (attachmentWidth / 2)
-    let attachmentY = dateY - attachmentSize - 2
-
-    // If text is off-canvas at bottom, move barcode texts above the image (between company and image)
-    if (barcodeY < 0 || attachmentY < 0) {
-      // place barcode text immediately above image
-      barcodeY = yPdf + heightPdf + gap + 2
-      dateY = barcodeY + dateSize2 + 2
-      attachmentY = dateY + attachmentSize + 2
-      // if company or type would collide, push company up
-      if (typeY <= attachmentY) {
-        companyY = attachmentY + companySize + typeSize + gap + 4
-        typeY = companyY - companySize - 2
+    // Format English date for stamp
+    const dateSource = doc.date || doc.created_at || new Date().toISOString()
+    let dateObjForLabel: Date
+    try { 
+      dateObjForLabel = new Date(String(dateSource)) 
+    } catch (e) { 
+      dateObjForLabel = new Date() 
+    }
+    
+    // If date was stored as date-only at midnight, merge with created_at time
+    if (dateObjForLabel.getHours() === 0 && dateObjForLabel.getMinutes() === 0 && dateObjForLabel.getSeconds() === 0 && doc.created_at) {
+      const c = new Date(String(doc.created_at))
+      if (!isNaN(c.getTime())) {
+        dateObjForLabel.setHours(c.getHours(), c.getMinutes(), c.getSeconds())
       }
     }
-
-    console.debug('Stamp: computed_text', { displayCompanyText, docTypeText, displayBarcodeLatin, displayEnglishDate })
-    console.debug('Stamp: coords', { xPdf, yPdf, widthPdf, heightPdf, companyX, companyY, typeX, typeY, barcodeX, barcodeY, dateX, dateY })
-
-    // Draw Arabic text in visual order (already shaped + BiDi processed)
-    if (displayCompanyText) {
-      const companyX = centerX2 - (companyWidth / 2)
-      drawVisualText(page, displayCompanyText, companyX, companyY, companySize, helvBold, rgb(0,0,0))
-    }
-    if (docTypeText) {
-      page.drawText(docTypeText, { x: typeX, y: typeY, size: typeSize, font: helv, color: rgb(0,0,0) })
-    }
-
-    // barcode identifier centered below (or near) the barcode image
-    page.drawText(displayBarcodeLatin, { x: barcodeX, y: barcodeY, size: barcodeSize2, font: helv, color: rgb(0,0,0) })
-
-    // Draw English Gregorian date centered near the barcode for readability
-    page.drawText(displayEnglishDate, { x: dateX, y: dateY, size: dateSize2, font: helv, color: rgb(0,0,0) })
-
-    // Draw Arabic attachment text in visual order (already shaped + BiDi processed)
-    // (attachmentX already computed above as let variable)
-    drawVisualText(page, displayAttachmentCount, attachmentX, attachmentY, attachmentSize, helvBold, rgb(0,0,0))
+    
+    const engFmt = new Intl.DateTimeFormat('en-GB', { 
+      day: '2-digit', 
+      month: 'short', 
+      year: 'numeric', 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    }).format(dateObjForLabel)
+    const englishDate = String(engFmt)
+    
+    console.debug('Stamp: generating PNG image', { 
+      barcode, 
+      companyName: fixedCompanyName, 
+      attachmentLabel, 
+      englishDate, 
+      stampWidth,
+      fontPath 
+    })
+    
+    // Generate stamp as PNG using canvas (native RTL/BiDi support)
+    const stampImageBuffer = await generateStampImage(
+      String(barcode || ''),
+      fixedCompanyName,
+      attachmentLabel,
+      englishDate,
+      Number(stampWidth),
+      fontPath
+    )
+    
+    // Embed the PNG stamp image in the PDF
+    const stampImage = await pdfDoc.embedPng(stampImageBuffer)
+    const stampDims = stampImage.scale(1)
+    
+    // Calculate dimensions maintaining aspect ratio
+    const desiredWidth = widthPdf
+    const aspectRatio = stampDims.height / stampDims.width
+    const desiredHeight = desiredWidth * aspectRatio
+    
+    console.debug('Stamp: embedding PNG', { 
+      xPdf, 
+      yPdf, 
+      desiredWidth, 
+      desiredHeight,
+      originalWidth: stampDims.width,
+      originalHeight: stampDims.height
+    })
+    
+    // Draw the stamp image on the PDF page
+    page.drawImage(stampImage, {
+      x: xPdf,
+      y: yPdf,
+      width: desiredWidth,
+      height: desiredHeight,
+    })
 
     const outBytes = await pdfDoc.save()
     // normalize to Buffer for consistency when uploading/verifying

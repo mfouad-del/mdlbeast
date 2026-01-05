@@ -3,5 +3,10 @@ services:
     name: zaco-backend
     env: node
     rootDirectory: backend
-    buildCommand: npm ci && npm run build
+    buildCommand: |
+      apt-get update && \
+      apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev && \
+      npm ci && \
+      npm run build
     startCommand: npm start
+

@@ -94,6 +94,7 @@ export interface Correspondence {
   category?: string
   physicalLocation?: string
   attachmentCount?: string | number // Can be text like "1 اسطوانة" or numeric
+  attachment_count?: string | number // Backend snake_case alias
   attachments: Attachment[]
   signatory?: string
   tags?: string[]
