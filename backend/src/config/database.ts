@@ -6,10 +6,19 @@ dotenv.config()
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  max: parseInt(process.env.DB_POOL_MAX || '20', 10),
+  min: parseInt(process.env.DB_POOL_MIN || '2', 10),
+  idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT || '30000', 10),
+  connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT || '5000', 10),
+  allowExitOnIdle: false
 })
+
+// Log pool configuration
+console.log('🗄️  Database Pool Configuration:')
+console.log(`  - Max connections: ${pool.options.max}`)
+console.log(`  - Min connections: ${pool.options.min}`)
+console.log(`  - Idle timeout: ${pool.options.idleTimeoutMillis}ms`)
+console.log(`  - Connection timeout: ${pool.options.connectionTimeoutMillis}ms`)
 
 pool.on("error", (err: Error) => {
   console.error("Unexpected error on idle client", err)
