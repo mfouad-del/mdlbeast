@@ -339,7 +339,7 @@ const App: React.FC = () => {
       <aside className="w-72 bg-white border-l border-slate-200 flex flex-col shrink-0 z-20 shadow-sm no-print h-full">
         <div className="p-4 border-b border-slate-100 bg-gradient-to-br from-slate-50 to-white">
            <div className="flex flex-col items-center text-center w-full">
-             <img src='/mdlbeast/logo.png' className="h-10 w-auto mb-2 object-contain drop-shadow-sm hover:scale-105 transition-transform duration-300" alt="Logo" />
+             <img src='/mdlbeast/logo.png' className="h-12 w-auto mb-3 object-contain drop-shadow-sm hover:scale-105 transition-transform duration-300" alt="Logo" />
              <div className="text-[8px] font-black text-slate-600 uppercase tracking-[0.12em] leading-relaxed">مركز الإتصالات الإدارية</div>
            </div>
         </div>

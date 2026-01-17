@@ -682,7 +682,7 @@ router.post('/:barcode/stamp', async (req, res) => {
     const rawAttachmentLabel = `المرفقات: ${attachmentText}`
     
     // Use company name directly (canvas will handle all Arabic processing)
-    const companyName = 'زوايا البناء للإستشارات الهندسيه'
+    const companyName = 'MDLBEAST COMPANY'
     
     console.debug('Stamp: texts to render:', {
       companyName,
