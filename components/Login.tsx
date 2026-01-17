@@ -4,7 +4,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Lock, Mail, ShieldCheck, LogIn, Smartphone, Globe } from "lucide-react"
-import { apiClient } from "@/lib/api-client"
+import { apiClient, API_BASE_URL } from "@/lib/api-client"
 import {
   Dialog,
   DialogContent,

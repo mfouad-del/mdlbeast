@@ -58,11 +58,8 @@ router.post(
         }
       }
 
-      // Optimized: Assume email column exists or just query by username if that's the standard.
-      // For better performance, we try to match username first.
-      // If you need email login, ensure the column exists via migration, don't check at runtime.
-      const result = await query("SELECT * FROM users WHERE username = $1 LIMIT 1", [username])
-
+      // Check by username OR email (to support flexible login inputs)
+      const result = await query("SELECT * FROM users WHERE username = $1 OR email = $1 LIMIT 1", [username])
 
       if (result.rows.length === 0) {
         await logAudit({ action: 'LOGIN_FAILED', details: `User not found: ${username}`, ipAddress: req.ip || req.socket.remoteAddress, userAgent: req.headers['user-agent'] })
