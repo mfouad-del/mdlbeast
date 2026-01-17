@@ -1,0 +1,100 @@
+"use client"
+
+import { useState, useRef, useEffect, useMemo } from "react"
+import type { Correspondence, SystemSettings } from "@/types"
+import { Search, ArrowRightLeft, FileSpreadsheet, FileText, Calendar, ScanText, Edit3, Trash2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
+import AsyncButton from "./ui/async-button"
+import StatementModal from "./StatementModal"
+import { exportToCSV } from "@/lib/barcode-service"
+import BarcodePrinter from "./BarcodePrinter"
+import OfficialReceipt from "./OfficialReceipt"
+import PdfStamper from "./PdfStamper"
+import { apiClient } from "@/lib/api-client"
+import { Spinner } from "./ui/spinner"
+
+interface DocumentListProps {
+  docs: Correspondence[]
+  settings: SystemSettings
+  currentUser?: any
+  users?: any[]
+  tenants?: any[]
+  onRefresh?: () => void | Promise<void>
+}
+
+export default function DocumentList({ docs, settings, currentUser, users: _users, tenants, onRefresh }: DocumentListProps) {
+  const [searchTerm, setSearchTerm] = useState("")
+  const [startDate, setStartDate] = useState("")
+  const [endDate, setEndDate] = useState("")
+  const [directionFilter, setDirectionFilter] = useState<'ALL' | 'INCOMING' | 'OUTGOING'>('ALL')
+  const [stamperDoc, setStamperDoc] = useState<Correspondence | null>(null)
+  const [statementOpenDoc, setStatementOpenDoc] = useState<Correspondence | null>(null)
+  
+  // Permissions - الصلاحيات المدمجة من الـ backend
+  // NOTE: Backend uses 'archive' module, not 'documents' (legacy key mapping)
+  const docPerms = currentUser?.permissions?.archive || {}
+  
+  // الصاحب دائماً يمكنه التعديل/الحذف، لكن الصلاحيات المخصصة تتحكم في الباقي
+  const canEdit = (doc: any) => {
+    if (doc?.user_id === currentUser?.id) return true // صاحب المستند
+    return docPerms.edit === true
+  }
+  const canDelete = (doc: any) => {
+    if (doc?.user_id === currentUser?.id) return true // صاحب المستند
+    return docPerms.delete === true
+  }
+  const canStamp = docPerms.stamp === true
+  const [statementText, setStatementText] = useState<string>('')
+  const [_statementLoading, _setStatementLoading] = useState(false)
+  const [editingDoc, setEditingDoc] = useState<Correspondence | null>(null)
+  const [editFormData, setEditFormData] = useState<any>({})
+  const [editPending, setEditPending] = useState(false)
+  const [uploadingAttachmentFor, setUploadingAttachmentFor] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(20)
+
+  const addAttachmentInputRef = useRef<HTMLInputElement | null>(null)
+  const [localDocs, setLocalDocs] = useState(docs)
+
+  useEffect(() => { setLocalDocs(docs) }, [docs])
+
+  // Listen for stamped document events and update local list entry when triggered
+  useEffect(() => {
+    const handler = async (e: any) => {
+      try {
+        const barcode = e?.detail?.barcode
+        if (!barcode) return
+        const updated = await apiClient.getDocumentByBarcode(barcode).catch(() => null)
+        if (updated) setLocalDocs((prev:any[]) => prev.map((d:any) => (d.barcode === barcode ? updated : d)))
+      } catch (err) { console.warn('document:stamped handler failed', err) }
+    }
+    window.addEventListener('document:stamped', handler)
+    return () => window.removeEventListener('document:stamped', handler)
+  }, [])
+
+  const handleAddAttachment = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    const targetBarcode = (e.target as any)?._targetBarcode || ''
+    if (!file || !targetBarcode) return
+    
+    setUploadingAttachmentFor(targetBarcode)
+    try {
+      console.log('[AddAttachment] Uploading file for barcode:', targetBarcode)
+      const uploaded = await apiClient.uploadFile(file, 3, 'documents')
+      console.log('[AddAttachment] Upload result:', uploaded)
+      
+      const result = await apiClient.addAttachment(targetBarcode, uploaded)
+      console.log('[AddAttachment] addAttachment result:', result)
+      
+      // Fetch updated document and update local state (avoid full page reload)
+      const updated = await apiClient.getDocumentByBarcode(targetBarcode)
+      console.log('[AddAttachment] getDocumentByBarcode result:', updated)
+      
+      if (updated) {
+        setLocalDocs((prev: any[]) => {
+          const updatedId = (updated as any).id
+          const updatedBarcode = (updated as any).barcode
+          const targetLower = String(targetBarcode).toLowerCase()
+          console.log('[AddAttachment] Updating local docs. updatedId:', updatedId, 'updatedBarcode:', updatedBarcode, 'targetLower:', targetLower)
+          console.log('[AddAttachment] Updated attachments count:', (updated as any).attachments?.length || 0)
+          
+          return prev.map((d: any) => {

@@ -33,6 +33,23 @@ const App: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userSettingsOpen, setUserSettingsOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState<string[]>(['documents', 'system']);
+
+  // Restore active tab from localStorage on mount (client-side only)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedTab = localStorage.getItem('mdlbeast_active_tab');
+      if (savedTab && savedTab !== activeTab) {
+        setActiveTab(savedTab);
+      }
+    }
+  }, []);
+
+  // Save active tab to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mdlbeast_active_tab', activeTab);
+    }
+  }, [activeTab]);
   
   const [settings] = useState<SystemSettings>({
     primaryColor: '#0f172a',
