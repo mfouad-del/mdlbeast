@@ -11,7 +11,7 @@
     "build": "next build",
     "export": "next build",
     "dev": "next dev",
-    "lint": "next lint",
+    "lint": "next lint --dir .",
     "start": "next start",
     "build:backend": "npm ci --prefix backend && npm run build --prefix backend",
     "start:backend": "npm start --prefix backend"
