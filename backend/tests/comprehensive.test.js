@@ -84,6 +84,7 @@ async function testAuthentication() {
   logSection('🔐 Authentication Tests')
   
   let authToken = null
+  const testAdminPassword = process.env.TEST_ADMIN_PASSWORD || 'admin123'
   
   await test('Login with valid credentials', async () => {
     const res = await fetch(`${API_BASE}/auth/login`, {
@@ -91,7 +92,7 @@ async function testAuthentication() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         username: 'admin',
-        password: 'MDLadmin@2026'
+        password: testAdminPassword
       })
     })
     assert(res.ok, 'Login should succeed')

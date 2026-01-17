@@ -2,13 +2,10 @@
 
 import { useState, useRef, useEffect } from "react"
 import type { Correspondence, SystemSettings } from "@/types"
-import { Search, ArrowRightLeft, FileSpreadsheet, AlertCircle, FileText, Calendar, ScanText, Edit3, Check, X, Trash2 } from "lucide-react"
+import { Search, ArrowRightLeft, FileSpreadsheet, AlertCircle, FileText, Calendar, Edit3, Check, X, Trash2 } from "lucide-react"
 import AsyncButton from "./ui/async-button"
-import StatementModal from "./StatementModal"
 import { exportToCSV } from "@/lib/barcode-service"
 import BarcodePrinter from "./BarcodePrinter"
-import OfficialReceipt from "./OfficialReceipt"
-import PdfStamper from "./PdfStamper"
 import { apiClient } from "@/lib/api-client"
 import { Spinner } from "./ui/spinner"
 
@@ -17,19 +14,15 @@ interface DocumentListProps {
   settings: SystemSettings
   currentUser?: any
   users?: any[]
-  tenants?: any[]
-  onRefresh?: () => void | Promise<void>
+  onRefresh?: (filters?: any) => void | Promise<void>
+  pagination?: { page: number, limit: number, total: number }
 }
 
-export default function DocumentList({ docs, settings, currentUser, users, tenants, onRefresh }: DocumentListProps) {
+export default function DocumentList({ docs, settings, currentUser, users, onRefresh, pagination }: DocumentListProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
   const [directionFilter, setDirectionFilter] = useState<'ALL' | 'INCOMING' | 'OUTGOING'>('ALL')
-  const [stamperDoc, setStamperDoc] = useState<Correspondence | null>(null)
-  const [statementOpenDoc, setStatementOpenDoc] = useState<Correspondence | null>(null)
-  const [statementText, setStatementText] = useState<string>('')
-  const [statementLoading, setStatementLoading] = useState(false)
   const [editingDoc, setEditingDoc] = useState<Correspondence | null>(null)
   const [editFormData, setEditFormData] = useState<any>({})
   const [editPending, setEditPending] = useState(false)
@@ -39,20 +32,6 @@ export default function DocumentList({ docs, settings, currentUser, users, tenan
   const [localDocs, setLocalDocs] = useState(docs)
 
   useEffect(() => { setLocalDocs(docs) }, [docs])
-
-  // Listen for stamped document events and update local list entry when triggered
-  useEffect(() => {
-    const handler = async (e: any) => {
-      try {
-        const barcode = e?.detail?.barcode
-        if (!barcode) return
-        const updated = await apiClient.getDocumentByBarcode(barcode).catch(() => null)
-        if (updated) setLocalDocs((prev:any[]) => prev.map((d:any) => (d.barcode === barcode ? updated : d)))
-      } catch (err) { console.warn('document:stamped handler failed', err) }
-    }
-    window.addEventListener('document:stamped', handler)
-    return () => window.removeEventListener('document:stamped', handler)
-  }, [])
 
   const handleAddAttachment = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -106,7 +85,6 @@ export default function DocumentList({ docs, settings, currentUser, users, tenan
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <input id="addAttachmentInput" ref={addAttachmentInputRef} type="file" accept=".pdf" className="hidden" onChange={handleAddAttachment} />
-      {stamperDoc && <PdfStamper doc={stamperDoc} settings={settings} onClose={() => setStamperDoc(null)} />}
 
       {/* Search & Filter Bar */}
       <div className="bg-white p-6 rounded-3xl border border-slate-300 shadow-md">
@@ -122,7 +100,19 @@ export default function DocumentList({ docs, settings, currentUser, users, tenan
                 className="w-full pr-12 pl-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-bold text-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    onRefresh?.({ search: searchTerm, page: 1, limit: pagination?.limit || 50 });
+                  }
+                }}
               />
+              <button 
+                 onClick={() => onRefresh?.({ search: searchTerm, page: 1, limit: pagination?.limit || 50 })}
+                 className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-blue-600 transition-colors"
+                 title="بحث في الأرشيف كاملًا"
+              >
+                <Search size={16} />
+              </button>
             </div>
           </div>
 
@@ -244,11 +234,7 @@ export default function DocumentList({ docs, settings, currentUser, users, tenan
                             <div className="flex items-center gap-1.5">
                               <span className="font-bold text-slate-400">إلى:</span>
                               <span className="font-medium text-slate-700">
-                                {doc.recipient || (
-                                  doc.type === 'INCOMING' && doc.companyId && tenants 
-                                    ? (tenants.find(t => String(t.id) === String(doc.companyId))?.name || '—')
-                                    : '—'
-                                )}
+                                {doc.recipient || '—'}
                               </span>
                             </div>
                           </div>
@@ -375,18 +361,8 @@ export default function DocumentList({ docs, settings, currentUser, users, tenan
 
                       <td className="px-6 py-4 align-middle">
                         <div className="flex flex-col gap-3 items-end">
-                          <button
-                            onClick={() => setStamperDoc(doc)}
-                            className="px-3 h-7 rounded-lg bg-slate-900 text-white hover:bg-black flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg active:scale-95"
-                            title="ختم المستند"
-                          >
-                            <ScanText size={14} />
-                            <span className="text-[10px] font-bold">ختم المستند</span>
-                          </button>
-
                           <div className="flex items-center gap-1 opacity-100 sm:opacity-60 sm:group-hover:opacity-100 transition-opacity">
                             <BarcodePrinter doc={doc} settings={settings} />
-                            <OfficialReceipt doc={doc} settings={settings} />
 
                             {(currentUser?.role === 'admin' || currentUser?.role === 'manager' || doc.user_id === currentUser?.id) && (
                               <>
@@ -450,13 +426,6 @@ export default function DocumentList({ docs, settings, currentUser, users, tenan
                       </span>
                     </div>
                     <div className="flex gap-2">
-                      <button
-                        onClick={() => setStamperDoc(doc)}
-                        className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-md active:scale-95"
-                        title="ختم المستند"
-                      >
-                        <ScanText size={16} />
-                      </button>
                       <BarcodePrinter doc={doc} settings={settings} />
                     </div>
                   </div>
@@ -621,7 +590,6 @@ export default function DocumentList({ docs, settings, currentUser, users, tenan
           </div>
         )}
       </div>
-      <StatementModal open={Boolean(statementOpenDoc)} onClose={() => { setStatementOpenDoc(null); setStatementText('') }} statement={statementText} />
       
       {/* Edit Record Modal */}
       {editingDoc && (
@@ -788,6 +756,34 @@ export default function DocumentList({ docs, settings, currentUser, users, tenan
               </div>
             </form>
           </div>
+
+              {/* Pagination Controls */}
+              {pagination && pagination.total > 0 && (
+                <div className="flex items-center justify-between mt-6 p-4 bg-white border border-slate-200 rounded-xl">
+                  <div className="text-sm font-bold text-slate-500">
+                    عرض {(pagination.page - 1) * pagination.limit + 1} إلى {Math.min(pagination.page * pagination.limit, pagination.total)} من أصل {pagination.total} سجل
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => onRefresh?.({ page: pagination.page - 1, limit: pagination.limit, search: searchTerm })}
+                      disabled={pagination.page <= 1}
+                      className="px-4 py-2 text-sm font-bold rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      السابق
+                    </button>
+                    <div className="px-4 py-2 bg-slate-100 rounded-lg text-sm font-black">
+                      صفحة {pagination.page}
+                    </div>
+                    <button
+                      onClick={() => onRefresh?.({ page: pagination.page + 1, limit: pagination.limit, search: searchTerm })}
+                      disabled={pagination.page * pagination.limit >= pagination.total}
+                      className="px-4 py-2 text-sm font-bold rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      التالي
+                    </button>
+                  </div>
+                </div>
+              )}
         </div>
       )}
     </div>

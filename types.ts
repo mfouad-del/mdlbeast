@@ -72,8 +72,6 @@ export interface Attachment {
 export interface Correspondence {
   id: number
   barcode: string // Primary ID for all operations
-  companyId?: string
-  tenant_id?: number
   type: DocType
   title: string
   subject: string

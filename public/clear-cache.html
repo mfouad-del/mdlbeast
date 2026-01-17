@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مسح الـ Cache - نظام الأرشفة</title>
+    <title>حل مشكلة تسجيل الدخول - مسح البيانات</title>
     <style>
         * {
             margin: 0;
@@ -12,38 +12,53 @@
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #0f172a;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
+            color: #0f172a;
+        }
+        .bg {
+            position: fixed;
+            inset: 0;
+            background:
+              radial-gradient(800px 400px at 20% 10%, rgba(99,102,241,0.35), transparent 60%),
+              radial-gradient(700px 350px at 80% 30%, rgba(14,165,233,0.25), transparent 60%),
+              radial-gradient(900px 500px at 50% 90%, rgba(16,185,129,0.18), transparent 60%),
+              #0f172a;
+            opacity: 1;
+            pointer-events: none;
         }
         .container {
-            background: white;
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            max-width: 500px;
+            background: rgba(255,255,255,0.98);
+            padding: 28px;
+            border-radius: 24px;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.45);
+            max-width: 520px;
             width: 100%;
             text-align: center;
+            border: 1px solid rgba(226,232,240,0.8);
+            backdrop-filter: blur(12px);
         }
         h1 {
-            color: #1a202c;
-            font-size: 28px;
-            font-weight: 800;
+            color: #0f172a;
+            font-size: 22px;
+            font-weight: 900;
             margin-bottom: 10px;
         }
         .subtitle {
-            color: #718096;
-            font-size: 14px;
+            color: #475569;
+            font-size: 12px;
             margin-bottom: 30px;
+            font-weight: 700;
         }
         .status {
-            background: #f7fafc;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 20px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 16px;
             margin-bottom: 20px;
         }
         .status-item {
@@ -59,14 +74,15 @@
             margin-bottom: 0;
         }
         .label {
-            font-weight: 600;
-            color: #2d3748;
+            font-weight: 900;
+            color: #334155;
+            font-size: 12px;
         }
         .badge {
             padding: 4px 12px;
             border-radius: 20px;
             font-size: 12px;
-            font-weight: 700;
+            font-weight: 900;
         }
         .badge.success {
             background: #c6f6d5;
@@ -77,13 +93,13 @@
             color: #7c2d12;
         }
         button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #0f172a;
             color: white;
             border: none;
-            padding: 16px 32px;
-            font-size: 16px;
-            font-weight: 700;
-            border-radius: 12px;
+            padding: 14px 18px;
+            font-size: 14px;
+            font-weight: 900;
+            border-radius: 16px;
             cursor: pointer;
             width: 100%;
             margin-bottom: 10px;
@@ -91,17 +107,18 @@
         }
         button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.35);
         }
         button:active {
             transform: translateY(0);
         }
         .btn-secondary {
-            background: #e2e8f0;
-            color: #2d3748;
+            background: #fff;
+            color: #0f172a;
+            border: 1px solid #cbd5e1;
         }
         .btn-secondary:hover {
-            background: #cbd5e0;
+            background: #f8fafc;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
         .success-message {
@@ -115,16 +132,34 @@
             font-weight: 600;
         }
         .icon {
-            font-size: 48px;
-            margin-bottom: 20px;
+            width: 56px;
+            height: 56px;
+            margin: 0 auto 16px;
+            border-radius: 18px;
+            background: #0f172a;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.25);
+        }
+        .hint {
+            margin-top: 14px;
+            font-size: 11px;
+            color: #64748b;
+            font-weight: 700;
+            line-height: 1.6;
+            text-align: right;
         }
     </style>
 </head>
 <body>
+    <div class="bg"></div>
     <div class="container">
-        <div class="icon">🧹</div>
-        <h1>مسح الـ Cache والبيانات</h1>
-        <p class="subtitle">حل مشكلة Access token required</p>
+        <div class="icon">CC</div>
+        <h1>حل مشكلة تسجيل الدخول</h1>
+        <p class="subtitle">مسح بيانات الجلسة/التوكن لإصلاح مشكلة Access token required</p>
         
         <div class="status">
             <div class="status-item">
@@ -141,8 +176,12 @@
             </div>
         </div>
 
-        <button onclick="clearAllData()">🗑️ مسح جميع البيانات</button>
-        <button class="btn-secondary" onclick="window.location.href='/archive/'">↩️ العودة للنظام</button>
+                <button onclick="clearAllData()">مسح البيانات الآن</button>
+                <button class="btn-secondary" onclick="goBack()">الرجوع</button>
+
+                <div class="hint">
+                    إذا كنت تفتح هذه الصفحة من داخل نافذة (Modal)، اضغط "الرجوع" للعودة بدون فتح صفحة جديدة.
+                </div>
         
         <div class="success-message" id="success">
             ✅ تم المسح بنجاح! يرجى إعادة تسجيل الدخول
@@ -194,11 +233,20 @@
             console.log('✅ All data cleared successfully!');
             console.log('📋 Cleared keys:', keysToRemove);
             
-            // Redirect after 2 seconds
-            setTimeout(() => {
-                window.location.href = '/mdlbeast/';
-            }, 2000);
+                        // Notify parent (modal) if embedded
+                        try {
+                            window.parent && window.parent.postMessage({ type: 'mdlbeast:clear-cache:done' }, '*')
+                        } catch (e) { /* ignore */ }
         }
+
+                function goBack() {
+                    try {
+                        window.parent && window.parent.postMessage({ type: 'mdlbeast:clear-cache:close' }, '*')
+                    } catch (e) { /* ignore */ }
+                    // Fallback behavior for direct open
+                    if (history.length > 1) history.back();
+                    else window.location.href = '/mdlbeast/';
+                }
 
         // Check on load
         checkStorage();

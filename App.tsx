@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  LayoutDashboard, FilePlus, FileMinus, Search, Scan, FileText, 
+  LayoutDashboard, FilePlus, FileMinus, Search, Scan,
   Users, Briefcase, LogOut, Trash2, Building2, Plus, Lock,
   AlertCircle, DownloadCloud, UploadCloud, Database, RefreshCcw, ShieldCheck, Edit3, X, Check, Menu, FileSignature 
 } from 'lucide-react';
@@ -11,7 +11,6 @@ import DocumentForm from './components/DocumentForm';
 import ChangePassword from './components/ChangePassword';
 import DocumentList from './components/DocumentList';
 import BarcodeScanner from './components/BarcodeScanner';
-import ReportGenerator from './components/ReportGenerator';
 import Login from './components/Login';
 import UserManagement from './components/UserManagement';
 import AdminStatus from './components/AdminStatus';
@@ -24,6 +23,7 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [docs, setDocs] = useState<Correspondence[]>([]);
+  const [pagination, setPagination] = useState({ page: 1, limit: 50, total: 0 });
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const backupFileInputRef = useRef<HTMLInputElement>(null);
@@ -43,7 +43,10 @@ const App: React.FC = () => {
       setIsLoading(true);
       
       // Documents (global list)
-      const fetchedDocs = await apiClient.getDocuments().catch((e) => { console.warn('Documents fetch failed', e); return [] as any[] })
+      const fetchedDocsRes = await apiClient.getDocuments({ limit: 50 }).catch((e) => { console.warn('Documents fetch failed', e); return { data: [] } as any })
+      const fetchedDocs = fetchedDocsRes.data || []
+      setPagination({ page: 1, limit: 50, total: fetchedDocsRes.meta?.total || 0 })
+
       const normalized = (fetchedDocs || []).map((d: any) => ({
         id: d.id,
         barcode: d.barcode || d.barcode_id || '',
@@ -133,13 +136,16 @@ const App: React.FC = () => {
     return () => { window.removeEventListener('error', onError); window.removeEventListener('unhandledrejection', onRejection); }
   }, []);
 
-  const refreshDocuments = async () => {
+  const refreshDocuments = async (filters?: any) => {
     try {
-      const fetchedDocs = await apiClient.getDocuments().catch(() => [])
+      const page = filters?.page || 1
+      const fetchedDocsRes = await apiClient.getDocuments({ limit: 50, page, ...filters }).catch(() => ({ data: [] } as any))
+      const fetchedDocs = fetchedDocsRes.data || []
+      setPagination({ page, limit: 50, total: fetchedDocsRes.meta?.total || 0 })
+      
       const normalized = (fetchedDocs || []).map((d: any) => ({
         id: d.id,
         barcode: d.barcode || d.barcode_id || '',
-        companyId: d.tenant_id || d.companyId || null,
         type: (String(d.type || '').toLowerCase().startsWith('in') || String(d.type) === 'وارد') ? DocType.INCOMING : DocType.OUTGOING,
         title: d.subject || d.title || '',
         sender: d.sender || '',
@@ -240,7 +246,6 @@ const App: React.FC = () => {
           <NavItem id="list" label="الأرشيف والبحث" icon={Search} />
           <div className="h-px bg-slate-100 my-4 mx-4"></div>
           <NavItem id="scanner" label="تتبع الباركود" icon={Scan} />
-          <NavItem id="reports" label="مركز التقارير" icon={FileText} />
           <NavItem id="change-password" label="تغيير كلمة المرور" icon={Lock} />
           <NavItem id="users" label="إدارة المستخدمين" icon={Users} adminOnly />
           <NavItem id="backup" label="النسخ الاحتياطي" icon={Database} adminOnly />
@@ -273,10 +278,9 @@ const App: React.FC = () => {
           {activeTab === 'dashboard' && <Dashboard docs={docs} />}
           {activeTab === 'incoming' && <DocumentForm type={DocType.INCOMING} onSave={handleSaveDoc} companies={[]} />}
           {activeTab === 'outgoing' && <DocumentForm type={DocType.OUTGOING} onSave={handleSaveDoc} companies={[]} />}
-          {activeTab === 'list' && <DocumentList docs={docs} settings={{...settings, orgName: 'MDLBEAST', logoUrl: '/mdlbeast/logo.png', orgNameEn: 'MDLBEAST'}} currentUser={currentUser} users={users} onRefresh={refreshDocuments} /> }
+          {activeTab === 'list' && <DocumentList docs={docs} settings={{...settings, orgName: 'MDLBEAST', logoUrl: '/mdlbeast/logo.png', orgNameEn: 'MDLBEAST'}} currentUser={currentUser} users={users} onRefresh={refreshDocuments} pagination={pagination} /> }
           {activeTab === 'scanner' && <BarcodeScanner />}
           {activeTab === 'approvals' && <Approvals currentUser={currentUser} tenantSignatureUrl='' />}
-          {activeTab === 'reports' && <ReportGenerator docs={docs} settings={{orgName: 'MDLBEAST', logoUrl: '/mdlbeast/logo.png'}} />}
           {activeTab === 'users' && <UserManagement users={users} onUpdateUsers={async () => { loadInitialData(); }} currentUserEmail={currentUser.email || currentUser.username || ''} />}
           {activeTab === 'change-password' && <ChangePassword />}
           {activeTab === 'admin-status' && <AdminStatus />}

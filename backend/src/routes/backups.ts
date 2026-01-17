@@ -114,9 +114,8 @@ router.delete('/', async (req: any, res: any) => {
 router.post('/json', async (req: any, res: any) => {
   if (!await requireAdmin(req, res)) return
   try {
-    const docs = (await query("SELECT id, barcode, type, sender, receiver, date, subject, statement, priority, status, classification, notes, attachments, tenant_id, created_at, updated_at FROM documents")).rows
+    const docs = (await query("SELECT id, barcode, type, sender, receiver, date, subject, statement, priority, status, classification, notes, attachments, created_at, updated_at FROM documents")).rows
     const barcodes = (await query("SELECT id, barcode, type, created_at FROM barcodes")).rows
-    const tenants = (await query("SELECT id, name, slug, logo_url, signature_url FROM tenants")).rows
     let settings: any = {}
     try {
       const r = await query('SELECT name, value FROM system_settings')
@@ -139,7 +138,7 @@ router.post('/json', async (req: any, res: any) => {
     }
     walk(uploadsDir)
 
-    const payload = { generatedAt: new Date().toISOString(), tables: { docs, barcodes, tenants, settings }, uploads }
+    const payload = { generatedAt: new Date().toISOString(), tables: { docs, barcodes, settings }, uploads }
 
     const filename = `backup-json-${new Date().toISOString().replace(/[:.]/g, '-')}.json`
     res.setHeader('Content-Type', 'application/json')
@@ -167,30 +166,19 @@ router.post('/json/restore', uploadJson.single('file'), async (req: any, res: an
     }
     if (!data || !data.tables) return res.status(400).json({ error: 'Invalid JSON backup format' })
 
-    const { docs = [], tenants = [] } = data.tables
+    const { docs = [] } = data.tables
 
     await query('BEGIN')
     try {
-      // Upsert tenants by slug
-      const tenantMap: Record<string, number> = {}
-      for (const t of tenants) {
-        if (!t.slug) continue
-        const r = await query(
-          "INSERT INTO tenants (name, slug, logo_url, signature_url) VALUES ($1,$2,$3,$4) ON CONFLICT (slug) DO UPDATE SET name=EXCLUDED.name, logo_url=EXCLUDED.logo_url, signature_url=EXCLUDED.signature_url RETURNING id",
-          [t.name, t.slug, t.logo_url || null, t.signature_url || null]
-        )
-        tenantMap[t.slug] = r.rows[0].id
-      }
-
       // Upsert documents by barcode
       for (const d of docs) {
         if (!d.barcode) continue
         const q = await query("SELECT id FROM documents WHERE lower(barcode)=lower($1) LIMIT 1", [d.barcode])
         if (q.rows.length > 0) {
           const id = q.rows[0].id
-          await query("UPDATE documents SET type=$1, sender=$2, receiver=$3, date=$4, subject=$5, statement=$6, priority=$7, status=$8, classification=$9, notes=$10, attachments=$11, tenant_id=$12, updated_at=NOW() WHERE id=$13", [d.type, d.sender, d.receiver, d.date, d.subject, d.statement, d.priority, d.status, d.classification, d.notes, JSON.stringify(d.attachments || []), d.tenant_id || null, id])
+          await query("UPDATE documents SET type=$1, sender=$2, receiver=$3, date=$4, subject=$5, statement=$6, priority=$7, status=$8, classification=$9, notes=$10, attachments=$11, updated_at=NOW() WHERE id=$12", [d.type, d.sender, d.receiver, d.date, d.subject, d.statement, d.priority, d.status, d.classification, d.notes, JSON.stringify(d.attachments || []), id])
         } else {
-          await query("INSERT INTO documents (barcode, type, sender, receiver, date, subject, statement, priority, status, classification, notes, attachments, tenant_id, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)", [d.barcode, d.type, d.sender, d.receiver, d.date, d.subject, d.statement, d.priority, d.status, d.classification, d.notes, JSON.stringify(d.attachments || []), d.tenant_id || null, d.created_at || new Date(), d.updated_at || new Date()])
+          await query("INSERT INTO documents (barcode, type, sender, receiver, date, subject, statement, priority, status, classification, notes, attachments, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)", [d.barcode, d.type, d.sender, d.receiver, d.date, d.subject, d.statement, d.priority, d.status, d.classification, d.notes, JSON.stringify(d.attachments || []), d.created_at || new Date(), d.updated_at || new Date()])
         }
       }
 

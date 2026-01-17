@@ -16,8 +16,8 @@
 
 3. **المتغيرات البيئية**:
    ```
-   DATABASE_URL=postgresql://zacodb_user:ToKNTzF4XsvJHTxLqYYqCeyk7YAMjICO@dpg-d54jrg6mcj7s73esp1i0-a.oregon-postgres.render.com/zacodb
-   JWT_SECRET=JWT_7aP!Q9#xL$4M@Wc2KZr8NfD0m
+   DATABASE_URL=<POSTGRES_CONNECTION_STRING>
+   JWT_SECRET=<YOUR_JWT_SECRET>
    PORT=3001
    NODE_ENV=production
    FRONTEND_URL=https://zaco.sa
@@ -29,7 +29,7 @@
 cd backend
 heroku create zaco-archive-api
 heroku config:set DATABASE_URL=postgresql://...
-heroku config:set JWT_SECRET=JWT_7aP!Q9#xL$4M@Wc2KZr8NfD0m
+heroku config:set JWT_SECRET=<YOUR_JWT_SECRET>
 heroku config:set NODE_ENV=production
 git push heroku main
 ```
@@ -110,7 +110,7 @@ module.exports = nextConfig
 
 ```bash
 # استخدم PSQL للاتصال
-PGPASSWORD=ToKNTzF4XsvJHTxLqYYqCeyk7YAMjICO psql -h dpg-d54jrg6mcj7s73esp1i0-a.oregon-postgres.render.com -U zacodb_user zacodb
+PGPASSWORD=<PASSWORD> psql -h <HOST> -U <USER> <DBNAME>
 ```
 
 ### تشغيل SQL Scripts

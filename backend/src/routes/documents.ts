@@ -4,224 +4,122 @@ import { body, validationResult } from "express-validator"
 import { query } from "../config/database"
 import { authenticateToken } from "../middleware/auth"
 import type { AuthRequest } from "../types"
-import { PDFDocument } from 'pdf-lib'
 
 const router = express.Router()
 
-// Public JSON preview URL endpoint (no auth) - returns { previewUrl }
-// Note: This endpoint is intentionally public to allow sharing links, but we could add token auth if needed.
-// For now, we keep it public as requested by business logic for external sharing.
-router.get('/:barcode/preview-url', async (req: Request, res: Response) => {
-  try {
-    const { barcode } = req.params
-    const idx = parseInt(String(req.query.idx || '0'), 10)
-    const r = await query("SELECT attachments FROM documents WHERE lower(barcode) = lower($1) LIMIT 1", [barcode])
-    if (r.rows.length === 0) return res.status(404).json({ error: 'Not found' })
-    let attachments: any = r.rows[0].attachments
-    try { if (typeof attachments === 'string') attachments = JSON.parse(attachments || '[]') } catch (e) { attachments = Array.isArray(attachments) ? attachments : [] }
-    if (!attachments || !attachments.length) return res.status(404).json({ error: 'No attachment' })
-    
-    const pdf = attachments[idx] || attachments[0]
+async function resolveAuthorizedPreviewUrl(params: { barcode: string; idx: number; user: any }): Promise<string> {
+  const { barcode, idx, user } = params
 
-    const supabaseUrl = (await import('../config/storage')).USE_R2_ONLY ? '' : process.env.SUPABASE_URL
-    const supabaseKeyRaw = (await import('../config/storage')).USE_R2_ONLY ? '' : (process.env.SUPABASE_SERVICE_ROLE_KEY || '')
-    const supabaseKey = String(supabaseKeyRaw).trim()
+  const docRes = await query("SELECT user_id, attachments FROM documents WHERE lower(barcode) = lower($1) LIMIT 1", [barcode])
+  if (docRes.rows.length === 0) {
+    const err: any = new Error('Not found')
+    err.status = 404
+    throw err
+  }
 
-    // Prefer signed URL when possible
-    const useR2 = String(process.env.STORAGE_PROVIDER || '').toLowerCase() === 'r2' || Boolean(process.env.CF_R2_ENDPOINT)
+  const docRow = docRes.rows[0]
+  const { canAccessDocument } = await import('../lib/rbac')
+  if (!canAccessDocument(user, docRow)) {
+    const err: any = new Error('Forbidden')
+    err.status = 403
+    throw err
+  }
 
-    if (useR2 && pdf.key && (process.env.CF_R2_BUCKET || '')) {
-      try {
-        const { getSignedDownloadUrl, getPublicUrl } = await import('../lib/r2-storage')
+  let attachments: any = docRow.attachments
+  try { if (typeof attachments === 'string') attachments = JSON.parse(attachments || '[]') } catch { attachments = Array.isArray(attachments) ? attachments : [] }
+  if (!Array.isArray(attachments) || attachments.length === 0) {
+    const err: any = new Error('No attachment')
+    err.status = 404
+    throw err
+  }
+
+  const pdf = attachments[idx] || attachments[0]
+  if (!pdf) {
+    const err: any = new Error('No attachment')
+    err.status = 404
+    throw err
+  }
+
+  const { USE_R2_ONLY } = await import('../config/storage')
+  const supabaseUrl = USE_R2_ONLY ? '' : process.env.SUPABASE_URL
+  const supabaseKeyRaw = USE_R2_ONLY ? '' : (process.env.SUPABASE_SERVICE_ROLE_KEY || '')
+  const supabaseKey = String(supabaseKeyRaw).trim()
+  const useR2 = String(process.env.STORAGE_PROVIDER || '').toLowerCase() === 'r2' || Boolean(process.env.CF_R2_ENDPOINT)
+
+  if (useR2) {
+    try {
+      const { getSignedDownloadUrl } = await import('../lib/r2-storage')
+      let key = pdf.key
+      if (!key && pdf.url) {
         try {
-          const signed = await getSignedDownloadUrl(pdf.key, 60 * 5)
-          return res.json({ previewUrl: signed })
-        } catch (signedErr) {
-          console.warn('R2 signed URL failed, trying public URL:', signedErr)
-          try {
-            const publicUrl = getPublicUrl(pdf.key)
-            return res.json({ previewUrl: publicUrl })
-          } catch (publicErr) {
-            console.error('R2 public URL also failed:', publicErr)
-            // Continue to next fallback
+          const u = new URL(String(pdf.url))
+          const pathname = u.pathname.replace(/^\//, '')
+          const bucket = (process.env.CF_R2_BUCKET || pdf.bucket || '').replace(/\/$/, '')
+          if (bucket && pathname.startsWith(bucket + '/')) key = decodeURIComponent(pathname.slice(bucket.length + 1))
+          else {
+            const parts = pathname.split('/')
+            if (parts.length > 1) key = decodeURIComponent(parts.slice(1).join('/'))
           }
-        }
-      } catch (e) {
-        console.warn('R2 preview-url error:', e)
+        } catch { /* ignore */ }
       }
+      if (key) return await getSignedDownloadUrl(String(key), 60 * 5)
+    } catch (e) {
+      console.warn('preview: R2 signed URL failed', e)
     }
-
-    const { USE_R2_ONLY } = await import('../config/storage')
-    if (USE_R2_ONLY && pdf.key && !(useR2 && (process.env.CF_R2_BUCKET || ''))) {
-      // Server is configured to use R2-only storage but this attachment does not appear to be in R2
-      return res.status(500).json({ error: 'Server is configured for R2-only storage and this object is not in R2. Contact the administrator.' })
-    }
-
-    if (pdf.key && supabaseUrl && supabaseKey && pdf.bucket) {
-      try {
-        const { createClient } = await import('@supabase/supabase-js')
-        const supabase = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } })
-        const { data: signedData, error: signedErr } = await supabase.storage.from(pdf.bucket).createSignedUrl(pdf.key, 60 * 5)
-        if (!signedErr && signedData?.signedUrl) {
-          return res.json({ previewUrl: signedData.signedUrl })
-        }
-        const publicRes = supabase.storage.from(pdf.bucket).getPublicUrl(pdf.key) as any
-        if (publicRes && publicRes.data && publicRes.data.publicUrl) return res.json({ previewUrl: publicRes.data.publicUrl })
-      } catch (e) {
-        console.warn('Preview-url signed URL error:', e)
-      }
-    }
-
-    if (pdf.url) return res.json({ previewUrl: pdf.url })
-
-    res.status(404).json({ error: 'No attachment' })
-  } catch (err: any) {
-    console.error('Preview-url error:', err)
-    res.status(500).json({ error: 'Preview failed' })
   }
-})
 
-// Public preview route (no auth) so browser can open attachment previews directly
-router.get('/:barcode/preview', async (req: Request, res: Response) => {
-  try {
-    const { barcode } = req.params
-    const idx = parseInt(String(req.query.idx || '0'), 10)
-    const r = await query("SELECT attachments FROM documents WHERE lower(barcode) = lower($1) LIMIT 1", [barcode])
-    if (r.rows.length === 0) return res.status(404).send('Not found')
-    let attachments: any = r.rows[0].attachments
-    try { if (typeof attachments === 'string') attachments = JSON.parse(attachments || '[]') } catch (e) { attachments = Array.isArray(attachments) ? attachments : [] }
-    if (!attachments || !attachments.length) return res.status(404).send('No attachment')
-    
-    const pdf = attachments[idx] || attachments[0]
-
-    const supabaseUrl = (await import('../config/storage')).USE_R2_ONLY ? '' : process.env.SUPABASE_URL
-    const supabaseKeyRaw = (await import('../config/storage')).USE_R2_ONLY ? '' : (process.env.SUPABASE_SERVICE_ROLE_KEY || '')
-    const supabaseKey = String(supabaseKeyRaw).trim()
-
-    // Prefer Cloudflare R2 signed URLs when using R2
-    const useR2 = String(process.env.STORAGE_PROVIDER || '').toLowerCase() === 'r2' || Boolean(process.env.CF_R2_ENDPOINT)
-    if (useR2) {
-      try {
-        const { getSignedDownloadUrl, getPublicUrl } = await import('../lib/r2-storage')
-        // If we have explicit key, use it. Otherwise attempt to derive key from pdf.url
-        let key = pdf.key
-        if (!key && pdf.url) {
-          try {
-            const u = new URL(String(pdf.url))
-            const pathname = u.pathname.replace(/^\//, '')
-            const bucket = (process.env.CF_R2_BUCKET || pdf.bucket || '').replace(/\/$/, '')
-            if (bucket && pathname.startsWith(bucket + '/')) key = decodeURIComponent(pathname.slice(bucket.length + 1))
-            else {
-              const parts = pathname.split('/')
-              if (parts.length > 1) key = decodeURIComponent(parts.slice(1).join('/'))
-            }
-          } catch (e) { /* ignore */ }
-        }
-
-        if (key) {
-          try {
-            const signed = await getSignedDownloadUrl(key, 60 * 5)
-            if (req.path.endsWith('/preview-url')) return res.json({ previewUrl: signed })
-            return res.redirect(signed)
-          } catch (err) {
-            // fallback to public URL
-            try {
-              const publicUrl = getPublicUrl(key)
-              if (req.path.endsWith('/preview-url')) return res.json({ previewUrl: publicUrl })
-              return res.redirect(publicUrl)
-            } catch (err2) {}
-          }
-        }
-      } catch (e) {
-        console.warn('R2 preview redirect error:', e)
-      }
-    }
-
-    const { USE_R2_ONLY } = await import('../config/storage')
-    // If we have a bucket/key, try to create a signed URL first for supabase
-    if (USE_R2_ONLY && pdf.key && !(useR2 && (process.env.CF_R2_BUCKET || ''))) {
-      return res.status(500).send('Server is configured for R2-only storage and this object is not in R2. Contact the administrator.')
-    }
-
-    if (pdf.key && supabaseUrl && supabaseKey && pdf.bucket) {
-      try {
-        const { createClient } = await import('@supabase/supabase-js')
-        const supabase = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } })
-        const { data: signedData, error: signedErr } = await supabase.storage.from(pdf.bucket).createSignedUrl(pdf.key, 60 * 5)
-        const newUrl = (signedData && signedData.signedUrl) ? signedData.signedUrl : (supabase.storage.from(pdf.bucket).getPublicUrl(pdf.key) as any)?.data?.publicUrl
-        if (newUrl) {
-          // Provide JSON endpoint for clients that prefer to open the signed URL directly
-          if (req.path.endsWith('/preview-url')) return res.json({ previewUrl: newUrl })
-          return res.redirect(newUrl)
-        }
-      } catch (e) {
-        console.warn('Public preview signed URL error (continuing to public url):', e)
-      }
-    }
-
-    // Fallback: use public URL with cache-busting query
-    if (pdf.url) {
-      const sep = pdf.url.includes('?') ? '&' : '?'
-      const final = `${pdf.url}${sep}t=${Date.now()}`
-      if (req.path.endsWith('/preview-url')) return res.json({ previewUrl: final })
-      return res.redirect(final)
-    }
-
-    res.status(404).send('No attachment')
-  } catch (err: any) {
-    console.error('Public preview error:', err)
-    res.status(500).send('Preview failed')
+  if (USE_R2_ONLY && pdf.key && !useR2) {
+    const err: any = new Error('R2-only storage configured but R2 is not configured')
+    err.status = 500
+    throw err
   }
-})
+
+  if (pdf.key && supabaseUrl && supabaseKey && pdf.bucket) {
+    try {
+      const { createClient } = await import('@supabase/supabase-js')
+      const supabase = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } })
+      const { data: signedData, error: signedErr } = await supabase.storage.from(pdf.bucket).createSignedUrl(pdf.key, 60 * 5)
+      if (!signedErr && signedData?.signedUrl) return signedData.signedUrl
+    } catch (e) {
+      console.warn('preview: supabase signed URL failed', e)
+    }
+  }
+
+  if (pdf.url) return String(pdf.url)
+
+  const err: any = new Error('No attachment')
+  err.status = 404
+  throw err
+}
 
 // All routes require authentication
 router.use(authenticateToken)
 
-// Get PDF page count for a specific attachment (auth)
-router.get('/:barcode/page-count', async (req: AuthRequest, res: Response) => {
+// Authenticated JSON preview URL endpoint (returns { previewUrl })
+router.get('/:barcode/preview-url', async (req: AuthRequest, res: Response) => {
   try {
     const { barcode } = req.params
     const idx = parseInt(String(req.query.idx || '0'), 10)
-    const r = await query("SELECT attachments FROM documents WHERE lower(barcode) = lower($1) LIMIT 1", [barcode])
-    if (r.rows.length === 0) return res.status(404).json({ error: 'Not found' })
-
-    let attachments: any = r.rows[0].attachments
-    try { if (typeof attachments === 'string') attachments = JSON.parse(attachments || '[]') } catch { attachments = Array.isArray(attachments) ? attachments : [] }
-    if (!attachments || !attachments.length) return res.status(404).json({ error: 'No attachment' })
-
-    const pdf = attachments[idx] || attachments[0]
-
-    // Prefer R2 direct download by key when available
-    let pdfBytes: Buffer | null = null
-    const useR2 = String(process.env.STORAGE_PROVIDER || '').toLowerCase() === 'r2' || Boolean(process.env.CF_R2_ENDPOINT)
-    const { USE_R2_ONLY, preferR2 } = await import('../config/storage')
-
-    if (useR2 && preferR2() && pdf?.key) {
-      try {
-        const { downloadToBuffer } = await import('../lib/r2-storage')
-        pdfBytes = await downloadToBuffer(String(pdf.key))
-      } catch (e) {
-        console.warn('page-count: failed to download from R2 by key; falling back to URL fetch', e)
-      }
-    }
-
-    // Fallback: fetch via URL (may require public access)
-    if (!pdfBytes) {
-      const url = String(pdf?.url || '')
-      if (!url) return res.status(400).json({ error: 'Missing PDF url' })
-      if (USE_R2_ONLY && !useR2) return res.status(500).json({ error: 'R2 storage not configured. Contact the administrator.' })
-      const fetch = (await import('node-fetch')).default as any
-      const resp = await fetch(url)
-      if (!resp.ok) return res.status(500).json({ error: 'Failed to fetch PDF' })
-      pdfBytes = Buffer.from(await resp.arrayBuffer())
-    }
-
-    const pdfDoc = await PDFDocument.load(pdfBytes)
-    const pageCount = pdfDoc.getPageCount()
-    return res.json({ pageCount })
+    const previewUrl = await resolveAuthorizedPreviewUrl({ barcode, idx, user: req.user })
+    return res.json({ previewUrl })
   } catch (err: any) {
-    console.error('page-count error:', err)
-    return res.status(500).json({ error: 'Failed to read page count' })
+    const status = Number(err?.status) || 500
+    if (status >= 500) console.error('preview-url error:', err)
+    return res.status(status).json({ error: err?.message || 'Preview failed' })
+  }
+})
+
+// Authenticated preview redirect route
+router.get('/:barcode/preview', async (req: AuthRequest, res: Response) => {
+  try {
+    const { barcode } = req.params
+    const idxNum = parseInt(String(req.query.idx || '0'), 10)
+    const previewUrl = await resolveAuthorizedPreviewUrl({ barcode, idx: idxNum, user: req.user })
+    return res.redirect(previewUrl)
+  } catch (err: any) {
+    const status = Number(err?.status) || 500
+    if (status >= 500) console.error('preview error:', err)
+    return res.status(status).send(err?.message || 'Preview failed')
   }
 })
 
@@ -233,80 +131,64 @@ router.get("/", async (req: AuthRequest, res: Response) => {
     const offsetNum = Math.max(0, Number(req.query.offset ?? 0) || 0)
 
     const user = (req as any).user
-    
-    console.log('[Documents] GET request from user:', { 
-      userId: user?.id, 
-      userRole: user?.role, 
-      tenantId: user?.tenant_id,
-      filters: { status, type, search }
-    })
+    if (!user) return res.status(401).json({ error: 'Not authenticated' })
 
-    let queryText = `SELECT d.*, 
-      u.full_name as created_by_name, 
-      u.username as created_by_username 
-      FROM documents d 
-      LEFT JOIN users u ON d.user_id = u.id 
-      WHERE 1=1`
+    // Base WHERE clause and params shared by Count and Data queries
+    let baseWhere = ` WHERE 1=1`
     const queryParams: any[] = []
     let paramCount = 1
 
     if (status) {
-      queryText += ` AND status = $${paramCount}`
+      baseWhere += ` AND status = $${paramCount}`
       queryParams.push(status)
       paramCount++
     }
 
     if (type) {
-      queryText += ` AND type = $${paramCount}`
+      baseWhere += ` AND type = $${paramCount}`
       queryParams.push(type)
       paramCount++
     }
 
-    // Scope results based on user role and tenant
-    if (!user) return res.status(401).json({ error: 'Not authenticated' })
-    
-    if (user.role === 'admin') {
-      // Admin can see all documents
-      console.log('[Documents] Admin - showing all documents')
-    } else if (user.role === 'manager') {
-      // Manager can see documents in their tenant only (if tenant assigned)
-      if (user.tenant_id) {
-        queryText += ` AND (d.tenant_id = $${paramCount} OR d.tenant_id IS NULL)`
-        queryParams.push(user.tenant_id)
-        paramCount++
-        console.log('[Documents] Manager - showing documents for tenant:', user.tenant_id)
-      } else {
-        // Manager without tenant can see all documents
-        console.log('[Documents] Manager (no tenant) - showing all documents')
-      }
+    // Scope results based on user role (no tenant scoping exists in DB)
+    if (user.role === 'admin' || user.role === 'manager' || user.role === 'supervisor') {
+      // Can see all documents
     } else {
-      // Member/Supervisor/other roles see their own documents only
-      queryText += ` AND d.user_id = $${paramCount}`
+      // Member/other roles see their own documents only
+      baseWhere += ` AND d.user_id = $${paramCount}`
       queryParams.push(user.id)
       paramCount++
-      console.log('[Documents] Member/Supervisor - showing own documents only:', user.id)
     }
 
     if (search) {
-      queryText += ` AND (barcode ILIKE $${paramCount} OR subject ILIKE $${paramCount} OR sender ILIKE $${paramCount} OR receiver ILIKE $${paramCount})`
+      baseWhere += ` AND (barcode ILIKE $${paramCount} OR subject ILIKE $${paramCount} OR sender ILIKE $${paramCount} OR receiver ILIKE $${paramCount})`
       queryParams.push(`%${search}%`)
       paramCount++
     }
 
+    // 1. Get Total Count
+    // Note: We include the LEFT JOIN users just in case filter logic in future depends on it, although currently it depends on 'd'.
+    // However, for pure performance if we only filter on 'd', we could omit the join. 
+    // Given the simplicity, we keep the structure consistent.
+    const countQuery = `SELECT COUNT(*) as total FROM documents d LEFT JOIN users u ON d.user_id = u.id ${baseWhere}`
+    const countRes = await query(countQuery, queryParams)
+    const total = parseInt(countRes.rows[0]?.total || '0', 10)
+
+    // 2. Get Data
     const limitParamIndex = paramCount
     const offsetParamIndex = paramCount + 1
-    queryText += ` ORDER BY created_at DESC LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}`
-    queryParams.push(limitNum, offsetNum)
+    const dataQueryParams = [...queryParams, limitNum, offsetNum]
     
-    console.log('[Documents] Query:', { 
-      queryText: queryText.substring(0, 200) + '...', 
-      placeholderCount: offsetParamIndex,
-      paramsLength: queryParams.length,
-      limit: limitNum,
-      offset: offsetNum,
-    })
+    const dataQuery = `SELECT d.*, 
+      u.full_name as created_by_name, 
+      u.username as created_by_username 
+      FROM documents d 
+      LEFT JOIN users u ON d.user_id = u.id 
+      ${baseWhere} 
+      ORDER BY created_at DESC LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}`
 
-    const result = await query(queryText, queryParams)
+    const result = await query(dataQuery, dataQueryParams)
+    
     // attach pdfFile convenience property for UI convenience and compute a displayDate that merges date with creation time when date has midnight only
     const rows = result.rows.map((r: any) => {
       let attachments = r.attachments
@@ -331,9 +213,15 @@ router.get("/", async (req: AuthRequest, res: Response) => {
       return { ...r, attachments, pdfFile, displayDate, attachmentCount: r.attachment_count }
     })
     
-    console.log('[Documents] Returning', rows.length, 'documents to user', user?.id)
-    
-    res.json(rows)
+    res.json({
+      data: rows,
+      meta: {
+        total,
+        page: Math.floor(offsetNum / limitNum) + 1,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum)
+      }
+    })
   } catch (error) {
     console.error("Get documents error:", error)
     res.status(500).json({ error: "Failed to fetch documents" })
@@ -415,59 +303,8 @@ router.get("/:barcode", async (req: Request, res: Response) => {
   }
 })
 
-// Statement endpoints: return statement text and a generated PDF when requested
-router.get('/:barcode/statement', async (req: Request, res: Response) => {
-  try {
-    const { barcode } = req.params
-    const r = await query("SELECT statement FROM documents WHERE lower(barcode) = lower($1) LIMIT 1", [barcode])
-    if (r.rows.length === 0) return res.status(404).json({ error: 'Not found' })
-    const stmt = r.rows[0].statement || ''
-    return res.json({ statement: String(stmt || '') })
-  } catch (err: any) {
-    console.error('Statement text error:', err)
-    res.status(500).json({ error: 'Failed to fetch statement' })
-  }
-})
-
-router.get('/:barcode/statement.pdf', async (req: Request, res: Response) => {
-  try {
-    const { barcode } = req.params
-    const r = await query("SELECT statement FROM documents WHERE lower(barcode) = lower($1) LIMIT 1", [barcode])
-    if (r.rows.length === 0) return res.status(404).send('Not found')
-    const statementText = r.rows[0].statement || ''
-
-    // generate a simple PDF using pdf-lib
-    const { PDFDocument, StandardFonts } = await import('pdf-lib')
-    const pdfDoc = await PDFDocument.create()
-    const page = pdfDoc.addPage([595, 842])
-    const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
-    const fontSize = 12
-    const x = 50
-    let y = 800
-
-    // Split into lines for simple layout
-    const lines = String(statementText || '').split(/\r?\n/)
-    for (const line of lines) {
-      page.drawText(line, { x, y, size: fontSize, font })
-      y -= fontSize + 4
-      if (y < 60) {
-        // new page
-        y = 800
-        pdfDoc.addPage([595, 842])
-      }
-    }
-
-    const pdfBytes = await pdfDoc.save()
-    res.setHeader('Content-Type', 'application/pdf')
-    res.setHeader('Content-Disposition', 'attachment; filename=statement.pdf')
-    return res.send(Buffer.from(pdfBytes))
-  } catch (err: any) {
-    console.error('Statement PDF error:', err)
-    res.status(500).send('Failed to generate statement PDF')
-  }
-})
-
-
+import { DocumentService } from '../services/documentService'
+const docService = new DocumentService()
 
 // Create document
 router.post(
@@ -475,7 +312,6 @@ router.post(
   [
     // Accept both server-side 'type' (document type) and client-side direction flag (INCOMING/OUTGOING) as optional
     body("type").optional().trim(),
-    // Accept aliases from the client form (title -> subject, recipient -> receiver, documentDate -> date)
     body("sender").trim().notEmpty().withMessage("Sender is required"),
     body("receiver").optional().trim(),
     body("recipient").optional().trim(),
@@ -491,163 +327,34 @@ router.post(
     const allowed = ['member','supervisor','manager','admin']
     const user = req.user
     if (!user || !allowed.includes(String(user.role))) return res.status(403).json({ error: 'Insufficient role to create documents' })
+    
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
-      // Log request body and validation errors to help debugging
-      try { console.warn('Create document request body:', JSON.stringify(req.body).slice(0, 1000)) } catch(e) {}
-      console.warn('Create document validation failed:', errors.array())
       return res.status(400).json({ errors: errors.array(), message: 'Validation failed' })
     }
 
     try {
-      const authReq = req
-      let {
-        barcode,
-        type,
-        sender,
-        receiver,
-        recipient,
-        date,
-        documentDate,
-        title,
-        subject,
-        priority,
-        status,
-        classification,
-        notes,
-        attachments = [],
-        tenant_id = null,
-        attachmentCount,
-      } = req.body
-
+      let attachments = req.body.attachments
       // Accept pdfFile as a shortcut from client (if provided during create)
       if ((!attachments || !Array.isArray(attachments) || attachments.length === 0) && req.body.pdfFile) {
-        attachments = [req.body.pdfFile]
+        req.body.attachments = [req.body.pdfFile]
       }
 
-      // Normalize aliases sent by the client
-      const finalReceiver = receiver || recipient || ''
-      const finalSubject = subject || title || ''
-      // Ensure date includes a timestamp (avoid midnight-only dates). If client sent only YYYY-MM-DD, append current time portion.
-      let finalDate: string
-      if (date) {
-        // If client sent a date-only string (YYYY-MM-DD), append current time so timestamp is not midnight
-        finalDate = typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)
-          ? `${date}T${new Date().toISOString().split('T')[1]}`
-          : date
-      } else if (documentDate) {
-        finalDate = typeof documentDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(documentDate)
-          ? `${documentDate}T${new Date().toISOString().split('T')[1]}`
-          : documentDate
-      } else {
-        finalDate = new Date().toISOString()
-      }
+      const newDoc = await docService.create(req.body, user)
 
-      // Determine direction from provided 'type' or barcode prefix (flexible)
-      let direction: 'INCOMING' | 'OUTGOING' | null = null
-      if (typeof type === 'string') {
-        const t = String(type).toUpperCase().trim()
-        if (t === 'INCOMING' || t.startsWith('IN')) direction = 'INCOMING'
-        else if (t === 'OUTGOING' || t.startsWith('OUT')) direction = 'OUTGOING'
-      }
-      if (!direction && barcode && typeof barcode === 'string') {
-        if (barcode.toUpperCase().startsWith('IN')) direction = 'INCOMING'
-        else if (barcode.toUpperCase().startsWith('OUT')) direction = 'OUTGOING'
-      }
-
-      // Default status based on direction if not provided
-      const finalStatus = status || (direction === 'INCOMING' ? 'وارد' : (direction === 'OUTGOING' ? 'صادر' : 'محفوظ'))
-
-      // If no barcode provided, generate a numeric sequential barcode server-side
-      if (!barcode) {
-        // Generate numeric-only barcode (new behavior). Keep direction required for status only.
-        if (!direction) return res.status(400).json({ error: 'Direction (type) is required to generate barcode' })
-        
-        const prefix = direction === 'INCOMING' ? '1' : '2'
-        const seqName = direction === 'INCOMING' ? 'doc_in_seq' : 'doc_out_seq'
-        let n: number
-        
-        try {
-          const seqRes = await query(`SELECT nextval('${seqName}') as n`)
-          n = seqRes.rows[0].n
-        } catch (seqErr: any) {
-          console.warn(`Sequence missing or nextval failed for ${seqName}, creating sequences:`, seqErr?.message || seqErr)
-          try {
-            await query(`CREATE SEQUENCE IF NOT EXISTS ${seqName} START 1`)
-            const seqRes2 = await query(`SELECT nextval('${seqName}') as n`)
-            n = seqRes2.rows[0].n
-          } catch (seqErr2: any) {
-            console.error(`Failed to create or get sequence value for ${seqName}:`, seqErr2)
-            return res.status(500).json({ error: 'Failed to generate barcode sequence' })
-          }
-        }
-
-        const padded = String(n).padStart(8, '0')
-        barcode = `${prefix}-${padded}`
-      }
-
-      // Enforce tenant/user scoping for created document: assign tenant_id and user_id from authenticated user
-      const user = (req as any).user
-      if (!user) return res.status(401).json({ error: 'Not authenticated' })
-      tenant_id = user.tenant_id || null
-      const creatorId = user.id
-
-      // Check if barcode exists
-      const existing = await query("SELECT id FROM documents WHERE barcode = $1", [barcode])
-
-      if (existing.rows.length > 0) {
-        return res.status(400).json({ error: "Barcode already exists" })
-      }
-
-      // Ticket: ensure members cannot set tenant/user manually; tenant_id and user_id are set from authenticated user
-      // (already enforced above by using creatorId and tenant_id variables)
-
-      // Insert document with optional tenant_id
-      const dbType = (typeof type === 'string' && type) ? type : (direction || 'UNKNOWN')
-      const result = await query(
-        `INSERT INTO documents (barcode, type, sender, receiver, date, subject, priority, status, classification, notes, attachments, user_id, tenant_id, attachment_count)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-         RETURNING *`,
-        [
-          barcode,
-          dbType,
-          sender,
-          finalReceiver,
-          finalDate,
-          finalSubject,
-          priority || 'عادي',
-          finalStatus,
-          classification,
-          notes,
-          JSON.stringify(attachments || []),
-          creatorId,
-          tenant_id,
-          attachmentCount || '0',
-        ],
-      )
-
-      // Ensure barcodes table has an entry for this barcode so scanner works
+      // include attachments array as JSONB and return pdfFile shortcut for convenience
+      let finalAttachments = newDoc.attachments
       try {
-        const bc = await query("SELECT id FROM barcodes WHERE barcode = $1 LIMIT 1", [barcode])
-        if (bc.rows.length === 0) {
-          await query(
-            `INSERT INTO barcodes (barcode, type, status, priority, subject, attachments, user_id, tenant_id)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-            [barcode, dbType, finalStatus || null, priority || null, finalSubject || null, JSON.stringify(attachments || []), authReq.user?.id, tenant_id || null],
-          )
-        }
-      } catch (e) {
-        console.warn('Failed to ensure barcode entry:', e)
-      }
-
-      // include attachments array as JSONB and return pdfFile shortcut
-      const docRow = result.rows[0]
-      const pdfAttachment = (docRow.attachments && Array.isArray(docRow.attachments) && docRow.attachments[0]) ? docRow.attachments[0] : null
-      const responseDoc = { ...docRow, pdfFile: pdfAttachment }
+        if (typeof finalAttachments === 'string') finalAttachments = JSON.parse(finalAttachments)
+      } catch (e) { finalAttachments = Array.isArray(finalAttachments) ? finalAttachments : [] }
+      const pdfAttachment = (finalAttachments && Array.isArray(finalAttachments) && finalAttachments[0]) ? finalAttachments[0] : null
+      const responseDoc = { ...newDoc, attachments: finalAttachments, pdfFile: pdfAttachment }
 
       res.status(201).json(responseDoc)
-    } catch (error) {
+    } catch (error: any) {
       console.error("Create document error:", error)
+      if (error.message === 'Barcode already exists') return res.status(400).json({ error: "Barcode already exists" })
+         if (error.message === 'Direction (type) is required to generate barcode') return res.status(400).json({ error: "Direction (type) is required to generate barcode" })
       res.status(500).json({ error: "Failed to create document" })
     }
   },
@@ -657,79 +364,20 @@ router.post(
 router.put("/:barcode", async (req: Request, res: Response) => {
   try {
     const { barcode } = req.params
-    const { type, sender, receiver, date, subject, priority, status, classification, notes, attachments: incomingAttachments, attachmentCount } = req.body
-
-    // Fetch existing to enforce access
-    const existing = await query("SELECT * FROM documents WHERE lower(barcode) = lower($1) LIMIT 1", [barcode])
-    if (existing.rows.length === 0) return res.status(404).json({ error: 'Document not found' })
-    const doc = existing.rows[0]
     const authReq = req as any
-    const user = authReq.user
-    
-    // Use unified RBAC function to check access
-    const { canAccessDocument } = await import('../lib/rbac')
-    if (!canAccessDocument(user, doc)) {
-      return res.status(403).json({ error: 'You do not have permission to edit this document' })
-    }
+    const updated = await docService.update(barcode, req.body, authReq.user)
 
-    // Prepare values for partial update (use existing if new value is undefined)
-    const newType = type !== undefined ? type : doc.type
-    const newSender = sender !== undefined ? sender : doc.sender
-    const newReceiver = receiver !== undefined ? receiver : doc.receiver
-    const newDate = date !== undefined ? date : doc.date
-    const newSubject = subject !== undefined ? subject : doc.subject
-    const newPriority = priority !== undefined ? priority : doc.priority
-    const newStatus = status !== undefined ? status : doc.status
-    const newClassification = classification !== undefined ? classification : doc.classification
-    const newNotes = notes !== undefined ? notes : doc.notes
-    const newAttachmentCount = attachmentCount !== undefined ? attachmentCount : doc.attachment_count
-    
-    // Handle attachments carefully
-    let currentAttachments = doc.attachments
-    try {
-        if (typeof currentAttachments === 'string') currentAttachments = JSON.parse(currentAttachments)
-    } catch(e) { currentAttachments = [] }
-    if (!Array.isArray(currentAttachments)) currentAttachments = []
-    
-    const newAttachments = incomingAttachments !== undefined ? incomingAttachments : currentAttachments
-
-    // Prevent changing tenant via update
-    const result = await query(
-      `UPDATE documents 
-       SET type = $1, sender = $2, receiver = $3, date = $4, subject = $5, 
-           priority = $6, status = $7, classification = $8, notes = $9, attachments = $10, attachment_count = $11
-       WHERE barcode = $12
-       RETURNING *`,
-      [
-        newType,
-        newSender,
-        newReceiver,
-        newDate,
-        newSubject,
-        newPriority,
-        newStatus,
-        newClassification,
-        newNotes,
-        JSON.stringify(newAttachments),
-        newAttachmentCount,
-        barcode,
-      ],
-    )
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Document not found" })
-    }
-
-    const row = result.rows[0]
-    let attachments = row.attachments
+    let attachments = updated.attachments
     try {
       if (typeof attachments === 'string') attachments = JSON.parse(attachments || '[]')
     } catch (e) { attachments = Array.isArray(attachments) ? attachments : [] }
     const pdfFile = Array.isArray(attachments) && attachments.length ? attachments[0] : null
 
-    res.json({ ...row, attachments, pdfFile })
-  } catch (error) {
+    res.json({ ...updated, attachments, pdfFile })
+  } catch (error: any) {
     console.error("Update document error:", error)
+    if (error.message === 'Document not found') return res.status(404).json({ error: "Document not found" })
+    if (error.message === 'Forbidden') return res.status(403).json({ error: "You do not have permission to edit this document" })
     res.status(500).json({ error: "Failed to update document" })
   }
 })

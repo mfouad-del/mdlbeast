@@ -9,8 +9,6 @@ import auditRoutes from "./routes/audit"
 import documentRoutes from "./routes/documents"
 import userRoutes from "./routes/users"
 import barcodeRoutes from "./routes/barcodes"
-import reportRoutes from "./routes/reports"
-import snapshotRoutes from "./routes/snapshots"
 import approvalRoutes from "./routes/approvals"
 import { errorHandler } from "./middleware/errorHandler"
 import { query } from "./config/database"
@@ -112,22 +110,16 @@ app.use('/api/documents', documentRoutes)
 app.use('/api/users', userRoutes)
 // New module routes
 app.use('/api/barcodes', barcodeRoutes)
-app.use('/api/reports', reportRoutes)
-app.use('/api/snapshots', snapshotRoutes)
 app.use('/api/approvals', approvalRoutes)
 
 // Uploads route (accepts PDF via multipart/form-data) with rate limiting
 import uploadRoutes from './routes/uploads'
-import stampRoutes from './routes/stamp'
 import * as pathModule from 'path'
 import * as fsModule from 'fs'
 const uploadsDirStartup = pathModule.resolve(process.cwd(), 'uploads')
 if (!fsModule.existsSync(uploadsDirStartup)) fsModule.mkdirSync(uploadsDirStartup, { recursive: true })
 app.use('/api/uploads', uploadLimiter, uploadRoutes)
 app.use('/uploads', express.static(uploadsDirStartup))
-
-// Stamp endpoint
-app.use('/api/documents', stampRoutes)
 
 // Admin status & logs (admin-only)
 import adminStatusRoutes from './routes/adminStatus'

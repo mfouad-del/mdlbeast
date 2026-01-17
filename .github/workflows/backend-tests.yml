@@ -52,8 +52,7 @@ jobs:
         run: |
           echo "--- Running backend tests ---"
           echo "NODE: $(node -v)  NPM: $(npm -v)"
-          if [ -z "${{ env.DATABASE_URL }}" ]; then
+          if [ -z "$DATABASE_URL" ]; then
             echo "WARNING: DATABASE_URL_TEST is not set. Some integration tests may fail or be skipped."
           fi
-          npm ci
           npm test --silent

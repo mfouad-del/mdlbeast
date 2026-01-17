@@ -33,7 +33,7 @@ Backend سيعمل على: https://zaco-backend.onrender.com
 
 ```bash
 # اتصل بقاعدة البيانات
-PGPASSWORD=ToKNTzF4XsvJHTxLqYYqCeyk7YAMjICO psql -h dpg-d54jrg6mcj7s73esp1i0-a.oregon-postgres.render.com -U zacodb_user zacodb
+PGPASSWORD=<PASSWORD> psql -h <HOST> -U <USER> <DBNAME>
 
 # نفذ السكريبتات داخل psql
 \i scripts/01_create_tables.sql

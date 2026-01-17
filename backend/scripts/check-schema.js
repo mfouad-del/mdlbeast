@@ -4,7 +4,11 @@
 
 const { Client } = require('pg');
 
-const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://mdlbeastdb_user:mRcP7qtpmSBPLIspOOjUBIhRChC5w7En@dpg-d5lkvkvgi27c738vq8g0-a/mdlbeastdb';
+const DATABASE_URL = process.env.DATABASE_URL;
+if (!DATABASE_URL) {
+  console.error('Missing DATABASE_URL. Set it in the environment before running this script.');
+  process.exit(1);
+}
 
 async function checkSchema() {
   const client = new Client({

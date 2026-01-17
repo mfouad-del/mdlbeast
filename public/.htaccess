@@ -23,6 +23,15 @@ DirectoryIndex index.html
 <IfModule mod_rewrite.c>
 RewriteEngine On
 
+# Reverse-proxy API calls to Render when hosted under /mdlbeast.
+# Frontend calls use a relative base (api/*), so requests resolve to /mdlbeast/api/*.
+# Requires mod_proxy + mod_proxy_http enabled on the host.
+<IfModule mod_proxy.c>
+<IfModule mod_proxy_http.c>
+RewriteRule ^api/(.*)$ https://mdlbeast.onrender.com/api/$1 [P,L,QSA]
+</IfModule>
+</IfModule>
+
 # Block any requests to wp-includes to prevent 404 errors
 RewriteRule ^wp-includes/ - [R=404,L]
 

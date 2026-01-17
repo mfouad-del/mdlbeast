@@ -10,31 +10,35 @@ require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') }
 if (!process.env.DATABASE_URL) {
   process.env.AUTO_RUN_MIGRATIONS = 'true';
   process.env.BACKUPS_ENABLED = 'true';
-  process.env.BACKUP_ENCRYPTION = 'true';
-  process.env.BACKUP_ENC_KEY = '3h8f9VnJkT2iLpQ1s7wX9yZbA0dE6G5H';
+  // Keep encryption disabled for local test defaults unless explicitly enabled.
+  process.env.BACKUP_ENCRYPTION = process.env.BACKUP_ENCRYPTION || 'false';
+  process.env.BACKUP_ENC_KEY = process.env.BACKUP_ENC_KEY || '';
   process.env.BACKUP_INTERVAL_DAYS = '15';
   process.env.BACKUP_RETENTION_COUNT = '6';
-  process.env.CF_R2_ACCESS_KEY_ID = 'ce3791c4a9e76c321fa83d91e83af445';
-  process.env.CF_R2_BUCKET = 'mdlbeast';
-  process.env.CF_R2_ENDPOINT = 'https://de95c4f37b252fdb5c22a69ed3d7d3a1.r2.cloudflarestorage.com';
-  process.env.CF_R2_REGION = 'auto';
-  process.env.CF_R2_SECRET_ACCESS_KEY = '945c78abf90af55ba501fd2a2c82ea40bfedbfc751781a61347a838af621b60e';
-  process.env.DATABASE_URL = 'postgresql://mdlbeastdb_user:mRcP7qtpmSBPLIspOOjUBIhRChC5w7En@dpg-d5lkvkvgi27c738vq8g0-a/mdlbeastdb';
-  process.env.DEBUG_SECRET = 'MDL@Debug2026';
-  process.env.FRONTEND_URL = 'https://zaco.sa/mdlbeast';
-  process.env.JWT_SECRET = 'UiR2u4kxB-a8fVvn1Jy5DEZNFuiyB19T7KD2cTSurgbhb8P_ooN0DWSgHiXiPeGN';
-  process.env.NODE_ENV = 'production';
+  // R2/Supabase credentials should be provided via env when needed.
+  process.env.CF_R2_ACCESS_KEY_ID = process.env.CF_R2_ACCESS_KEY_ID || '';
+  process.env.CF_R2_BUCKET = process.env.CF_R2_BUCKET || '';
+  process.env.CF_R2_ENDPOINT = process.env.CF_R2_ENDPOINT || '';
+  process.env.CF_R2_REGION = process.env.CF_R2_REGION || 'auto';
+  process.env.CF_R2_SECRET_ACCESS_KEY = process.env.CF_R2_SECRET_ACCESS_KEY || '';
+  // Local/dev default DB URL (override via env in CI/prod).
+  // Use a non-credential dummy URL to avoid secret scanners flagging example credentials.
+  process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgresql://localhost:5432/mdlbeastdb';
+  process.env.DEBUG_SECRET = process.env.DEBUG_SECRET || 'dev-debug-secret-change-me';
+  process.env.FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+  process.env.JWT_SECRET = process.env.JWT_SECRET || 'dev-jwt-secret-change-me';
+  process.env.NODE_ENV = process.env.NODE_ENV || 'test';
   process.env.PORT = '3001';
-  process.env.R2_PUBLIC_BASE_URL = 'https://pub-ca46338c34ee4a7a8eff690474faf0c6.r2.dev';
-  process.env.REFRESH_TOKEN_SECRET = 'Uth9x8or8VjU1_Q7dVKag-BWjk_4rfiwGVrWwGq7eC2K03wBhdR4tRRbuf-ZrDwJ';
-  process.env.SESSION_SECRET = 'EBwdR4a$XbRhFtiY92kLpQx!3nVmZ8jK';
-  process.env.STORAGE_PROVIDER = 'r2';
-  process.env.SUPER_ADMIN_EMAIL = 'admin@mdlbeast.com';
-  process.env.SUPER_ADMIN_NAME = 'MDLBEAST Administrator';
-  process.env.SUPER_ADMIN_PASSWORD = 'MDLadmin@2026';
-  process.env.TEST_USER_EMAIL = 'user@mdlbeast.com';
-  process.env.TEST_USER_NAME = 'MDLBEAST Staff';
-  process.env.TEST_USER_PASSWORD = 'MDLuser@2026';
+  process.env.R2_PUBLIC_BASE_URL = process.env.R2_PUBLIC_BASE_URL || '';
+  process.env.REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || 'dev-refresh-secret-change-me';
+  process.env.SESSION_SECRET = process.env.SESSION_SECRET || 'dev-session-secret-change-me';
+  process.env.STORAGE_PROVIDER = process.env.STORAGE_PROVIDER || 'r2';
+  process.env.SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || 'admin@example.com';
+  process.env.SUPER_ADMIN_NAME = process.env.SUPER_ADMIN_NAME || 'Administrator';
+  process.env.SUPER_ADMIN_PASSWORD = process.env.SUPER_ADMIN_PASSWORD || 'admin123';
+  process.env.TEST_USER_EMAIL = process.env.TEST_USER_EMAIL || 'user@example.com';
+  process.env.TEST_USER_NAME = process.env.TEST_USER_NAME || 'Test User';
+  process.env.TEST_USER_PASSWORD = process.env.TEST_USER_PASSWORD || 'user123';
 }
 
 console.log('✓ Environment variables loaded');

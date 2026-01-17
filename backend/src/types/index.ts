@@ -6,7 +6,6 @@ export interface User {
   password?: string
   full_name?: string
   role: "admin" | "manager" | "supervisor" | "member" | "user"
-  tenant_id?: number | null
   created_at: Date
   updated_at: Date
 }
@@ -41,6 +40,5 @@ export interface AuthRequest extends Request {
     id: number
     username?: string
     role?: string
-    tenant_id?: number | null
   }
 }

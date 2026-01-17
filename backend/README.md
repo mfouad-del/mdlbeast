@@ -21,7 +21,7 @@ cp .env.example .env
 
 الملف `.env` يحتوي على الإعدادات الصحيحة بالفعل:
 ```env
-DATABASE_URL=postgresql://username:password@host:port/database
+DATABASE_URL=<POSTGRES_CONNECTION_STRING>
 JWT_SECRET=your-jwt-secret-key-here
 REFRESH_TOKEN_SECRET=your-refresh-token-secret-here
 PORT=3001
@@ -120,11 +120,13 @@ curl -X POST https://zaco-backend.onrender.com/api/auth/login \\
 ## 🗄️ قاعدة البيانات
 
 ### معلومات الاتصال
-- **Host**: dpg-d54jrg6mcj7s73esp1i0-a.oregon-postgres.render.com
+- **Host**: <HOST>
 - **Port**: 5432
-- **Database**: zacodb
-- **Username**: zacodb_user
-- **Password**: ToKNTzF4XsvJHTxLqYYqCeyk7YAMjICO
+- **Database**: <DBNAME>
+- **Username**: <USER>
+- **Password**: <PASSWORD>
+
+> ملاحظة: لا تقم بتخزين بيانات الاتصال الحقيقية داخل المستودع. استخدم متغيرات البيئة أو أسرار منصة النشر.
 
 ### الجداول
 1. **users** - جدول المستخدمين

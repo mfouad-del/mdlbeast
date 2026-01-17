@@ -1,4 +1,7 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://mdlbeast.onrender.com/api"
+// Prefer same-origin API (Bluehost can proxy /mdlbeast/api -> Render via .htaccess).
+// Use a relative base so this works when the app is deployed under a subpath (e.g. /mdlbeast).
+// Override with NEXT_PUBLIC_API_URL when running locally or without proxy.
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "api"
 
 interface ApiResponse<T> {
   data?: T
@@ -155,10 +158,9 @@ class ApiClient {
       this.checkVersion().catch(() => {}) // Fire and forget
     } catch { /* ignore */ }
 
-    // Simple public endpoint detection - extend if you add more public endpoints
-    const publicPrefixes = ['/auth/', '/version', '/documents/']
-    const isPreviewEndpoint = endpoint.includes('/preview') || endpoint.includes('/preview-url')
-    const isPublic = publicPrefixes.some(p => endpoint.startsWith(p)) || isPreviewEndpoint || endpoint === '/version'
+    // Public endpoints (everything else requires an access token)
+    const publicPrefixes = ['/auth/', '/version']
+    const isPublic = publicPrefixes.some(p => endpoint.startsWith(p))
 
     // If endpoint requires auth and we don't have a token, fail fast to avoid noisy 401s
     if (!this.token && !isPublic) {
@@ -291,10 +293,20 @@ class ApiClient {
   }
 
   // Documents
-  async getDocuments(params?: { status?: string; type?: string; search?: string; tenant_id?: number }) {
-    const queryParams = new URLSearchParams(params as any).toString()
-    const res = await this.request<any[]>(`/documents${queryParams ? `?${queryParams}` : ""}`)
-    return res || []
+  async getDocuments(params?: { status?: string; type?: string; search?: string; page?: number; limit?: number }) {
+    const { page = 1, limit = 20, ...rest } = params || {}
+    const offset = (page - 1) * limit
+    const q = new URLSearchParams(rest as any)
+    q.set('limit', String(limit))
+    q.set('offset', String(offset))
+    
+    const res = await this.request<any>(`/documents?${q.toString()}`)
+    
+    // Handle both legacy (array) and new (object) response formats for safety
+    if (Array.isArray(res)) {
+       return { data: res, meta: { total: res.length, page: 1, limit: res.length, totalPages: 1 } }
+    }
+    return res || { data: [], meta: { total: 0, page: 1, limit, totalPages: 0 } }
   }
 
   async getDocumentByBarcode(barcode: string) {
@@ -321,43 +333,10 @@ class ApiClient {
     })
   }
 
-  // Stamp a document PDF by placing a barcode image at provided coordinates (server overwrites original file)
-  async stampDocument(barcode: string, payload: { x: number; y: number; containerWidth?: number; containerHeight?: number; stampWidth?: number; pageRotation?: 0 | 90 | 180 | 270 }) {
-    // Longer timeout for stamping operations (server can take time to fetch/embed/overwrite)
-    const controller = new AbortController()
-    const timeoutMs = 60_000
-    const timeout = setTimeout(() => controller.abort(), timeoutMs)
-    const headers: any = { 'Content-Type': 'application/json' }
-    if (this.token) headers['Authorization'] = `Bearer ${this.token}`
-    try {
-      const res = await fetch(`${API_BASE_URL}/documents/${encodeURIComponent(barcode)}/stamp`, { method: 'POST', body: JSON.stringify(payload), headers, signal: controller.signal })
-      if (!res.ok) {
-        let body: any = null
-        try { body = await res.json() } catch (e) { body = await res.text().catch(() => null) }
-        let msg = 'Stamp failed'
-        if (body) msg = body?.error || body?.message || String(body)
-        throw new Error(msg)
-      }
-      return res.json()
-    } catch (err: any) {
-      if (err.name === 'AbortError') throw new Error('Request timeout')
-      throw err
-    } finally {
-      clearTimeout(timeout)
-    }
-  }
-
   async getPreviewUrl(barcode: string, index?: number) {
     const qp = (typeof index === 'number') ? `?idx=${encodeURIComponent(String(index))}` : ''
     const res = await this.request<any>(`/documents/${encodeURIComponent(barcode)}/preview-url${qp}`)
     return res?.previewUrl || null
-  }
-
-  async getPdfPageCount(barcode: string, index?: number): Promise<number> {
-    const qp = (typeof index === 'number') ? `?idx=${encodeURIComponent(String(index))}` : ''
-    const res = await this.request<any>(`/documents/${encodeURIComponent(barcode)}/page-count${qp}`)
-    const n = Number(res?.pageCount)
-    return Number.isFinite(n) && n > 0 ? n : 1
   }
 
   // Add an attachment to an existing document: uploadFile should be used first,
@@ -375,10 +354,6 @@ class ApiClient {
     return this.request<any>(`/documents/${documentId}/attachments/${attachmentIndex}`, {
       method: 'DELETE'
     })
-  }
-
-  async getStatement(barcode: string) {
-    return this.request<any>(`/documents/${encodeURIComponent(barcode)}/statement`)
   }
 
   async getStatistics() {

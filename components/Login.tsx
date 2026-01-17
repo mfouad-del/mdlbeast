@@ -5,6 +5,13 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Lock, Mail, ShieldCheck, LogIn, Smartphone, Globe, RefreshCw } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { useToast } from "@/hooks/use-toast"
 
 // Translations
 const translations = {
@@ -58,6 +65,7 @@ declare global {
 
 export default function Login({ onLogin, logoUrl }: { onLogin?: (u: any) => void; logoUrl?: string }) {
   const router = useRouter()
+  const { toast } = useToast()
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null)
@@ -65,6 +73,7 @@ export default function Login({ onLogin, logoUrl }: { onLogin?: (u: any) => void
   const [isLoading, setIsLoading] = useState(false)
   const [lang, setLang] = useState<'en' | 'ar'>('en')
   const [recaptchaLoaded, setRecaptchaLoaded] = useState(false)
+  const [isClearCacheOpen, setIsClearCacheOpen] = useState(false)
   const recaptchaRef = useRef<HTMLDivElement>(null)
   const widgetId = useRef<number | null>(null)
   
@@ -189,6 +198,32 @@ export default function Login({ onLogin, logoUrl }: { onLogin?: (u: any) => void
     localStorage.setItem("mdlbeast_lang", newLang)
   }
 
+  useEffect(() => {
+    if (!isClearCacheOpen) return
+
+    const onMessage = (event: MessageEvent) => {
+      // The iframe is same-origin, but keep a cheap origin check anyway.
+      if (typeof window !== 'undefined' && event.origin !== window.location.origin) return
+      const data: any = event.data
+      if (!data || typeof data !== 'object') return
+
+      if (data.type === 'mdlbeast:clear-cache:done') {
+        setIsClearCacheOpen(false)
+        toast({
+          title: lang === 'ar' ? 'تم تنظيف الكاش' : 'Cache cleared',
+          description: lang === 'ar' ? 'جرّب تسجيل الدخول مرة أخرى.' : 'Please try logging in again.',
+        })
+      }
+
+      if (data.type === 'mdlbeast:clear-cache:close') {
+        setIsClearCacheOpen(false)
+      }
+    }
+
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [isClearCacheOpen, toast, lang])
+
   return (
     <div className={`h-screen overflow-hidden bg-slate-50 flex items-center justify-center p-4 font-sans`} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
       <div className="max-w-md w-full animate-in fade-in zoom-in-95 duration-500">
@@ -300,10 +335,13 @@ export default function Login({ onLogin, logoUrl }: { onLogin?: (u: any) => void
             </div>
 
             <div className="space-y-4 flex flex-col items-center">
-              <a href="/mdlbeast/clear-cache.html" target="_blank" rel="noopener noreferrer"
+              <button
+                type="button"
+                data-clear-cache-trigger
+                onClick={() => setIsClearCacheOpen(true)}
                 className="inline-flex items-center gap-2 px-6 py-3 bg-amber-100 text-amber-900 border border-amber-200 rounded-xl text-xs font-black hover:bg-amber-200 transition-colors shadow-sm">
                 {t.havingIssues}
-              </a>
+              </button>
 
               <a href="/mdlbeast/app.apk"
                 className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg text-[10px] font-bold hover:bg-green-100 transition-colors">
@@ -320,6 +358,26 @@ export default function Login({ onLogin, logoUrl }: { onLogin?: (u: any) => void
           </footer>
         </div>
       </div>
+
+      <Dialog open={isClearCacheOpen} onOpenChange={setIsClearCacheOpen}>
+        <DialogContent className="max-w-[720px] p-0 overflow-hidden">
+          <DialogHeader className="px-6 pt-6">
+            <DialogTitle className="text-slate-900">
+              {lang === 'ar' ? 'إصلاح مشاكل تسجيل الدخول' : 'Fix login issues'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="px-6 pb-6">
+            <div className="rounded-xl overflow-hidden border border-slate-200">
+              <iframe
+                title="Clear cache"
+                src="/mdlbeast/clear-cache.html"
+                className="w-full"
+                style={{ height: 560 }}
+              />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -31,7 +31,7 @@ npm run dev
 
 ```env
 # Database
-DATABASE_URL=postgresql://mdlbeastdb_user:mRcP7qtpmSBPLIspOOjUBIhRChC5w7En@dpg-d5lkvkvgi27c738vq8g0-a/mdlbeastdb
+DATABASE_URL=<POSTGRES_CONNECTION_STRING>
 
 # Authentication
 JWT_SECRET=<YOUR_JWT_SECRET>
@@ -44,12 +44,12 @@ NODE_ENV=production
 FRONTEND_URL=https://zaco.sa/mdlbeast
 
 # Cloudflare R2 Storage
-CF_R2_ACCESS_KEY_ID=ce3791c4a9e76c321fa83d91e83af445
-CF_R2_SECRET_ACCESS_KEY=945c78abf90af55ba501fd2a2c82ea40bfedbfc751781a61347a838af621b60e
-CF_R2_ENDPOINT=https://de95c4f37b252fdb5c22a69ed3d7d3a1.r2.cloudflarestorage.com
-CF_R2_BUCKET=mdlbeast
+CF_R2_ACCESS_KEY_ID=<YOUR_R2_ACCESS_KEY_ID>
+CF_R2_SECRET_ACCESS_KEY=<YOUR_R2_SECRET_ACCESS_KEY>
+CF_R2_ENDPOINT=<YOUR_R2_ENDPOINT>
+CF_R2_BUCKET=<YOUR_R2_BUCKET>
 CF_R2_REGION=auto
-R2_PUBLIC_BASE_URL=https://pub-ca46338c34ee4a7a8eff690474faf0c6.r2.dev
+R2_PUBLIC_BASE_URL=<YOUR_R2_PUBLIC_BASE_URL>
 
 # Storage Provider
 STORAGE_PROVIDER=r2
@@ -90,43 +90,25 @@ GROQ_API_KEY=<YOUR_KEY>
 ### Frontend Environment Variables
 
 ```env
+# Optional override. When deploying on Bluehost under /mdlbeast, prefer leaving this unset
+# and using the Apache proxy rule (/mdlbeast/api -> Render) so the frontend can call same-origin.
 NEXT_PUBLIC_API_URL=https://mdlbeast.onrender.com/api
 NEXT_BASE_PATH=/mdlbeast
 ```
 
 ## 📦 Database Info
+This project does not store database credentials in the repository.
 
-### Connection Details
-- **Host**: dpg-d5lkvkvgi27c738vq8g0-a.virginia-postgres.render.com
-- **Database**: mdlbeastdb
-- **Username**: mdlbeastdb_user
-- **Password**: mRcP7qtpmSBPLIspOOjUBIhRChC5w7En
-- **Port**: 5432
-
-### Internal URL (Render Services)
-```
-postgresql://mdlbeastdb_user:mRcP7qtpmSBPLIspOOjUBIhRChC5w7En@dpg-d5lkvkvgi27c738vq8g0-a/mdlbeastdb
-```
-
-### External URL
-```
-postgresql://mdlbeastdb_user:mRcP7qtpmSBPLIspOOjUBIhRChC5w7En@dpg-d5lkvkvgi27c738vq8g0-a.virginia-postgres.render.com/mdlbeastdb
-```
-
-### PSQL Command
-```bash
-PGPASSWORD=mRcP7qtpmSBPLIspOOjUBIhRChC5w7En psql -h dpg-d5lkvkvgi27c738vq8g0-a.virginia-postgres.render.com -U mdlbeastdb_user mdlbeastdb
-```
+Use your provider (Render/Supabase/etc) to obtain the correct connection string, and set it via environment variables.
 
 ## 🗄️ R2 Storage Info
 
 ### Bucket Details
-- **Bucket Name**: mdlbeast
-- **Endpoint**: https://de95c4f37b252fdb5c22a69ed3d7d3a1.r2.cloudflarestorage.com
-- **Public URL**: https://pub-ca46338c34ee4a7a8eff690474faf0c6.r2.dev
-- **Token**: rYWbTJ-jdUr7YW4V2ZJcGWWwKyUiNwR_ONoxLT2F
-- **Access Key ID**: ce3791c4a9e76c321fa83d91e83af445
-- **Secret Access Key**: 945c78abf90af55ba501fd2a2c82ea40bfedbfc751781a61347a838af621b60e
+- **Bucket Name**: <YOUR_R2_BUCKET>
+- **Endpoint**: <YOUR_R2_ENDPOINT>
+- **Public URL**: <YOUR_R2_PUBLIC_BASE_URL>
+- **Access Key ID**: <YOUR_R2_ACCESS_KEY_ID>
+- **Secret Access Key**: <YOUR_R2_SECRET_ACCESS_KEY>
 
 ## 👤 Default Users
 

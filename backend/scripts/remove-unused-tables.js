@@ -7,8 +7,14 @@ const { Pool } = require('pg')
 const fs = require('fs')
 const path = require('path')
 
+const DATABASE_URL = process.env.DATABASE_URL
+if (!DATABASE_URL) {
+  console.error('Missing DATABASE_URL. Set it in the environment before running this script.')
+  process.exit(1)
+}
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://mdlbeastdb_user:mRcP7qtpmSBPLIspOOjUBIhRChC5w7En@dpg-d5lkvkvgi27c738vq8g0-a.virginia-postgres.render.com/mdlbeastdb',
+  connectionString: DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 })
 

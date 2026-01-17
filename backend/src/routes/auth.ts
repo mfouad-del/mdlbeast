@@ -7,7 +7,6 @@ import { query } from "../config/database"
 import { logAudit } from "../services/auditService"
 
 const router = express.Router()
-const JWT_SECRET = process.env.JWT_SECRET
 const RECAPTCHA_SECRET_KEY = process.env.RECAPTCHA_SECRET_KEY || ""
 
 // Verify reCAPTCHA token
@@ -79,12 +78,17 @@ router.post(
 
       await logAudit({ userId: user.id, action: 'LOGIN_SUCCESS', ipAddress: req.ip || req.socket.remoteAddress, userAgent: req.headers['user-agent'] })
 
-      const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || 'default-refresh-secret'
-      const accessToken = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET as string, {
+      const jwtSecret = String(process.env.JWT_SECRET || '')
+      if (!jwtSecret) return res.status(500).json({ error: 'Server misconfigured: JWT_SECRET is missing' })
+
+      const refreshSecret = String(process.env.REFRESH_TOKEN_SECRET || '')
+      if (!refreshSecret) return res.status(500).json({ error: 'Server misconfigured: REFRESH_TOKEN_SECRET is missing' })
+
+      const accessToken = jwt.sign({ id: user.id, username: user.username, role: user.role }, jwtSecret, {
         expiresIn: "1h",
         algorithm: 'HS256'
       })
-      const refreshToken = jwt.sign({ id: user.id }, REFRESH_TOKEN_SECRET, {
+      const refreshToken = jwt.sign({ id: user.id }, refreshSecret, {
         expiresIn: "7d",
         algorithm: 'HS256'
       })
@@ -174,15 +178,19 @@ router.post("/refresh", (req: Request, res: Response) => {
     const { refreshToken } = req.body
     if (!refreshToken) return res.status(401).json({ error: "Refresh token required" })
 
-    const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || 'default-refresh-secret'
+    const refreshSecret = String(process.env.REFRESH_TOKEN_SECRET || '')
+    if (!refreshSecret) return res.status(500).json({ error: 'Server misconfigured: REFRESH_TOKEN_SECRET is missing' })
     let decoded: any
     try {
-      decoded = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET)
+      decoded = jwt.verify(refreshToken, refreshSecret)
     } catch (err) {
       return res.status(401).json({ error: "Invalid or expired refresh token" })
     }
 
-    const accessToken = jwt.sign({ id: decoded.id }, JWT_SECRET as string, {
+    const jwtSecret = String(process.env.JWT_SECRET || '')
+    if (!jwtSecret) return res.status(500).json({ error: 'Server misconfigured: JWT_SECRET is missing' })
+
+    const accessToken = jwt.sign({ id: decoded.id }, jwtSecret, {
       expiresIn: "1h",
       algorithm: 'HS256'
     })

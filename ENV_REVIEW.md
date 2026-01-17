@@ -4,17 +4,17 @@
 
 ### 🔐 Security & Authentication
 ```env
-JWT_SECRET=UiR2u4kxB-a8fVvn1Jy5DEZNFuiyB19T7KD2cTSurgbhb8P_ooN0DWSgHiXiPeGN
-REFRESH_TOKEN_SECRET=Uth9x8or8VjU1_Q7dVKag-BWjk_4rfiwGVrWwGq7eC2K03wBhdR4tRRbuf-ZrDwJ
-SESSION_SECRET=EBwdR4a$XbRhFtiY92kLpQx!3nVmZ8jK
-DEBUG_SECRET=MDL@Debug2026
+JWT_SECRET=<YOUR_JWT_SECRET>
+REFRESH_TOKEN_SECRET=<YOUR_REFRESH_TOKEN_SECRET>
+SESSION_SECRET=<YOUR_SESSION_SECRET>
+DEBUG_SECRET=<YOUR_DEBUG_SECRET>
 ```
 ✓ **Status**: All secrets are sufficiently long (32+ characters)  
 ✓ **Security**: Good entropy and complexity
 
 ### 💾 Database Configuration
 ```env
-DATABASE_URL=postgresql://mdlbeastdb_user:mRcP7qtpmSBPLIspOOjUBIhRChC5w7En@dpg-d5lkvkvgi27c738vq8g0-a/mdlbeastdb
+DATABASE_URL=<POSTGRES_CONNECTION_STRING>
 ```
 ✓ **Status**: Connected successfully  
 ✓ **Schema**: 12 tables, all tenant references removed  
@@ -23,11 +23,11 @@ DATABASE_URL=postgresql://mdlbeastdb_user:mRcP7qtpmSBPLIspOOjUBIhRChC5w7En@dpg-d
 ### ☁️ Cloudflare R2 Storage
 ```env
 CF_R2_BUCKET=mdlbeast
-CF_R2_ACCESS_KEY_ID=ce3791c4a9e76c321fa83d91e83af445
-CF_R2_SECRET_ACCESS_KEY=945c78abf90af55ba501fd2a2c82ea40bfedbfc751781a61347a838af621b60e
-CF_R2_ENDPOINT=https://de95c4f37b252fdb5c22a69ed3d7d3a1.r2.cloudflarestorage.com
+CF_R2_ACCESS_KEY_ID=<YOUR_R2_ACCESS_KEY_ID>
+CF_R2_SECRET_ACCESS_KEY=<YOUR_R2_SECRET_ACCESS_KEY>
+CF_R2_ENDPOINT=<YOUR_R2_ENDPOINT>
 CF_R2_REGION=auto
-R2_PUBLIC_BASE_URL=https://pub-ca46338c34ee4a7a8eff690474faf0c6.r2.dev
+R2_PUBLIC_BASE_URL=<YOUR_R2_PUBLIC_BASE_URL>
 STORAGE_PROVIDER=r2
 ```
 ✓ **Status**: Configured correctly  
@@ -38,7 +38,7 @@ STORAGE_PROVIDER=r2
 ```env
 BACKUPS_ENABLED=true
 BACKUP_ENCRYPTION=true
-BACKUP_ENC_KEY=3h8f9VnJkT2iLpQ1s7wX9yZbA0dE6G5H
+BACKUP_ENC_KEY=<YOUR_BACKUP_ENC_KEY>
 BACKUP_INTERVAL_DAYS=15
 BACKUP_RETENTION_COUNT=6
 ```
@@ -60,11 +60,11 @@ FRONTEND_URL=https://zaco.sa/mdlbeast
 ```env
 SUPER_ADMIN_EMAIL=admin@mdlbeast.com
 SUPER_ADMIN_NAME="MDLBEAST Administrator"
-SUPER_ADMIN_PASSWORD=MDLadmin@2026
+SUPER_ADMIN_PASSWORD=<ADMIN_PASSWORD>
 
 TEST_USER_EMAIL=user@mdlbeast.com
 TEST_USER_NAME="MDLBEAST Staff"
-TEST_USER_PASSWORD=MDLuser@2026
+TEST_USER_PASSWORD=<TEST_USER_PASSWORD>
 ```
 ✓ **Status**: Configured  
 ⚠️ **Note**: Ensure these passwords are changed before production deployment
@@ -86,7 +86,7 @@ RECAPTCHA_SECRET_KEY=your-secret-key-here
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=noreply@mdlbeast.com
-SMTP_PASS=your-app-password
+SMTP_PASS=<YOUR_SMTP_APP_PASSWORD>
 EMAIL_FROM=noreply@mdlbeast.com
 ```
 ❌ **Status**: Not configured  

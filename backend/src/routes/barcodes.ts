@@ -34,12 +34,11 @@ router.get("/:barcode", async (req: Request, res: Response) => {
           subject: doc.subject,
           attachments: doc.attachments,
           user_id: doc.user_id,
-          tenant_id: doc.tenant_id || null,
           created_at: doc.created_at,
         }
         // try to insert into barcodes table for caching
         try {
-          await query('INSERT INTO barcodes (barcode, type, status, priority, subject, attachments, user_id, tenant_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)', [synth.barcode, synth.type, synth.status, synth.priority, synth.subject, JSON.stringify(synth.attachments || []), synth.user_id, synth.tenant_id])
+          await query('INSERT INTO barcodes (barcode, type, status, priority, subject, attachments, user_id) VALUES ($1,$2,$3,$4,$5,$6,$7)', [synth.barcode, synth.type, synth.status, synth.priority, synth.subject, JSON.stringify(synth.attachments || []), synth.user_id])
         } catch (e) {
           // ignore unique constraint etc
         }
@@ -131,9 +130,9 @@ router.post("/:barcode/timeline", async (req: Request, res: Response) => {
         const doc = d.rows[0]
         try {
           const r = await query(
-            `INSERT INTO barcodes (barcode, type, status, priority, subject, attachments, user_id, tenant_id)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
-            [doc.barcode, doc.type, doc.status || null, doc.priority || null, doc.subject || null, JSON.stringify(doc.attachments || []), doc.user_id || null, doc.tenant_id || null]
+            `INSERT INTO barcodes (barcode, type, status, priority, subject, attachments, user_id)
+             VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
+            [doc.barcode, doc.type, doc.status || null, doc.priority || null, doc.subject || null, JSON.stringify(doc.attachments || []), doc.user_id || null]
           )
           if (r.rows.length) bc = r
         } catch (e) {

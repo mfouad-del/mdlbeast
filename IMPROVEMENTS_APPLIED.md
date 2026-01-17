@@ -182,7 +182,7 @@ DB_CONNECTION_TIMEOUT=5000
 # Email (existing)
 EMAIL_SERVICE=gmail
 EMAIL_USER=your-email@gmail.com
-EMAIL_PASS=your-app-password
+EMAIL_PASS=<YOUR_SMTP_APP_PASSWORD>
 ```
 
 ---

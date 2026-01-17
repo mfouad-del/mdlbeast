@@ -6,21 +6,9 @@
  * Run: node backend/tests/extended-tests.js
  */
 
-// Set environment variables for testing
+// NOTE: This script must NOT embed real secrets. Provide required values via environment variables.
 process.env.AUTO_RUN_MIGRATIONS = process.env.AUTO_RUN_MIGRATIONS || 'true';
 process.env.BACKUPS_ENABLED = process.env.BACKUPS_ENABLED || 'true';
-process.env.BACKUP_ENCRYPTION = process.env.BACKUP_ENCRYPTION || 'true';
-process.env.BACKUP_ENC_KEY = process.env.BACKUP_ENC_KEY || '3h8f9VnJkT2iLpQ1s7wX9yZbA0dE6G5H';
-process.env.CF_R2_ACCESS_KEY_ID = process.env.CF_R2_ACCESS_KEY_ID || 'ce3791c4a9e76c321fa83d91e83af445';
-process.env.CF_R2_BUCKET = process.env.CF_R2_BUCKET || 'mdlbeast';
-process.env.CF_R2_ENDPOINT = process.env.CF_R2_ENDPOINT || 'https://de95c4f37b252fdb5c22a69ed3d7d3a1.r2.cloudflarestorage.com';
-process.env.CF_R2_SECRET_ACCESS_KEY = process.env.CF_R2_SECRET_ACCESS_KEY || '945c78abf90af55ba501fd2a2c82ea40bfedbfc751781a61347a838af621b60e';
-process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgresql://mdlbeastdb_user:mRcP7qtpmSBPLIspOOjUBIhRChC5w7En@dpg-d5lkvkvgi27c738vq8g0-a/mdlbeastdb';
-process.env.JWT_SECRET = process.env.JWT_SECRET || 'UiR2u4kxB-a8fVvn1Jy5DEZNFuiyB19T7KD2cTSurgbhb8P_ooN0DWSgHiXiPeGN';
-process.env.REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || 'Uth9x8or8VjU1_Q7dVKag-BWjk_4rfiwGVrWwGq7eC2K03wBhdR4tRRbuf-ZrDwJ';
-process.env.SESSION_SECRET = process.env.SESSION_SECRET || 'EBwdR4a$XbRhFtiY92kLpQx!3nVmZ8jK';
-process.env.SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || 'admin@mdlbeast.com';
-process.env.SUPER_ADMIN_PASSWORD = process.env.SUPER_ADMIN_PASSWORD || 'MDLadmin@2026';
 
 const { Client } = require('pg');
 const fs = require('fs');
@@ -28,6 +16,10 @@ const path = require('path');
 
 // Database configuration
 const DATABASE_URL = process.env.DATABASE_URL;
+if (!DATABASE_URL) {
+  console.error('Missing DATABASE_URL. Set it in the environment before running this script.');
+  process.exit(1);
+}
 
 // Expected tables after cleanup
 const EXPECTED_TABLES = [
@@ -39,8 +31,6 @@ const EXPECTED_TABLES = [
   'email_queue',
   'internal_messages',
   'notifications',
-  'reports',
-  'snapshots',
   'system_settings',
   'users'
 ];

@@ -11,6 +11,7 @@ module.exports = [
             'build/**',
             'out/**',
             'backend/**',
+            'scripts/**',
             'uploads/**',
             '**/*.config.{js,cjs,mjs}',
             'public/**',
@@ -34,10 +35,7 @@ module.exports = [
         },
         rules: {
             'no-unused-vars': 'off',
-            '@typescript-eslint/no-unused-vars': ['warn', { 
-                argsIgnorePattern: '^_',
-                varsIgnorePattern: '^_',
-            }],
+            '@typescript-eslint/no-unused-vars': 'off',
             'no-console': 'off',
             'prefer-const': 'warn',
             'no-undef': 'off', // TypeScript handles this

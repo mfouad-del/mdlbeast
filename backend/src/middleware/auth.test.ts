@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken'
 jest.mock('../config/database', () => ({
   query: jest.fn(async (q: string, params?: any[]) => {
     if (q.includes('SELECT * FROM users')) {
-      return { rows: [{ id: 1, username: 'alice', role: 'admin', tenant_id: 1 }] }
+      return { rows: [{ id: 1, username: 'alice', role: 'admin' }] }
     }
     return { rows: [] }
   })

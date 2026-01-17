@@ -10,7 +10,8 @@ const path = require('path');
 
 // Add your Render database URL here or use environment variable
 const DATABASE_URL = process.env.DATABASE_URL || 
-  'postgresql://user:password@localhost:5432/mdlbeastdb';
+  // Use a non-credential dummy URL to avoid secret scanners flagging example credentials.
+  'postgresql://localhost:5432/mdlbeastdb';
 
 const migrations = [
   'scripts/03_create_modules_tables.sql',
