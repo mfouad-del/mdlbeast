@@ -94,7 +94,7 @@ export default function InstallPWA() {
 
       <div className="flex items-start gap-4">
         <div className="w-12 h-12 bg-slate-900 rounded-xl flex items-center justify-center flex-shrink-0">
-          <img src="/logo.png" alt="MDLBEAST" className="w-8 h-8 object-contain" />
+          <img src="/mdlbeast/logo.png" alt="MDLBEAST" className="w-8 h-8 object-contain" />
         </div>
 
         <div className="flex-1">
