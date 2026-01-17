@@ -269,19 +269,6 @@ const App: React.FC = () => {
              {currentCompany && <img src={currentCompany.logoUrl} className="h-20 w-auto mb-4 object-contain drop-shadow-sm hover:scale-105 transition-transform duration-300" alt="Logo" />}
              <div className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] mb-6 leading-relaxed">مركز الإتصالات الإدارية</div>
            </div>
-           
-           <div className="space-y-2 w-full flex flex-col items-center">
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mb-1">
-                <Building2 size={12} /> المؤسسة الحالية
-              </label>
-              <select 
-                className="w-full p-3 bg-white border border-slate-200 rounded-xl text-xs font-black appearance-none cursor-pointer focus:border-slate-900 outline-none shadow-sm transition-all text-center"
-                value={selectedCompanyId} 
-                onChange={(e) => setSelectedCompanyId(e.target.value)}
-              >
-                {companies.map(c => <option key={c.id} value={c.id}>{c.nameAr}</option>)}
-              </select>
-           </div>
         </div>
 
         <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto custom-scrollbar">
@@ -296,7 +283,6 @@ const App: React.FC = () => {
           <NavItem id="reports" label="مركز التقارير" icon={FileText} />
           <NavItem id="change-password" label="تغيير كلمة المرور" icon={Lock} />
           <NavItem id="users" label="إدارة المستخدمين" icon={Users} adminOnly />
-          <NavItem id="companies" label="إدارة المؤسسات" icon={Briefcase} adminOnly />
           <NavItem id="backup" label="النسخ الاحتياطي" icon={Database} adminOnly />
           <NavItem id="admin-status" label="حالة النظام" icon={AlertCircle} adminOnly />
         </nav>
@@ -334,78 +320,6 @@ const App: React.FC = () => {
           {activeTab === 'users' && <UserManagement users={users} onUpdateUsers={async () => { loadInitialData(); }} currentUserEmail={currentUser.email || currentUser.username || ''} />}
           {activeTab === 'change-password' && <ChangePassword />}
           {activeTab === 'admin-status' && <AdminStatus />}
-          
-          {activeTab === 'companies' && (
-             <div className="space-y-8 animate-in slide-in-from-bottom-8 duration-700">
-                <div className="bg-white p-12 rounded-[3rem] border border-slate-200 shadow-2xl">
-                  <header className="mb-10 flex items-center gap-5">
-                    <div className="bg-slate-900 p-4 rounded-2xl text-white shadow-xl"><Briefcase size={28} /></div>
-                    <div>
-                      <h2 className="text-3xl font-black text-slate-900 font-heading tracking-tight">إدارة الكيانات المستقلة</h2>
-                      <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mt-1">إدارة الشركات والفروع داخل النظام الموحد</p>
-                    </div>
-                  </header>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-                     <div className="space-y-6">
-                        <div className="flex justify-between items-center mb-2">
-                           <h3 className="text-xl font-black text-slate-900">{editingCompanyId ? 'تعديل مؤسسة' : 'إضافة مؤسسة جديدة'}</h3>
-                           {editingCompanyId && <button onClick={() => { setEditingCompanyId(null); setNewCompany({nameAr:'', nameEn:'', logoUrl:'/mdlbeast/logo.png', signatureUrl: ''}); }} className="text-slate-400 hover:text-red-500"><X size={20}/></button>}
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">اسم المؤسسة (بالعربي)</label>
-                          <input type="text" placeholder="مثال: MDLBEAST Entertainment" className="w-full p-5 bg-slate-50 border border-slate-200 rounded-2xl font-black focus:border-slate-900 outline-none transition-all text-slate-900" value={newCompany.nameAr} onChange={e => setNewCompany({...newCompany, nameAr: e.target.value})} />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Entity Name (English)</label>
-                          <input type="text" placeholder="Example: MDLBEAST" className="w-full p-5 bg-slate-50 border border-slate-200 rounded-2xl font-black focus:border-slate-900 outline-none transition-all text-slate-900" value={newCompany.nameEn} onChange={e => setNewCompany({...newCompany, nameEn: e.target.value})} />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">رابط الشعار</label>
-                          <input type="text" placeholder="https://..." className="w-full p-5 bg-slate-50 border border-slate-200 rounded-2xl font-mono text-xs focus:border-slate-900 outline-none transition-all text-slate-900" value={newCompany.logoUrl} onChange={e => setNewCompany({...newCompany, logoUrl: e.target.value})} />
-                        </div>
-                        <button onClick={handleAddOrUpdateCompany} className="w-full bg-slate-900 text-white py-6 rounded-[1.5rem] font-black text-lg shadow-xl hover:bg-black transition-all flex items-center justify-center gap-3">
-                           {editingCompanyId ? <><Check size={20} /> حفظ التعديلات</> : <><Plus size={20} /> إضافة المؤسسة للأرشيف</>}
-                        </button>
-                     </div>
-
-                     <div className="bg-slate-50/50 rounded-[2.5rem] p-8 border border-slate-200 flex flex-col">
-                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-6">المؤسسات المسجلة</p>
-                        <div className="space-y-4 overflow-y-auto max-h-[400px]">
-                           {companies.map(c => (
-                             <div key={c.id} className="bg-white p-5 rounded-[1.5rem] border border-slate-200 flex items-center justify-between group">
-                                <div className="flex items-center gap-4">
-                                  <img src={c.logoUrl} className="w-12 h-12 object-contain" alt="logo" />
-                                  <div>
-                                    <div className="font-black text-sm text-slate-900">{c.nameAr}</div>
-                                    <div className="text-[10px] font-black text-slate-400 uppercase">{c.nameEn}</div>
-                                  </div>
-                                </div>
-                                <div className="flex gap-2">
-                                  <button onClick={() => startEditCompany(c)} className="text-slate-300 opacity-0 group-hover:opacity-100 hover:text-blue-500 transition-all p-2 hover:bg-blue-50 rounded-full" title="تعديل">
-                                    <Edit3 size={18} />
-                                  </button>
-                                  <AsyncButton 
-                                    onClickAsync={async () => {
-                                      if (companies.length <= 1) return;
-                                      if (!confirm("هل تود حذف هذه المؤسسة نهائياً؟")) return;
-                                      await apiClient.deleteTenant(c.id)
-                                      alert('تم حذف المؤسسة')
-                                      loadInitialData()
-                                    }} 
-                                    className="text-red-300 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all p-2 hover:bg-red-50 rounded-full" title="حذف"
-                                  >
-                                    <Trash2 size={18} />
-                                  </AsyncButton>
-                                </div>
-                             </div>
-                           ))}
-                        </div>
-                     </div>
-                  </div>
-                </div>
-             </div>
-          )}
 
           {activeTab === 'backup' && (
              <div className="space-y-8 animate-in slide-in-from-bottom-8 duration-700">
