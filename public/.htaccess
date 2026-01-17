@@ -1,5 +1,25 @@
 DirectoryIndex index.html
 
+# CORS Headers for PWA
+<IfModule mod_headers.c>
+  # Allow same-origin access to manifest.json and sw.js
+  <FilesMatch "\.(json|js)$">
+    Header set Access-Control-Allow-Origin "*"
+    Header set Access-Control-Allow-Methods "GET, OPTIONS"
+    Header set Access-Control-Allow-Headers "Content-Type"
+  </FilesMatch>
+  
+  # Ensure proper MIME types
+  <FilesMatch "manifest\.json$">
+    Header set Content-Type "application/manifest+json"
+  </FilesMatch>
+  
+  <FilesMatch "sw\.js$">
+    Header set Content-Type "application/javascript"
+    Header set Service-Worker-Allowed "/"
+  </FilesMatch>
+</IfModule>
+
 <IfModule mod_rewrite.c>
 RewriteEngine On
 

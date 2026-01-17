@@ -80,8 +80,8 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('push', (event) => {
   const options = {
     body: event.data ? event.data.text() : 'إشعار جديد من MDLBEAST',
-    icon: '/logo.png',
-    badge: '/icon.jpg',
+    icon: '/mdlbeast/logo.png',
+    badge: '/mdlbeast/icon.jpg',
     dir: 'rtl',
     lang: 'ar'
   };

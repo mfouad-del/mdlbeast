@@ -51,7 +51,7 @@
   ],
   "screenshots": [
     {
-      "src": "/logo.png",
+      "src": "/mdlbeast/logo.png",
       "sizes": "512x512",
       "type": "image/png",
       "form_factor": "wide"
@@ -63,7 +63,7 @@
       "short_name": "Dashboard",
       "description": "فتح لوحة التحكم",
       "url": "/mdlbeast/dashboard/",
-      "icons": [{ "src": "/icon.jpg", "sizes": "96x96" }]
+      "icons": [{ "src": "/mdlbeast/icon.jpg", "sizes": "96x96" }]
     }
   ]
 }
