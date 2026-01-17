@@ -98,12 +98,23 @@ const App: React.FC = () => {
 
     // If user token exists, try to fetch current user and then load data
     const tryInit = async () => {
+      const token = localStorage.getItem('auth_token')
+      if (!token) {
+        setIsLoading(false)
+        return
+      }
+
       try {
-        await apiClient.getCurrentUser().then(u => { setCurrentUser(u) }).catch(() => null)
+        const u = await apiClient.getCurrentUser().then(u => u).catch(() => null)
+        if (u) {
+          setCurrentUser(u)
+          await loadInitialData()
+        }
       } catch (_e) {
         // Ignore initialization errors
+      } finally {
+        setIsLoading(false)
       }
-      loadInitialData();
     }
     tryInit();
 

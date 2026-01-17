@@ -280,10 +280,10 @@ export default function Login({ onLogin, logoUrl }: { onLogin?: (u: any) => void
         <DialogContent className="max-w-[720px] p-0 overflow-hidden">
           <DialogHeader className="px-6 pt-6">
             <DialogTitle className="text-slate-900">
-              {lang === 'ar' ? 'إصلاح مشاكل تسجيل الدخول' : 'Fix login issues'}
+              Fix login issues
             </DialogTitle>
             <DialogDescription className="text-slate-500 text-sm">
-              {lang === 'ar' ? 'مسح بيانات الجلسة المحفوظة لإصلاح مشاكل تسجيل الدخول' : 'Clear saved session data to fix login issues'}
+              Clear saved session data to fix login issues
             </DialogDescription>
           </DialogHeader>
           <div className="px-6 pb-6">

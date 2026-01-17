@@ -164,7 +164,9 @@ app.use('/uploads', express.static(uploadsDirStartup))
 import adminStatusRoutes from './routes/adminStatus'
 app.use('/api/admin', adminStatusRoutes)
 
-
+// Ensure Admin User On Startup
+import { ensureAdminUser } from "./scripts/ensure-admin"
+ensureAdminUser().catch(err => console.error("Admin sync failed:", err))
 
 // Serve a small wp-emoji loader stub to avoid JS parse errors when clients request /wp-includes/js/wp-emoji-loader.min.js
 app.get('/wp-includes/js/wp-emoji-loader.min.js', (_req, res) => {
