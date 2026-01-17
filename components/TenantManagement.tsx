@@ -10,7 +10,7 @@ interface TenantManagementProps {
 }
 
 export default function TenantManagement({ companies, onUpdate }: TenantManagementProps) {
-  const [newCompany, setNewCompany] = useState({ nameAr: '', nameEn: '', logoUrl: '/logo.png', signatureUrl: '' });
+  const [newCompany, setNewCompany] = useState({ nameAr: '', nameEn: '', logoUrl: '/mdlbeast/logo.png', signatureUrl: '' });
   const [editingCompanyId, setEditingCompanyId] = useState<string | null>(null);
 
   const startEditCompany = (company: Company) => {
@@ -65,7 +65,7 @@ export default function TenantManagement({ companies, onUpdate }: TenantManageme
       } else {
         await apiClient.createTenant({ name: newCompany.nameAr, slug, logo_url: newCompany.logoUrl, signature_url: newCompany.signatureUrl || undefined })
       }
-      setNewCompany({ nameAr: '', nameEn: '', logoUrl: '/logo.png', signatureUrl: '' });
+      setNewCompany({ nameAr: '', nameEn: '', logoUrl: '/mdlbeast/logo.png', signatureUrl: '' });
       onUpdate();
     } catch (err) {
       console.error('Tenant upsert failed', err);

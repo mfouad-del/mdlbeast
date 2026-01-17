@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   title: "MDLBEAST Communications",
   description: "نظام الاتصالات الإدارية - MDLBEAST Entertainment Company",
   generator: "v0.app",
-  manifest: "/manifest.json",
+  manifest: "/mdlbeast/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -23,23 +23,23 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: "/icon-light-32x32.jpg",
+        url: "/mdlbeast/icon-light-32x32.jpg",
         media: "(prefers-color-scheme: light)",
       },
       {
-        url: "/icon-dark-32x32.jpg",
+        url: "/mdlbeast/icon-dark-32x32.jpg",
         media: "(prefers-color-scheme: dark)",
       },
       {
-        url: "/icon.jpg",
+        url: "/mdlbeast/icon.jpg",
         type: "image/jpeg",
       },
       {
-        url: "/favicon.jpg",
+        url: "/mdlbeast/favicon.jpg",
         type: "image/jpeg",
       },
     ],
-    apple: "/apple-icon.jpg",
+    apple: "/mdlbeast/apple-icon.jpg",
   },
 }
 
@@ -70,8 +70,8 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="msapplication-TileColor" content="#0f172a" />
         <meta name="theme-color" content="#0f172a" />
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/apple-icon.jpg" />
+        <link rel="manifest" href="/mdlbeast/manifest.json" />
+        <link rel="apple-touch-icon" href="/mdlbeast/apple-icon.jpg" />
         {/* Prevent aggressive caching of the HTML shell so clients revalidate frequently */}
         <meta httpEquiv="Cache-control" content="no-cache, no-store, must-revalidate" />
         <meta httpEquiv="Pragma" content="no-cache" />
@@ -85,7 +85,7 @@ export default function RootLayout({
   // Register Service Worker for PWA
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
-      navigator.serviceWorker.register('/sw.js').then(function(registration) {
+      navigator.serviceWorker.register('/mdlbeast/sw.js', { scope: '/mdlbeast/' }).then(function(registration) {
         console.log('[PWA] Service Worker registered with scope:', registration.scope);
       }).catch(function(err) {
         console.log('[PWA] Service Worker registration failed:', err);

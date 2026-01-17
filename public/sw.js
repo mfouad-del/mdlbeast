@@ -3,10 +3,10 @@ const CACHE_NAME = 'mdlbeast-v1';
 const urlsToCache = [
   '/mdlbeast/',
   '/mdlbeast/index.html',
-  '/logo.png',
-  '/favicon.jpg',
-  '/icon.jpg',
-  '/manifest.json'
+  '/mdlbeast/logo.png',
+  '/mdlbeast/favicon.jpg',
+  '/mdlbeast/icon.jpg',
+  '/mdlbeast/manifest.json'
 ];
 
 // Install event - cache files
