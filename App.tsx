@@ -3,7 +3,7 @@ import {
   LayoutDashboard, FilePlus, FileMinus, Search, Scan,
   Users, Briefcase, LogOut, Trash2, Building2, Plus, Lock,
   AlertCircle, DownloadCloud, UploadCloud, Database, RefreshCcw, ShieldCheck, Edit3, X, Check, Menu, FileSignature,
-  ChevronDown, FolderOpen, CreditCard, FileText, BarChart3, Settings, DollarSign, Stamp
+  ChevronDown, FolderOpen, CreditCard, FileText, BarChart3, Settings, DollarSign, Stamp, Bell
 } from 'lucide-react';
 import { DocType, Correspondence, DocStatus, SystemSettings, User } from './types';
 import { apiClient } from './lib/api-client';
@@ -37,6 +37,8 @@ const App: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userSettingsOpen, setUserSettingsOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState<string[]>(['documents', 'system']);
+  const [notificationCount, setNotificationCount] = useState(0);
+  const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
 
   // Restore active tab from localStorage on mount (client-side only)
   useEffect(() => {
@@ -111,6 +113,12 @@ const App: React.FC = () => {
       // Users (requires admin/auth)
       const fetchedUsers = await apiClient.getUsers().catch((e) => { console.warn('Users fetch failed', e); return [] as any[] })
       setUsers(fetchedUsers);
+      
+      // Notifications count
+      try {
+        const notifRes = await apiClient.getNotifications({ limit: 100, offset: 0, unreadOnly: true })
+        setNotificationCount((notifRes as any)?.data?.length || 0)
+      } catch (e) { /* silently ignore */ }
     } catch (e) {
       console.error("Sync error", e);
     } finally {
@@ -314,17 +322,17 @@ const App: React.FC = () => {
       )}
       
       <aside className="w-72 bg-white border-l border-slate-200 flex flex-col shrink-0 z-20 shadow-sm no-print h-full">
-        <div className="p-6 border-b border-slate-100 bg-gradient-to-br from-slate-50 to-white">
+        <div className="p-4 border-b border-slate-100 bg-gradient-to-br from-slate-50 to-white">
            <div className="flex flex-col items-center text-center w-full">
-             <img src='/mdlbeast/logo.png' className="h-16 w-auto mb-3 object-contain drop-shadow-sm hover:scale-105 transition-transform duration-300" alt="Logo" />
-             <div className="text-[9px] font-black text-slate-600 uppercase tracking-[0.15em] leading-relaxed">مركز الإتصالات الإدارية</div>
+             <img src='/mdlbeast/logo.png' className="h-10 w-auto mb-2 object-contain drop-shadow-sm hover:scale-105 transition-transform duration-300" alt="Logo" />
+             <div className="text-[8px] font-black text-slate-600 uppercase tracking-[0.12em] leading-relaxed">مركز الإتصالات الإدارية</div>
            </div>
         </div>
 
         <nav className="flex-1 px-3 py-4 overflow-y-auto custom-scrollbar">
           <NavItem id="dashboard" label="لوحة التحكم" icon={LayoutDashboard} />
           
-          <SidebarSection id="documents" title="المراسلات" icon={FolderOpen}>
+          <SidebarSection id="documents" title="الاتصالات الإدارية" icon={FolderOpen}>
             <NavItem id="incoming" label="قيد وارد جديد" icon={FilePlus} />
             <NavItem id="outgoing" label="قيد صادر جديد" icon={FileMinus} />
             <NavItem id="list" label="الأرشيف والبحث" icon={Search} />
@@ -334,7 +342,6 @@ const App: React.FC = () => {
           
           <SidebarSection id="workflow" title="سير العمل" icon={FileSignature}>
             <NavItem id="approvals" label="نظام الإعتمادات" icon={FileSignature} />
-            <NavItem id="notifications" label="مركز الإشعارات" icon={AlertCircle} />
             <NavItem id="internal" label="التواصل الداخلي" icon={FileText} />
           </SidebarSection>
           
@@ -378,6 +385,61 @@ const App: React.FC = () => {
 
       <LoadingProvider>
         <main className="flex-1 flex flex-col overflow-hidden relative">
+        {/* Navbar */}
+        <nav className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between shrink-0 shadow-sm no-print">
+          <div className="flex items-center gap-4">
+            <h1 className="text-lg font-black text-slate-800">
+              {activeTab === 'dashboard' && 'لوحة التحكم'}
+              {activeTab === 'incoming' && 'قيد وارد جديد'}
+              {activeTab === 'outgoing' && 'قيد صادر جديد'}
+              {activeTab === 'list' && 'الأرشيف والبحث'}
+              {activeTab === 'scanner' && 'تتبع الباركود'}
+              {activeTab === 'reports' && 'تقارير الأرشيف'}
+              {activeTab === 'audit' && 'مراقبة التفاعل'}
+              {activeTab === 'approvals' && 'نظام الإعتمادات'}
+              {activeTab === 'notifications' && 'مركز الإشعارات'}
+              {activeTab === 'internal' && 'التواصل الداخلي'}
+              {activeTab === 'users' && 'إدارة المستخدمين'}
+              {activeTab === 'admin-status' && 'حالة النظام'}
+              {activeTab === 'backup' && 'النسخ الاحتياطي'}
+            </h1>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            {/* Notifications Bell */}
+            <div className="relative">
+              <button
+                onClick={() => setActiveTab('notifications')}
+                className="relative p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 transition-all group"
+              >
+                <Bell size={18} className="text-slate-600 group-hover:text-slate-900" />
+                {notificationCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center animate-pulse">
+                    {notificationCount > 9 ? '9+' : notificationCount}
+                  </span>
+                )}
+              </button>
+            </div>
+            
+            {/* User Quick Info */}
+            <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-slate-50">
+              <div className="text-right">
+                <div className="text-xs font-black text-slate-800">{currentUser.full_name}</div>
+                <div className="text-[10px] text-slate-500 font-bold">
+                  {currentUser.role === 'admin' ? 'مدير نظام' : currentUser.role === 'manager' ? 'مدير' : currentUser.role === 'supervisor' ? 'مشرف' : 'مستخدم'}
+                </div>
+              </div>
+              <div className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-white font-black text-xs overflow-hidden">
+                {currentUser.avatar_url ? (
+                  <img src={currentUser.avatar_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  currentUser.full_name?.substring(0, 1) || 'U'
+                )}
+              </div>
+            </div>
+          </div>
+        </nav>
+        
         <div className="flex-1 overflow-y-auto p-8 lg:p-14 max-w-7xl xl:max-w-none mx-auto w-full">
           {globalError && (
             <div className="mb-6 p-3 bg-red-50 text-red-700 rounded-xl font-bold">{globalError}</div>
@@ -391,7 +453,7 @@ const App: React.FC = () => {
           {activeTab === 'audit' && <AuditLogs />}
           {activeTab === 'approvals' && <Approvals currentUser={currentUser} tenantSignatureUrl='' />}
           {activeTab === 'notifications' && <NotificationCenter />}
-          {activeTab === 'internal' && <InternalCommunication />}
+          {activeTab === 'internal' && <InternalCommunication currentUser={currentUser} />}
           {activeTab === 'users' && <UserManagement users={users} onUpdateUsers={async () => { loadInitialData(); }} currentUserEmail={currentUser.email || currentUser.username || ''} />}
           {activeTab === 'admin-status' && <AdminStatus />}
           {activeTab === 'backup' && <AdminBackups />}

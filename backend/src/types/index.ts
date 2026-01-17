@@ -39,6 +39,7 @@ export interface AuthRequest extends Request {
   user?: {
     id: number
     username?: string
+    full_name?: string
     role?: string
   }
 }

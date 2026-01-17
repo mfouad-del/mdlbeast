@@ -44,6 +44,7 @@ export interface User {
   signature_url?: string
   stamp_url?: string
   avatar_url?: string
+  profile_picture_url?: string  // Alias for avatar_url
   permissions?: any  // User permissions object
 }
 

@@ -60,9 +60,12 @@ export default function AdminStatus() {
   useEffect(() => {
     const checkMode = async () => {
       try {
-        const res: any = await (apiClient as any).request('/system-settings/maintenance-status', { method: 'GET' })
-        setMaintenanceMode(res.maintenance_mode)
-      } catch (e) { console.error('Failed to check maintenance mode', e) }
+        const res: any = await (apiClient as any).request('/admin/maintenance-status', { method: 'GET' })
+        setMaintenanceMode(res?.maintenance_mode || false)
+      } catch (e) { 
+        // Silently ignore - maintenance mode defaults to false
+        setMaintenanceMode(false)
+      }
     }
     checkMode()
   }, [])
@@ -74,7 +77,7 @@ export default function AdminStatus() {
 
     setRunningAction('maintenance')
     try {
-      await (apiClient as any).request('/system-settings/maintenance_mode', { 
+      await (apiClient as any).request('/admin/maintenance-mode', { 
         method: 'PUT',
         body: JSON.stringify({ value: !maintenanceMode })
       })

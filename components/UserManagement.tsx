@@ -51,123 +51,64 @@ interface UserWithChildren extends User {
   notify_on_report?: boolean
 }
 
-// هيكل الصلاحيات المتوافق مع الـ backend (Refactored & Synchronized)
+// ============================================================================
+// هيكل الصلاحيات - مشروع الاتصالات الإدارية
+// Administrative Communications Project - Permissions Structure
+// ============================================================================
 interface UserPermissions {
-  // 1. إدارة المشاريع (Projects Administration)
-  projects?: {
-    view_idx?: boolean // Dashboard/Sidebar Access
-    view_all?: boolean
-    view_own?: boolean // My Projects
-    create?: boolean
-    edit?: boolean
-    delete?: boolean
-    assign_team?: boolean
-    
-    // Project Finance (Within Project Context)
-    create_payment_request?: boolean // For Engineers
-    view_payment_requests?: boolean
-    approve_payment_request?: boolean // For Managers
-    
-    view_change_orders?: boolean
-    create_change_order?: boolean
-    approve_change_order?: boolean
-    
-    // Sidebar Tab Visibility
-    view_project_reports_tab?: boolean
-  }
-
-  // 2. الاتصالات الإدارية (Administrative Communications)
+  // 1. الاتصالات الإدارية (الأرشيف - الصادر/الوارد)
   archive?: {
-    view_idx?: boolean
-    view_all?: boolean
-    view_own?: boolean
-    create?: boolean
-    edit?: boolean
-    delete?: boolean
-    stamp?: boolean
-    export?: boolean
+    view_idx?: boolean    // عرض القسم في السايدبار
+    view_all?: boolean    // عرض جميع المستندات
+    view_own?: boolean    // عرض المستندات الخاصة فقط
+    create?: boolean      // إنشاء مستند جديد
+    edit?: boolean        // تعديل المستندات
+    delete?: boolean      // حذف المستندات
+    stamp?: boolean       // ختم المستندات
+    export?: boolean      // تصدير/طباعة المستندات
   }
 
-  // 3. إدارة المدفوعات والمالية (Finance Administration)
-  finance?: {
-    view_idx?: boolean
-    view_all_payments?: boolean
-    view_own_payments?: boolean // رؤية مدفوعات مشاريعي فقط (للمدراء)
-    manage_payments?: boolean // Accountant Only
-    collect_payment?: boolean // تحصيل الدفعات المستحقة
-    generate_invoices?: boolean
-    view_financial_reports?: boolean
-    manage_installments?: boolean
-    
-    // Sidebar Tab Visibility
-    view_payments_tab?: boolean
-  }
-
-  // 4. إدارة التقارير (Reports Administration)
+  // 2. التقارير
   reports?: {
-    view_idx?: boolean
-    view_own_supervision?: boolean
-    view_all_supervision?: boolean
-    create_supervision?: boolean
-    approve_supervision?: boolean
-    delete_supervision?: boolean
-    export_snapshots?: boolean
-    
-    view_internal?: boolean
-    create_internal?: boolean
+    view_idx?: boolean          // عرض القسم في السايدبار
+    view_all?: boolean          // عرض جميع التقارير
+    view_own?: boolean          // عرض التقارير الخاصة فقط
+    create?: boolean            // إنشاء تقرير
+    export?: boolean            // تصدير/طباعة التقارير
   }
 
-  // 5. إدارة الموارد البشرية (HR & Users)
+  // 3. إدارة المستخدمين
   users?: {
-    view_idx?: boolean
-    view_list?: boolean
-    create?: boolean
-    edit?: boolean
-    delete?: boolean
-    manage_permissions?: boolean
-    view_audit_logs?: boolean
-    // HR Management (دمج الموارد البشرية)
-    manage_attendance?: boolean // إدارة الحضور والغياب
-    view_payroll?: boolean // عرض كشوف الرواتب
-    manage_leaves?: boolean // إدارة الإجازات
-    view_performance?: boolean // عرض تقييمات الأداء
+    view_idx?: boolean          // عرض القسم في السايدبار
+    view_list?: boolean         // عرض قائمة المستخدمين
+    create?: boolean            // إضافة مستخدم جديد
+    edit?: boolean              // تعديل بيانات المستخدمين
+    delete?: boolean            // حذف المستخدمين
+    manage_permissions?: boolean // إدارة الصلاحيات
+    view_audit_logs?: boolean   // عرض سجل العمليات
   }
 
-  // 6. إدارة النظام (System & Settings)
+  // 4. إعدادات النظام
   system?: {
-    view_idx?: boolean
-    manage_settings?: boolean
-    manage_backups?: boolean
-    manage_email?: boolean
-    // User management within system (for admins)
-    manage_users?: boolean // إدارة المستخدمين من لوحة النظام
-    manage_roles?: boolean // إدارة الأدوار
+    view_idx?: boolean          // عرض القسم في السايدبار
+    manage_settings?: boolean   // تعديل الإعدادات
+    manage_backups?: boolean    // إدارة النسخ الاحتياطي
   }
 
-  // 7. التواصل الداخلي
+  // 5. التواصل الداخلي
   communication?: {
-    access_chat?: boolean
-    view_announcements?: boolean
-    moderate_chat?: boolean
+    access_chat?: boolean       // الوصول للدردشة
+    view_announcements?: boolean // مشاهدة الإعلانات
+    moderate_chat?: boolean     // إدارة الدردشة
   }
 
-  // 8. الموافقات (General Approvals)
+  // 6. الموافقات والاعتمادات
   approvals?: {
-    view_idx?: boolean
-    view_own?: boolean
-    view_pending?: boolean
-    action_approve?: boolean
-    action_reject?: boolean
-    override_any?: boolean
-  }
-  
-  // 9. إدارة العملاء
-  clients?: {
-    view_idx?: boolean
-    view_list?: boolean
-    create?: boolean
-    edit?: boolean
-    delete?: boolean
+    view_idx?: boolean          // عرض القسم في السايدبار
+    view_own?: boolean          // عرض طلباتي
+    view_pending?: boolean      // عرض الطلبات المعلقة
+    action_approve?: boolean    // صلاحية الموافقة
+    action_reject?: boolean     // صلاحية الرفض
   }
 
   __mode?: 'inherit' | 'custom'
@@ -216,78 +157,58 @@ const SCOPES = [
   { value: 'all', label: 'كل النظام' },
 ]
 
+// ============================================================================
+// الصلاحيات الافتراضية - مشروع الاتصالات الإدارية
+// ============================================================================
 const DEFAULT_PERMISSIONS: UserPermissions = {
-    projects: { view_idx: true, view_all: false, view_own: true, create: false, edit: false, delete: false, assign_team: false, create_payment_request: false, view_payment_requests: false, approve_payment_request: false, view_change_orders: false, create_change_order: false, approve_change_order: false, view_project_reports_tab: false },
-    archive: { view_idx: true, view_all: false, view_own: true, create: true, edit: false, delete: false, stamp: false, export: false },
-    finance: { view_idx: false, view_all_payments: false, view_own_payments: false, manage_payments: false, collect_payment: false, generate_invoices: false, view_financial_reports: false, manage_installments: false, view_payments_tab: false },
-    reports: { view_idx: true, view_own_supervision: true, view_all_supervision: false, create_supervision: true, approve_supervision: false, delete_supervision: false, export_snapshots: false, view_internal: true, create_internal: true },
-    users: { view_idx: false, view_list: false, create: false, edit: false, delete: false, manage_permissions: false, view_audit_logs: false, manage_attendance: false, view_payroll: false, manage_leaves: false, view_performance: false },
-    system: { view_idx: false, manage_settings: false, manage_backups: false, manage_email: false, manage_users: false, manage_roles: false },
-    communication: { access_chat: true, view_announcements: true, moderate_chat: false },
-    approvals: { view_idx: true, view_own: true, view_pending: false, action_approve: false, action_reject: false, override_any: false },
-    clients: { view_idx: false, view_list: false, create: false, edit: false, delete: false }
+  archive: { view_idx: true, view_all: false, view_own: true, create: true, edit: false, delete: false, stamp: false, export: false },
+  reports: { view_idx: true, view_all: false, view_own: true, create: false, export: false },
+  users: { view_idx: false, view_list: false, create: false, edit: false, delete: false, manage_permissions: false, view_audit_logs: false },
+  system: { view_idx: false, manage_settings: false, manage_backups: false },
+  communication: { access_chat: true, view_announcements: true, moderate_chat: false },
+  approvals: { view_idx: true, view_own: true, view_pending: false, action_approve: false, action_reject: false }
 }
 
-// الصلاحيات الافتراضية لكل دور (متوافقة مع الـ backend - Synchronized)
+// الصلاحيات الافتراضية لكل دور
 const ROLE_DEFAULT_PERMISSIONS: Record<string, UserPermissions> = {
+  // مدير النظام - صلاحيات كاملة
   admin: {
-    projects: { view_idx: true, view_all: true, view_own: true, create: true, edit: true, delete: true, assign_team: true, create_payment_request: true, view_payment_requests: true, approve_payment_request: true, view_change_orders: true, create_change_order: true, approve_change_order: true, view_project_reports_tab: true },
     archive: { view_idx: true, view_all: true, view_own: true, create: true, edit: true, delete: true, stamp: true, export: true },
-    finance: { view_idx: true, view_all_payments: true, view_own_payments: true, manage_payments: true, collect_payment: true, generate_invoices: true, view_financial_reports: true, manage_installments: true, view_payments_tab: true },
-    reports: { view_idx: true, view_own_supervision: true, view_all_supervision: true, create_supervision: true, approve_supervision: true, delete_supervision: true, export_snapshots: true, view_internal: true, create_internal: true },
-    users: { view_idx: true, view_list: true, create: true, edit: true, delete: true, manage_permissions: true, view_audit_logs: true, manage_attendance: true, view_payroll: true, manage_leaves: true, view_performance: true },
-    system: { view_idx: true, manage_settings: true, manage_backups: true, manage_email: true, manage_users: true, manage_roles: true },
+    reports: { view_idx: true, view_all: true, view_own: true, create: true, export: true },
+    users: { view_idx: true, view_list: true, create: true, edit: true, delete: true, manage_permissions: true, view_audit_logs: true },
+    system: { view_idx: true, manage_settings: true, manage_backups: true },
     communication: { access_chat: true, view_announcements: true, moderate_chat: true },
-    approvals: { view_idx: true, view_own: true, view_pending: true, action_approve: true, action_reject: true, override_any: true },
-    clients: { view_idx: true, view_list: true, create: true, edit: true, delete: true }
+    approvals: { view_idx: true, view_own: true, view_pending: true, action_approve: true, action_reject: true }
   },
   
+  // المدير - صلاحيات إدارية محدودة
   manager: {
-    projects: { view_idx: true, view_all: true, view_own: true, create: true, edit: true, delete: false, assign_team: true, create_payment_request: true, view_payment_requests: true, approve_payment_request: true, view_change_orders: true, create_change_order: false, approve_change_order: true, view_project_reports_tab: true },
     archive: { view_idx: true, view_all: true, view_own: true, create: true, edit: true, delete: false, stamp: true, export: true },
-    finance: { view_idx: true, view_all_payments: false, view_own_payments: true, manage_payments: false, collect_payment: false, generate_invoices: true, view_financial_reports: false, manage_installments: false, view_payments_tab: false }, 
-    reports: { view_idx: true, view_own_supervision: true, view_all_supervision: true, create_supervision: true, approve_supervision: true, delete_supervision: false, export_snapshots: true, view_internal: true, create_internal: true },
-    users: { view_idx: true, view_list: true, create: true, edit: true, delete: false, manage_permissions: false, view_audit_logs: true, manage_attendance: true, view_payroll: true, manage_leaves: true, view_performance: true },
-    system: { view_idx: false, manage_settings: false, manage_backups: false, manage_email: false, manage_users: false, manage_roles: false },
+    reports: { view_idx: true, view_all: true, view_own: true, create: true, export: true },
+    users: { view_idx: true, view_list: true, create: true, edit: true, delete: false, manage_permissions: false, view_audit_logs: true },
+    system: { view_idx: false, manage_settings: false, manage_backups: false },
     communication: { access_chat: true, view_announcements: true, moderate_chat: true },
-    approvals: { view_idx: true, view_own: true, view_pending: true, action_approve: true, action_reject: true, override_any: false },
-    clients: { view_idx: true, view_list: true, create: true, edit: true, delete: false }
-  },
-
-  accountant: {
-    projects: { view_idx: false, view_all: true, view_own: false, create: false, edit: false, delete: false, assign_team: false, create_payment_request: false, view_payment_requests: true, approve_payment_request: false, view_change_orders: true, create_change_order: false, approve_change_order: false, view_project_reports_tab: false },
-    archive: { view_idx: true, view_all: true, view_own: false, create: false, edit: false, delete: false, stamp: false, export: true },
-    finance: { view_idx: true, view_all_payments: true, view_own_payments: true, manage_payments: true, collect_payment: true, generate_invoices: true, view_financial_reports: true, manage_installments: true, view_payments_tab: true },
-    reports: { view_idx: true, view_own_supervision: false, view_all_supervision: false, create_supervision: false, approve_supervision: false, delete_supervision: false, export_snapshots: true, view_internal: true, create_internal: true },
-    users: { view_idx: false, view_list: false, create: false, edit: false, delete: false, manage_permissions: false, view_audit_logs: false, manage_attendance: false, view_payroll: false, manage_leaves: false, view_performance: false },
-    system: { view_idx: false, manage_settings: false, manage_backups: false, manage_email: false, manage_users: false, manage_roles: false },
-    communication: { access_chat: true, view_announcements: true, moderate_chat: false },
-    approvals: { view_idx: true, view_own: true, view_pending: false, action_approve: false, action_reject: false, override_any: false },
-    clients: { view_idx: true, view_list: true, create: false, edit: false, delete: false }
+    approvals: { view_idx: true, view_own: true, view_pending: true, action_approve: true, action_reject: true }
   },
   
+  // المشرف - صلاحيات تشغيلية
   supervisor: { 
-    projects: { view_idx: true, view_all: true, view_own: true, create: false, edit: true, delete: false, assign_team: false, create_payment_request: true, view_payment_requests: true, approve_payment_request: false, view_change_orders: true, create_change_order: true, approve_change_order: false, view_project_reports_tab: true },
-    archive: { view_idx: true, view_all: true, view_own: true, create: true, edit: true, delete: false, stamp: false, export: false },
-    finance: { view_idx: false, view_all_payments: false, view_own_payments: false, manage_payments: false, collect_payment: false, generate_invoices: false, view_financial_reports: false, manage_installments: false, view_payments_tab: false },
-    reports: { view_idx: true, view_own_supervision: true, view_all_supervision: true, create_supervision: true, approve_supervision: false, delete_supervision: false, export_snapshots: false, view_internal: true, create_internal: true },
-    users: { view_idx: false, view_list: false, create: false, edit: false, delete: false, manage_permissions: false, view_audit_logs: false, manage_attendance: false, view_payroll: false, manage_leaves: false, view_performance: false },
-    system: { view_idx: false, manage_settings: false, manage_backups: false, manage_email: false, manage_users: false, manage_roles: false },
+    archive: { view_idx: true, view_all: true, view_own: true, create: true, edit: true, delete: false, stamp: false, export: true },
+    reports: { view_idx: true, view_all: true, view_own: true, create: true, export: false },
+    users: { view_idx: false, view_list: false, create: false, edit: false, delete: false, manage_permissions: false, view_audit_logs: false },
+    system: { view_idx: false, manage_settings: false, manage_backups: false },
     communication: { access_chat: true, view_announcements: true, moderate_chat: false },
-    approvals: { view_idx: true, view_own: true, view_pending: false, action_approve: false, action_reject: false, override_any: false },
-    clients: { view_idx: false, view_list: false, create: false, edit: false, delete: false }
+    approvals: { view_idx: true, view_own: true, view_pending: false, action_approve: false, action_reject: false }
   },
 
+  // العضو العادي - صلاحيات أساسية
   member: {
-    projects: { view_idx: true, view_all: false, view_own: true, create: false, edit: false, delete: false, assign_team: false, create_payment_request: false, view_payment_requests: false, approve_payment_request: false, view_change_orders: false, create_change_order: false, approve_change_order: false, view_project_reports_tab: false },
     archive: { view_idx: true, view_all: false, view_own: true, create: true, edit: false, delete: false, stamp: false, export: false },
-    finance: { view_idx: false, view_all_payments: false, view_own_payments: false, manage_payments: false, collect_payment: false, generate_invoices: false, view_financial_reports: false, manage_installments: false, view_payments_tab: false },
-    reports: { view_idx: true, view_own_supervision: true, view_all_supervision: false, create_supervision: true, approve_supervision: false, delete_supervision: false, export_snapshots: false, view_internal: true, create_internal: true },
-    users: { view_idx: false, view_list: false, create: false, edit: false, delete: false, manage_permissions: false, view_audit_logs: false, manage_attendance: false, view_payroll: false, manage_leaves: false, view_performance: false },
-    system: { view_idx: false, manage_settings: false, manage_backups: false, manage_email: false, manage_users: false, manage_roles: false },
+    reports: { view_idx: true, view_all: false, view_own: true, create: false, export: false },
+    users: { view_idx: false, view_list: false, create: false, edit: false, delete: false, manage_permissions: false, view_audit_logs: false },
+    system: { view_idx: false, manage_settings: false, manage_backups: false },
     communication: { access_chat: true, view_announcements: true, moderate_chat: false },
-    approvals: { view_idx: true, view_own: true, view_pending: false, action_approve: false, action_reject: false, override_any: false },
-    clients: { view_idx: false, view_list: false, create: false, edit: false, delete: false }
+    approvals: { view_idx: true, view_own: true, view_pending: false, action_approve: false, action_reject: false }
   }
 }
 
@@ -544,66 +465,48 @@ const PermissionsEditor: React.FC<PermissionsEditorProps> = ({ permissions, onCh
     return current !== base
   }
 
-  // Categories - Clean text, no icons
+  // Categories - مشروع الاتصالات الإدارية فقط
   const permissionCategories = [
-    {
-      id: 'projects_tab',
-      label: 'المشاريع والعملاء',
-      description: 'إدارة المشاريع، العقود، العملاء، والتقارير الميدانية',
-      groups: [
-        { title: 'الوصول للمشاريع', moduleId: 'projects', actions: ['view_idx', 'view_all', 'view_own'] },
-        { title: 'التحكم بالمشاريع', moduleId: 'projects', actions: ['create', 'edit', 'delete', 'assign_team'] },
-        { title: 'المالية للمشاريع', moduleId: 'projects', actions: ['create_payment_request', 'view_payment_requests', 'approve_payment_request'] },
-        { title: 'أوامر التغيير', moduleId: 'projects', actions: ['view_change_orders', 'create_change_order', 'approve_change_order'] },
-        { title: 'إظهار التابات', moduleId: 'projects', actions: ['view_project_reports_tab'] },
-        { title: 'إدارة العملاء', moduleId: 'clients', actions: ['view_idx', 'view_list', 'create', 'edit', 'delete'] },
-        { title: 'تقارير الإشراف', moduleId: 'reports', actions: ['view_own_supervision', 'view_all_supervision', 'create_supervision', 'approve_supervision', 'delete_supervision', 'export_snapshots'] },
-        { title: 'التقارير الداخلية', moduleId: 'reports', actions: ['view_internal', 'create_internal'] }
-      ]
-    },
     {
       id: 'archive_tab',
       label: 'الاتصالات الإدارية',
-      description: 'الوثائق، الصادر/الوارد، الختم الإلكتروني',
+      description: 'إدارة المستندات والصادر والوارد والختم الإلكتروني',
       groups: [
-        { title: 'الوصول للأرشيف', moduleId: 'archive', actions: ['view_idx', 'view_all', 'view_own'] },
-        { title: 'إدارة الوثائق', moduleId: 'archive', actions: ['create', 'edit', 'delete'] },
+        { title: 'الوصول', moduleId: 'archive', actions: ['view_idx', 'view_all', 'view_own'] },
+        { title: 'إدارة المستندات', moduleId: 'archive', actions: ['create', 'edit', 'delete'] },
         { title: 'الأدوات', moduleId: 'archive', actions: ['stamp', 'export'] }
       ]
     },
     {
-      id: 'finance_tab',
-      label: 'الإدارة المالية',
-      description: 'المدفوعات، الفواتير، والتقارير المالية العامة',
+      id: 'reports_tab',
+      label: 'التقارير',
+      description: 'عرض وإنشاء وتصدير التقارير',
       groups: [
-        { title: 'الوصول', moduleId: 'finance', actions: ['view_idx', 'view_all_payments', 'view_own_payments'] },
-        { title: 'الإجراءات المالية', moduleId: 'finance', actions: ['manage_payments', 'collect_payment', 'generate_invoices', 'view_financial_reports', 'manage_installments'] },
-        { title: 'إظهار التابات', moduleId: 'finance', actions: ['view_payments_tab'] }
+        { title: 'الوصول', moduleId: 'reports', actions: ['view_idx', 'view_all', 'view_own'] },
+        { title: 'الإدارة', moduleId: 'reports', actions: ['create', 'export'] }
       ]
     },
     {
       id: 'users_tab',
       label: 'المستخدمين',
-      description: 'إدارة الهيكل التنظيمي وصلاحيات الوصول',
+      description: 'إدارة المستخدمين والصلاحيات',
       groups: [
         { title: 'إدارة المستخدمين', moduleId: 'users', actions: ['view_idx', 'view_list', 'create', 'edit', 'delete'] },
-        { title: 'الأمان والصلاحيات', moduleId: 'users', actions: ['manage_permissions', 'view_audit_logs'] },
-        { title: 'الموارد البشرية', moduleId: 'users', actions: ['manage_attendance', 'view_payroll', 'manage_leaves', 'view_performance'] }
+        { title: 'الأمان', moduleId: 'users', actions: ['manage_permissions', 'view_audit_logs'] }
       ]
     },
     {
       id: 'system_tab',
-      label: 'إعدادات النظام',
-      description: 'تكوين النظام، النسخ الاحتياطي، والإدارة العامة',
+      label: 'النظام',
+      description: 'إعدادات النظام والنسخ الاحتياطي',
       groups: [
-        { title: 'النظام العام', moduleId: 'system', actions: ['view_idx', 'manage_settings', 'manage_backups', 'manage_email'] },
-        { title: 'التحكم الإداري', moduleId: 'system', actions: ['manage_users', 'manage_roles'] }
+        { title: 'الإعدادات', moduleId: 'system', actions: ['view_idx', 'manage_settings', 'manage_backups'] }
       ]
     },
     {
       id: 'communication_tab',
       label: 'التواصل',
-      description: 'الشات الداخلي والإعلانات',
+      description: 'الدردشة الداخلية والإعلانات',
       groups: [
         { title: 'الدردشة', moduleId: 'communication', actions: ['access_chat', 'view_announcements', 'moderate_chat'] }
       ]
@@ -611,70 +514,38 @@ const PermissionsEditor: React.FC<PermissionsEditorProps> = ({ permissions, onCh
     {
       id: 'approvals_tab',
       label: 'الاعتمادات',
-      description: 'مركز الموافقات والطلبات المعلقة',
+      description: 'الموافقات والطلبات',
       groups: [
         { title: 'العرض', moduleId: 'approvals', actions: ['view_idx', 'view_own', 'view_pending'] },
-        { title: 'اتخاذ القرار', moduleId: 'approvals', actions: ['action_approve', 'action_reject', 'override_any'] }
+        { title: 'الإجراءات', moduleId: 'approvals', actions: ['action_approve', 'action_reject'] }
       ]
     }
   ]
 
-  // Arabic Labels Map - Full synchronization with backend
+  // Arabic Labels
   const actionLabels: Record<string, string> = {
-    view_idx: 'القسم بالسايدبار (عرض)',
+    view_idx: 'عرض في السايدبار',
     view_all: 'عرض الكل',
     view_own: 'عرض الخاص فقط',
     create: 'إنشاء جديد',
-    edit: 'تعديل البيانات',
-    delete: 'حذف البيانات',
-    assign_team: 'تعيين فريق العمل',
-    create_payment_request: 'إنشاء طلب دفعة',
-    view_payment_requests: 'عرض طلبات الدفع',
-    approve_payment_request: 'اعتماد الدفعات',
-    view_change_orders: 'عرض أوامر التغيير',
-    create_change_order: 'إنشاء أمر تغيير',
-    approve_change_order: 'اعتماد أمر تغيير',
-    view_project_reports_tab: 'تاب تقارير المشاريع',
-    stamp: 'استخدام الختم',
-    export: 'تصدير البيانات',
-    view_all_payments: 'عرض كل المدفوعات',
-    view_own_payments: 'عرض مدفوعات مشاريعي',
-    manage_payments: 'إدارة المدفوعات',
-    collect_payment: 'تحصيل الدفعات',
-    generate_invoices: 'إصدار فواتير',
-    view_financial_reports: 'تقارير مالية',
-    manage_installments: 'جدولة الأقساط',
-    view_payments_tab: 'تاب المدفوعات',
-    view_own_supervision: 'تقارير إشراف (خاصة)',
-    view_all_supervision: 'تقارير إشراف (الكل)',
-    create_supervision: 'إنشاء تقرير إشراف',
-    approve_supervision: 'اعتماد تقرير إشراف',
-    delete_supervision: 'حذف تقرير إشراف',
-    export_snapshots: 'طباعة/تصدير',
-    view_internal: 'عرض التقارير الداخلية',
-    create_internal: 'إنشاء تقرير داخلي',
+    edit: 'تعديل',
+    delete: 'حذف',
+    stamp: 'الختم الإلكتروني',
+    export: 'تصدير/طباعة',
     view_list: 'عرض القائمة',
     manage_permissions: 'إدارة الصلاحيات',
-    view_audit_logs: 'سجل العمليات (Audit)',
+    view_audit_logs: 'سجل العمليات',
     manage_settings: 'إعدادات النظام',
     manage_backups: 'النسخ الاحتياطي',
-    manage_email: 'إعدادات البريد',
-    manage_users: 'إدارة المستخدمين (System)',
-    manage_roles: 'إدارة الأدوار',
-    manage_attendance: 'الحضور والانصراف',
-    view_payroll: 'مسيرات الرواتب',
-    manage_leaves: 'الإجازات',
-    view_performance: 'تقييم الأداء',
-    access_chat: 'الوصول للشات',
+    access_chat: 'الوصول للدردشة',
     view_announcements: 'مشاهدة الإعلانات',
-    moderate_chat: 'إشراف على الشات',
-    view_pending: 'طلبات قيد الانتظار',
-    action_approve: 'صلاحية الموافقة',
-    action_reject: 'صلاحية الرفض',
-    override_any: 'تجاوز الصلاحيات (Admin)'
+    moderate_chat: 'إدارة الدردشة',
+    view_pending: 'الطلبات المعلقة',
+    action_approve: 'الموافقة',
+    action_reject: 'الرفض'
   }
 
-  const [activeTab, setActiveTab] = React.useState('projects_tab')
+  const [activeTab, setActiveTab] = React.useState('archive_tab')
   const [currentMode, setCurrentMode] = React.useState<'inherit' | 'custom'>(permissions.__mode || 'inherit')
 
   const toggleMode = (newMode: 'inherit' | 'custom') => {

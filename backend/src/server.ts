@@ -16,6 +16,7 @@ import stampRoutes from "./routes/stamp"
 import { errorHandler } from "./middleware/errorHandler"
 import { query } from "./config/database"
 import { logBuffer } from "./lib/logBuffer"
+import { authenticateToken, isAdmin } from "./middleware/auth"
 
 // Intercept console logs to populate admin status logs
 const originalLog = console.log
@@ -156,6 +157,8 @@ app.use('/api/barcodes', barcodeRoutes)
 app.use('/api/approvals', approvalRoutes)
 app.use('/api/notifications', notificationRoutes)
 app.use('/api/internal', internalMessagesRoutes)
+// Alias for internal-comm routes (frontend uses /internal-comm/)
+app.use('/api/internal-comm', internalMessagesRoutes)
 
 // Uploads route (accepts PDF via multipart/form-data) with rate limiting
 import uploadRoutes from './routes/uploads'
@@ -169,6 +172,33 @@ app.use('/uploads', express.static(uploadsDirStartup))
 // Admin status & logs (admin-only)
 import adminStatusRoutes from './routes/adminStatus'
 app.use('/api/admin', adminStatusRoutes)
+
+// System settings routes (alias for maintenance status)
+app.get('/api/system-settings/maintenance-status', async (req, res) => {
+  try {
+    // Redirect to admin route
+    const response = await fetch(`http://localhost:${PORT}/api/admin/maintenance-status`, {
+      headers: req.headers as any
+    })
+    const data = await response.json()
+    res.json(data)
+  } catch (e) {
+    res.json({ maintenance_mode: false })
+  }
+})
+app.put('/api/system-settings/maintenance_mode', authenticateToken, isAdmin, async (req: any, res: any) => {
+  try {
+    const response = await fetch(`http://localhost:${PORT}/api/admin/maintenance-mode`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...req.headers },
+      body: JSON.stringify(req.body)
+    })
+    const data = await response.json()
+    res.json(data)
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message })
+  }
+})
 
 // Ensure Admin User On Startup
 import { ensureAdminUser } from "./scripts/ensure-admin"

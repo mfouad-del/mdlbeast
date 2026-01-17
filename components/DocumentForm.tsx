@@ -167,8 +167,14 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
       ? `${formData.documentDate}T${new Date().toISOString().split('T')[1]}`
       : formData.documentDate || new Date().toISOString()
 
+    // Set sender/recipient based on document type:
+    // INCOMING: recipient = "MDLBEAST" (us), sender = user input
+    // OUTGOING: sender = "MDLBEAST" (us), recipient = user input
+    const finalSender = type === 'OUTGOING' ? 'MDLBEAST' : formData.sender
+    const finalRecipient = type === 'INCOMING' ? 'MDLBEAST' : formData.recipient
+
     // Do not pre-generate barcode on client; backend will assign numeric sequence
-    onSave({ ...formData, type, pdfFile, date: dateWithTime })
+    onSave({ ...formData, sender: finalSender, recipient: finalRecipient, type, pdfFile, date: dateWithTime })
   }
 
   return (
@@ -205,28 +211,21 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
             </div>
             {/* Internal number removed per new requirements */}
 
-            {/* Sender Field */}
+            {/* Sender Field - للوارد: حقل حر، للصادر: نحن */}
             <div className="space-y-2">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-tight flex items-center gap-1.5 mr-1">
                 <Landmark size={12} className="text-slate-400" /> من جهة
               </label>
-              { type === 'OUTGOING' && (companies || []).length > 0 ? (
-                <select
-                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-black text-slate-900 text-sm outline-none focus:border-slate-900 transition-all cursor-pointer"
-                  value={formData.sender}
-                  onChange={(e) => handleSelectChange('sender', e.target.value)}
-                  required
-                >
-                  <option value="">اختر جهة</option>
-                  {(companies || []).map((c) => (
-                    <option key={c.id} value={c.nameAr || c.name || c.id}>{c.nameAr || c.name || c.id}</option>
-                  ))}
-                </select>
+              { type === 'OUTGOING' ? (
+                <div className="w-full p-4 bg-slate-100 border border-slate-200 rounded-2xl text-slate-700 font-bold text-sm cursor-not-allowed">
+                  MDLBEAST
+                </div>
               ) : (
                 <input
                   required
                   type="text"
                   name="sender"
+                  placeholder="أدخل اسم الجهة المرسلة"
                   className="w-full p-4 bg-white border border-slate-200 rounded-2xl outline-none focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 transition-all text-slate-900 font-bold text-sm placeholder:text-slate-300 shadow-sm"
                   value={formData.sender}
                   onChange={handleInputChange}
@@ -234,28 +233,21 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
               )}
             </div>
 
-            {/* Recipient Field */}
+            {/* Recipient Field - للوارد: نحن، للصادر: حقل حر */}
             <div className="space-y-2">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-tight flex items-center gap-1.5 mr-1">
                 <UserIcon size={12} className="text-slate-400" /> إلى جهة
               </label>
-              { type === 'INCOMING' && (companies || []).length > 0 ? (
-                <select
-                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-black text-slate-900 text-sm outline-none focus:border-slate-900 transition-all cursor-pointer"
-                  value={formData.recipient}
-                  onChange={(e) => handleSelectChange('recipient', e.target.value)}
-                  required
-                >
-                  <option value="">اختر جهة</option>
-                  {(companies || []).map((c) => (
-                    <option key={c.id} value={c.nameAr || c.name || c.id}>{c.nameAr || c.name || c.id}</option>
-                  ))}
-                </select>
+              { type === 'INCOMING' ? (
+                <div className="w-full p-4 bg-slate-100 border border-slate-200 rounded-2xl text-slate-700 font-bold text-sm cursor-not-allowed">
+                  MDLBEAST
+                </div>
               ) : (
                 <input
                   required
                   type="text"
                   name="recipient"
+                  placeholder="أدخل اسم الجهة المستقبلة"
                   className="w-full p-4 bg-white border border-slate-200 rounded-2xl outline-none focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 transition-all text-slate-900 font-bold text-sm placeholder:text-slate-300 shadow-sm"
                   value={formData.recipient}
                   onChange={handleInputChange}

@@ -159,7 +159,7 @@ class ApiClient {
     } catch { /* ignore */ }
 
     // Public endpoints (everything else requires an access token)
-    const publicPrefixes = ['/auth/', '/version']
+    const publicPrefixes = ['/auth/', '/version', '/admin/maintenance-status']
     const isPublic = publicPrefixes.some(p => endpoint.startsWith(p))
 
     // If endpoint requires auth and we don't have a token, fail fast to avoid noisy 401s
@@ -708,6 +708,64 @@ class ApiClient {
 
   async deleteInternalMessage(id: number | string) {
     return this.request<any>(`/internal/${id}`, { method: 'DELETE' })
+  }
+
+  // Internal-comm endpoints (for new InternalCommunication component)
+  async getInternalCommUsers() {
+    return this.request<any[]>(`/internal-comm/users`)
+  }
+
+  async getInternalCommMessages(params?: { limit?: number; before?: number; query?: string; hasAttachments?: boolean }) {
+    const qs = new URLSearchParams()
+    if (params?.limit !== undefined) qs.set('limit', String(params.limit))
+    if (params?.before !== undefined) qs.set('before', String(params.before))
+    if (params?.query) qs.set('query', params.query)
+    if (params?.hasAttachments) qs.set('hasAttachments', 'true')
+    const suffix = qs.toString() ? `?${qs.toString()}` : ''
+    return this.request<any[]>(`/internal-comm/messages${suffix}`)
+  }
+
+  async postInternalCommMessage(payload: { content: string; mentions?: number[]; attachments?: any[] }) {
+    return this.request<any>(`/internal-comm/messages`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  }
+
+  async editInternalCommMessage(id: number, content: string) {
+    return this.request<any>(`/internal-comm/messages/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ content }),
+    })
+  }
+
+  async deleteInternalCommMessage(id: number) {
+    return this.request<any>(`/internal-comm/messages/${id}`, { method: 'DELETE' })
+  }
+
+  async pinInternalCommMessage(id: number, pinned: boolean) {
+    return this.request<any>(`/internal-comm/messages/${id}/pin`, {
+      method: 'POST',
+      body: JSON.stringify({ pinned }),
+    })
+  }
+
+  async starInternalCommMessage(id: number, starred: boolean) {
+    return this.request<any>(`/internal-comm/messages/${id}/star`, {
+      method: 'POST',
+      body: JSON.stringify({ starred }),
+    })
+  }
+
+  async reactToInternalCommMessage(id: number, emoji: string) {
+    return this.request<any>(`/internal-comm/messages/${id}/react`, {
+      method: 'POST',
+      body: JSON.stringify({ emoji }),
+    })
+  }
+
+  async sendTypingInternalComm() {
+    return this.request<any>(`/internal-comm/typing`, { method: 'POST' })
   }
 
   async markApprovalAsSeen(id: number | string) {
