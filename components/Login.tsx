@@ -85,7 +85,10 @@ export default function Login({ onLogin, logoUrl }: { onLogin?: (u: any) => void
     const hasToken = localStorage.getItem('auth_token')
     if (hadSession && !hasToken) {
       setShowDeploymentNotice(true)
-      setTimeout(() => setShowDeploymentNotice(false), 10000) // Hide after 10s
+      // Don't auto-hide - user needs to read it
+    } else if (!hadSession && !hasToken) {
+      // Clear any stale data
+      localStorage.clear()
     }
   }, [])
 
@@ -203,11 +206,20 @@ export default function Login({ onLogin, logoUrl }: { onLogin?: (u: any) => void
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {showDeploymentNotice && (
-              <div className="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-xl text-xs font-bold text-center mb-4">
-                <ShieldCheck size={16} className="inline ml-2" />
-                {lang === 'ar' 
-                  ? 'تم تحديث النظام. يرجى تسجيل الدخول مرة أخرى.' 
-                  : 'System updated. Please login again.'}
+              <div className="bg-blue-50 border-2 border-blue-300 text-blue-900 p-4 rounded-xl text-sm font-bold text-center mb-4 animate-pulse">
+                <ShieldCheck size={20} className="inline ml-2" />
+                <div className="mt-2">
+                  {lang === 'ar' 
+                    ? '🔄 تم تحديث النظام إلى إصدار جديد\nبياناتك محفوظة - يرجى تسجيل الدخول مرة أخرى' 
+                    : '🔄 System updated to new version\nYour data is safe - Please login again'}
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => setShowDeploymentNotice(false)}
+                  className="mt-2 text-xs text-blue-600 hover:text-blue-800 underline"
+                >
+                  {lang === 'ar' ? 'فهمت' : 'Got it'}
+                </button>
               </div>
             )}
 
