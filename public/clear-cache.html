@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,7 +8,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-            background: #0f172a;
+            background: #0b1220;
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -20,16 +20,16 @@
             position: fixed;
             inset: 0;
             background:
-              radial-gradient(800px 400px at 20% 10%, rgba(99,102,241,0.35), transparent 60%),
-              radial-gradient(700px 350px at 80% 30%, rgba(14,165,233,0.25), transparent 60%),
-              radial-gradient(900px 500px at 50% 90%, rgba(16,185,129,0.18), transparent 60%),
-              #0f172a;
+              radial-gradient(900px 450px at 20% 10%, rgba(79,70,229,0.30), transparent 60%),
+              radial-gradient(800px 400px at 80% 30%, rgba(14,165,233,0.18), transparent 60%),
+              radial-gradient(950px 520px at 50% 95%, rgba(16,185,129,0.14), transparent 60%),
+              #0b1220;
             pointer-events: none;
         }
         .container {
             background: rgba(255,255,255,0.98);
             padding: 28px;
-            border-radius: 24px;
+            border-radius: 26px;
             box-shadow: 0 30px 80px rgba(0,0,0,0.45);
             max-width: 520px;
             width: 100%;
@@ -37,7 +37,7 @@
             border: 1px solid rgba(226,232,240,0.8);
             backdrop-filter: blur(12px);
         }
-        h1 { color: #0f172a; font-size: 22px; font-weight: 900; margin-bottom: 10px; }
+        h1 { color: #0b1220; font-size: 22px; font-weight: 900; margin-bottom: 10px; letter-spacing: -0.01em; }
         .subtitle { color: #475569; font-size: 12px; margin-bottom: 30px; font-weight: 700; }
         .status {
             background: #f8fafc;
@@ -58,8 +58,8 @@
         .status-item:last-child { margin-bottom: 0; }
         .label { font-weight: 900; color: #334155; font-size: 12px; }
         .badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 900; }
-        .badge.success { background: #c6f6d5; color: #22543d; }
-        .badge.warning { background: #feebc8; color: #7c2d12; }
+        .badge.success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .badge.warning { background: #ffedd5; color: #9a3412; border: 1px solid #fed7aa; }
         button {
             background: #0f172a;
             color: white;
@@ -91,7 +91,7 @@
             width: 56px; height: 56px;
             margin: 0 auto 16px;
             border-radius: 18px;
-            background: #0f172a;
+            background: linear-gradient(135deg, #0f172a, #111827);
             color: white;
             display: flex;
             align-items: center;
@@ -102,26 +102,36 @@
         .lang-toggle {
             position: absolute;
             top: 10px;
-            left: 10px;
-            background: #f1f5f9;
-            border: none;
+            inset-inline-end: 10px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
             padding: 6px 12px;
             border-radius: 20px;
             font-size: 11px;
             font-weight: 700;
             cursor: pointer;
             color: #475569;
+            width: auto;
+            margin-bottom: 0;
         }
-        .lang-toggle:hover { background: #e2e8f0; }
+        .lang-toggle:hover { background: #f1f5f9; }
+
+        @media (max-width: 420px) {
+            body { padding: 12px; }
+            .container { padding: 18px; border-radius: 22px; }
+            h1 { font-size: 18px; }
+            .subtitle { margin-bottom: 18px; }
+            button { border-radius: 14px; }
+        }
     </style>
 </head>
 <body>
     <div class="bg"></div>
     <div class="container" style="position: relative;">
-        <button class="lang-toggle" onclick="toggleLang()">English</button>
+        <button class="lang-toggle" onclick="toggleLang()">العربية</button>
         <div class="icon">CC</div>
-        <h1 id="title">حل مشكلة تسجيل الدخول</h1>
-        <p class="subtitle" id="subtitle">مسح بيانات الجلسة لإصلاح مشكلة Access token required</p>
+        <h1 id="title">Fix Login Issues</h1>
+        <p class="subtitle" id="subtitle">Clear saved session data to fix “Access token required”</p>
         
         <div class="status">
             <div class="status-item">
@@ -145,7 +155,8 @@
     </div>
 
     <script>
-        var lang = 'ar';
+        // Default to English inside the modal/page (per product requirement)
+        var lang = 'en';
         var i18n = {
             ar: {
                 title: 'حل مشكلة تسجيل الدخول',
@@ -159,7 +170,7 @@
             },
             en: {
                 title: 'Fix Login Issues',
-                subtitle: 'Clear session data to fix Access token required error',
+                subtitle: 'Clear saved session data to fix “Access token required”',
                 clearBtn: 'Clear Data Now',
                 backBtn: 'Go Back',
                 success: '✅ Cleared successfully! Please login again',
@@ -181,6 +192,18 @@
             document.getElementById('success').textContent = i18n[lang].success;
             checkStorage();
         }
+
+        // Initialize UI based on default language
+        (function initLang() {
+            document.documentElement.lang = lang;
+            document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+            document.querySelector('.lang-toggle').textContent = i18n[lang].toggle;
+            document.getElementById('title').textContent = i18n[lang].title;
+            document.getElementById('subtitle').textContent = i18n[lang].subtitle;
+            document.getElementById('clearBtn').textContent = i18n[lang].clearBtn;
+            document.getElementById('backBtn').textContent = i18n[lang].backBtn;
+            document.getElementById('success').textContent = i18n[lang].success;
+        })();
 
         function checkStorage() {
             var token = localStorage.getItem('auth_token') || localStorage.getItem('token');

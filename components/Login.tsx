@@ -322,7 +322,7 @@ export default function Login({ onLogin, logoUrl }: { onLogin?: (u: any) => void
                 title="Clear cache"
                 src="/mdlbeast/clear-cache.html"
                 className="w-full"
-                style={{ height: 560 }}
+                style={{ height: 'min(560px, 72vh)' }}
               />
             </div>
           </div>

@@ -341,7 +341,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-[#F8FAFC] text-slate-900 overflow-hidden font-sans">
+    <div className="flex h-[100dvh] bg-[#F8FAFC] text-slate-900 overflow-hidden font-sans">
       {/* User Settings Modal */}
       {currentUser && (
         <UserSettingsModal
@@ -355,7 +355,86 @@ const App: React.FC = () => {
         />
       )}
       
-      <aside className={`${isSidebarCollapsed ? 'w-20' : 'w-72'} bg-white border-l border-slate-200 flex flex-col shrink-0 z-20 shadow-sm no-print h-full transition-all duration-300 relative`}>
+      {/* Mobile Sidebar Overlay */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <button
+            aria-label="Close menu"
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          <aside className="absolute inset-y-0 right-0 w-[86vw] max-w-[320px] bg-white border-l border-slate-200 flex flex-col shadow-2xl">
+            <div className="p-4 border-b border-slate-100 bg-gradient-to-br from-slate-50 to-white">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <img src='/mdlbeast/logo.png' className="h-10 w-auto object-contain" alt="Logo" />
+                  <div className="text-xs font-black text-slate-700">MDLBEAST</div>
+                </div>
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors"
+                  aria-label="Close"
+                >
+                  <X size={18} className="text-slate-700" />
+                </button>
+              </div>
+            </div>
+
+            <nav className="flex-1 px-3 py-4 overflow-y-auto custom-scrollbar overflow-x-hidden">
+              <button onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false) }} className={`w-full flex items-center gap-3 px-5 py-3.5 rounded-xl text-sm font-black transition-all ${activeTab === 'dashboard' ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}>
+                <LayoutDashboard size={18} /> لوحة التحكم
+              </button>
+
+              <div className="mt-3">
+                <div className="px-4 py-2 text-[11px] font-black text-slate-400 uppercase tracking-wider">الاتصالات الإدارية</div>
+                {([
+                  ['incoming', 'قيد وارد جديد', FilePlus],
+                  ['outgoing', 'قيد صادر جديد', FileMinus],
+                  ['list', 'الأرشيف والبحث', Search],
+                  ['scanner', 'تتبع الباركود', Scan],
+                  ['reports', 'تقارير الأرشيف', BarChart3],
+                ] as any[]).map(([id, label, Icon]) => (
+                  <button
+                    key={id}
+                    onClick={() => { setActiveTab(id); setMobileMenuOpen(false) }}
+                    className={`w-full flex items-center gap-3 px-5 py-3.5 rounded-xl text-sm font-black transition-all ${activeTab === id ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}
+                  >
+                    <Icon size={18} /> {label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-3">
+                <div className="px-4 py-2 text-[11px] font-black text-slate-400 uppercase tracking-wider">سير العمل</div>
+                {([
+                  ['approvals', 'نظام الإعتمادات', FileSignature],
+                  ['internal', 'التواصل الداخلي', FileText],
+                ] as any[]).map(([id, label, Icon]) => (
+                  <button
+                    key={id}
+                    onClick={() => { setActiveTab(id); setMobileMenuOpen(false) }}
+                    className={`w-full flex items-center gap-3 px-5 py-3.5 rounded-xl text-sm font-black transition-all ${activeTab === id ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}
+                  >
+                    <Icon size={18} /> {label}
+                  </button>
+                ))}
+              </div>
+            </nav>
+
+            <div className="p-4 border-t border-slate-200">
+              <button
+                onClick={() => { localStorage.removeItem('mdlbeast_session_user'); localStorage.removeItem('auth_token'); setCurrentUser(null); setMobileMenuOpen(false) }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-black text-red-700 bg-red-50 hover:bg-red-100 transition-colors"
+              >
+                <LogOut size={18} /> تسجيل الخروج
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {/* Desktop Sidebar */}
+      <aside className={`${isSidebarCollapsed ? 'w-20' : 'w-72'} bg-white border-l border-slate-200 hidden md:flex flex-col shrink-0 z-20 shadow-sm no-print h-full transition-all duration-300 relative`}>
         {/* Collapse Toggle */}
         <button
           onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
@@ -429,6 +508,13 @@ const App: React.FC = () => {
         {/* Navbar */}
         <nav className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between shrink-0 shadow-sm no-print">
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="md:hidden p-2 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors"
+              aria-label="Open menu"
+            >
+              <Menu size={18} className="text-slate-700" />
+            </button>
             <h1 className="text-lg font-black text-slate-800">
               {activeTab === 'dashboard' && 'لوحة التحكم'}
               {activeTab === 'incoming' && 'قيد وارد جديد'}

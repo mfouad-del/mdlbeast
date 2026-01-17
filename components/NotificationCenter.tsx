@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Bell, Check, Trash2, RefreshCcw, MailOpen, AlertCircle } from 'lucide-react'
 import { apiClient } from '@/lib/api-client'
 import AsyncButton from './ui/async-button'
@@ -25,7 +25,7 @@ export default function NotificationCenter() {
   const [error, setError] = useState<string | null>(null)
   const [unreadOnly, setUnreadOnly] = useState(false)
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -36,12 +36,11 @@ export default function NotificationCenter() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [unreadOnly])
 
   useEffect(() => {
     load()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unreadOnly])
+  }, [load])
 
   const unreadCount = useMemo(() => items.filter(i => !i.is_read).length, [items])
 
