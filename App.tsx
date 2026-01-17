@@ -4,7 +4,7 @@ import {
   Users, Briefcase, LogOut, Trash2, Building2, Plus, Lock,
   AlertCircle, DownloadCloud, UploadCloud, Database, RefreshCcw, ShieldCheck, Edit3, X, Check, Menu, FileSignature 
 } from 'lucide-react';
-import { DocType, Correspondence, DocStatus, SystemSettings, Company, User } from './types';
+import { DocType, Correspondence, DocStatus, SystemSettings, User } from './types';
 import { apiClient } from './lib/api-client';
 import Dashboard from './components/Dashboard';
 import DocumentForm from './components/DocumentForm';
@@ -14,7 +14,6 @@ import BarcodeScanner from './components/BarcodeScanner';
 import ReportGenerator from './components/ReportGenerator';
 import Login from './components/Login';
 import UserManagement from './components/UserManagement';
-import TenantManagement from './components/TenantManagement';
 import AdminStatus from './components/AdminStatus';
 import AsyncButton from './components/ui/async-button'
 import { LoadingProvider } from './components/ui/loading-context'
@@ -26,8 +25,6 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [docs, setDocs] = useState<Correspondence[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const backupFileInputRef = useRef<HTMLInputElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -39,23 +36,17 @@ const App: React.FC = () => {
     companies: []
   });
 
-  const [newCompany, setNewCompany] = useState({ nameAr: '', nameEn: '', logoUrl: '/mdlbeast/logo.png', signatureUrl: '' });
-  const [editingCompanyId, setEditingCompanyId] = useState<string | null>(null);
   const [globalError, setGlobalError] = useState<string | null>(null);
 
   const loadInitialData = async () => {
     try {
       setIsLoading(true);
-      // Tenants (companies)
-      const fetchedCompanies = await apiClient.getTenants().catch((e) => { console.warn('Tenants fetch failed', e); return [] as any[] })
-      setCompanies(fetchedCompanies);
       
       // Documents (global list)
       const fetchedDocs = await apiClient.getDocuments().catch((e) => { console.warn('Documents fetch failed', e); return [] as any[] })
       const normalized = (fetchedDocs || []).map((d: any) => ({
         id: d.id,
         barcode: d.barcode || d.barcode_id || '',
-        companyId: d.tenant_id || d.companyId || null,
         type: (String(d.type || '').toLowerCase().startsWith('in') || String(d.type) === 'وارد') ? DocType.INCOMING : DocType.OUTGOING,
         title: d.subject || d.title || '',
         sender: d.sender || '',
@@ -142,12 +133,6 @@ const App: React.FC = () => {
     return () => { window.removeEventListener('error', onError); window.removeEventListener('unhandledrejection', onRejection); }
   }, []);
 
-  useEffect(() => {
-    if (selectedCompanyId) {
-      apiClient.getDocuments({ search: '' }).then(setDocs).catch(() => {});
-    }
-  }, [selectedCompanyId]);
-
   const refreshDocuments = async () => {
     try {
       const fetchedDocs = await apiClient.getDocuments().catch(() => [])
@@ -189,8 +174,6 @@ const App: React.FC = () => {
     }
   }
 
-  const currentCompany = companies.find(c => c.id === selectedCompanyId) || companies[0];
-
   const handleSaveDoc = async (data: any) => {
     // Do not set barcode client-side; backend will generate numeric sequence.
     const docToSave = {
@@ -223,30 +206,7 @@ const App: React.FC = () => {
     alert('Restore via the web UI is disabled. Use the server-side migration tools or contact the administrator to restore backups.');
   };
 
-  const startEditCompany = (company: Company) => {
-    setEditingCompanyId(company.id);
-    setNewCompany({ nameAr: company.nameAr, nameEn: company.nameEn, logoUrl: company.logoUrl, signatureUrl: company.signatureUrl || '' });
-  };
-
-  const handleAddOrUpdateCompany = async () => {
-    if (!newCompany.nameAr) return;
-    try {
-      const slug = newCompany.nameAr.toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, '-').replace(/--+/g, '-')
-      if (editingCompanyId) {
-        await apiClient.updateTenant(editingCompanyId, { name: newCompany.nameAr, slug, logo_url: newCompany.logoUrl, signature_url: (newCompany as any).signatureUrl || undefined })
-        setEditingCompanyId(null)
-      } else {
-        await apiClient.createTenant({ name: newCompany.nameAr, slug, logo_url: newCompany.logoUrl, signature_url: (newCompany as any).signatureUrl || undefined })
-      }
-      setNewCompany({ nameAr: '', nameEn: '', logoUrl: '/mdlbeast/logo.png', signatureUrl: '' });
-      loadInitialData();
-    } catch (err) {
-      console.error('Tenant upsert failed', err);
-      alert('فشل تحديث/إنشاء المؤسسة على الخادم');
-    }
-  };
-
-  if (!currentUser) return <Login onLogin={(u) => { setCurrentUser(u); localStorage.setItem('mdlbeast_session_user', JSON.stringify(u)); }} logoUrl={currentCompany?.logoUrl || '/mdlbeast/logo.png'} />;
+  if (!currentUser) return <Login onLogin={(u) => { setCurrentUser(u); localStorage.setItem('mdlbeast_session_user', JSON.stringify(u)); }} logoUrl='/mdlbeast/logo.png' />;
 
   const NavItem = ({ id, label, icon: Icon, adminOnly = false }: any) => {
     // Show admin-only items for users whose role is 'admin' (case-insensitive)
@@ -266,7 +226,7 @@ const App: React.FC = () => {
       <aside className="w-72 bg-white border-l border-slate-200 flex flex-col shrink-0 z-20 shadow-sm no-print h-full">
         <div className="p-8 border-b border-slate-100 bg-slate-50/50">
            <div className="flex flex-col items-center text-center w-full">
-             {currentCompany && <img src={currentCompany.logoUrl} className="h-20 w-auto mb-4 object-contain drop-shadow-sm hover:scale-105 transition-transform duration-300" alt="Logo" />}
+             <img src='/mdlbeast/logo.png' className="h-20 w-auto mb-4 object-contain drop-shadow-sm hover:scale-105 transition-transform duration-300" alt="Logo" />
              <div className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] mb-6 leading-relaxed">مركز الإتصالات الإدارية</div>
            </div>
         </div>
@@ -311,12 +271,12 @@ const App: React.FC = () => {
             <div className="mb-6 p-3 bg-red-50 text-red-700 rounded-xl font-bold">{globalError}</div>
           )}
           {activeTab === 'dashboard' && <Dashboard docs={docs} />}
-          {activeTab === 'incoming' && <DocumentForm type={DocType.INCOMING} onSave={handleSaveDoc} companies={companies} />}
-          {activeTab === 'outgoing' && <DocumentForm type={DocType.OUTGOING} onSave={handleSaveDoc} companies={companies} />}
-          {activeTab === 'list' && <DocumentList docs={docs} settings={{...settings, orgName: currentCompany?.nameAr, logoUrl: currentCompany?.logoUrl, orgNameEn: currentCompany?.nameEn}} currentUser={currentUser} users={users} onRefresh={refreshDocuments} /> }
+          {activeTab === 'incoming' && <DocumentForm type={DocType.INCOMING} onSave={handleSaveDoc} companies={[]} />}
+          {activeTab === 'outgoing' && <DocumentForm type={DocType.OUTGOING} onSave={handleSaveDoc} companies={[]} />}
+          {activeTab === 'list' && <DocumentList docs={docs} settings={{...settings, orgName: 'MDLBEAST', logoUrl: '/mdlbeast/logo.png', orgNameEn: 'MDLBEAST'}} currentUser={currentUser} users={users} onRefresh={refreshDocuments} /> }
           {activeTab === 'scanner' && <BarcodeScanner />}
-          {activeTab === 'approvals' && <Approvals currentUser={currentUser} tenantSignatureUrl={(currentCompany as any)?.signatureUrl || (currentCompany as any)?.signature_url || ''} />}
-          {activeTab === 'reports' && <ReportGenerator docs={docs} settings={{orgName: currentCompany?.nameAr || '', logoUrl: currentCompany?.logoUrl || ''}} />}
+          {activeTab === 'approvals' && <Approvals currentUser={currentUser} tenantSignatureUrl='' />}
+          {activeTab === 'reports' && <ReportGenerator docs={docs} settings={{orgName: 'MDLBEAST', logoUrl: '/mdlbeast/logo.png'}} />}
           {activeTab === 'users' && <UserManagement users={users} onUpdateUsers={async () => { loadInitialData(); }} currentUserEmail={currentUser.email || currentUser.username || ''} />}
           {activeTab === 'change-password' && <ChangePassword />}
           {activeTab === 'admin-status' && <AdminStatus />}

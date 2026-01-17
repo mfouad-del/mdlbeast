@@ -542,11 +542,6 @@ class ApiClient {
     return this.request<{ url: string }>(`/uploads/signed-url?key=${encodeURIComponent(key)}`)
   }
 
-  // Tenants
-  async getTenants() {
-    return this.request<any[]>(`/tenants`)
-  }
-
   // Change own password
   async changePassword(current_password: string, new_password: string) {
     return this.request<any>(`/users/me/password`, {
@@ -560,26 +555,6 @@ class ApiClient {
     return this.request<any>(`/users/${id}/password`, {
       method: 'POST',
       body: JSON.stringify({ new_password }),
-    })
-  }
-
-  async createTenant(payload: { name: string; slug: string; logo_url?: string; signature_url?: string }) {
-    return this.request<any>(`/tenants`, {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
-  }
-
-  async updateTenant(id: number | string, payload: { name?: string; slug?: string; logo_url?: string; signature_url?: string }) {
-    return this.request<any>(`/tenants/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    })
-  }
-
-  async deleteTenant(id: number | string) {
-    return this.request<any>(`/tenants/${id}`, {
-      method: 'DELETE',
     })
   }
 

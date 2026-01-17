@@ -10,7 +10,6 @@ import documentRoutes from "./routes/documents"
 import userRoutes from "./routes/users"
 import barcodeRoutes from "./routes/barcodes"
 import reportRoutes from "./routes/reports"
-import tenantRoutes from "./routes/tenants"
 import snapshotRoutes from "./routes/snapshots"
 import approvalRoutes from "./routes/approvals"
 import { errorHandler } from "./middleware/errorHandler"
@@ -114,7 +113,6 @@ app.use('/api/users', userRoutes)
 // New module routes
 app.use('/api/barcodes', barcodeRoutes)
 app.use('/api/reports', reportRoutes)
-app.use('/api/tenants', tenantRoutes)
 app.use('/api/snapshots', snapshotRoutes)
 app.use('/api/approvals', approvalRoutes)
 
