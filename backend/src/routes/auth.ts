@@ -7,7 +7,8 @@ import { query } from "../config/database"
 import { logAudit } from "../services/auditService"
 
 const router = express.Router()
-const RECAPTCHA_SECRET_KEY = process.env.RECAPTCHA_SECRET_KEY || ""
+// Support both naming conventions to prevent configuration errors
+const RECAPTCHA_SECRET_KEY = process.env.RECAPTCHA_SECRET_KEY || process.env.RECAPTCHA_SECRET || ""
 
 // Verify reCAPTCHA token
 async function verifyRecaptcha(token: string): Promise<boolean> {
