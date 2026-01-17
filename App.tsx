@@ -478,13 +478,17 @@ const App: React.FC = () => {
       )}
 
       {/* Desktop Sidebar */}
-      <aside className={`${isSidebarCollapsed ? 'w-20' : 'w-72'} bg-white border-l border-slate-200 hidden md:flex flex-col shrink-0 z-20 shadow-sm no-print h-full transition-all duration-300 relative`}>
+      <aside className={`${isSidebarCollapsed ? 'w-20' : 'w-72'} bg-white ${dir === 'rtl' ? 'border-l' : 'border-r'} border-slate-200 hidden md:flex flex-col shrink-0 z-20 shadow-sm no-print h-full transition-all duration-300 relative`}>
         {/* Collapse Toggle */}
         <button
           onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          className="absolute -left-3 top-20 bg-white border border-slate-200 p-1 rounded-full shadow-md text-slate-500 hover:text-slate-900 z-50"
+          className={`absolute ${dir === 'rtl' ? '-left-3' : '-right-3'} top-20 bg-white border border-slate-200 p-1 rounded-full shadow-md text-slate-500 hover:text-slate-900 z-50`}
         >
-          {isSidebarCollapsed ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+          {isSidebarCollapsed ? (
+            dir === 'rtl' ? <ChevronLeft size={16} /> : <ChevronRight size={16} />
+          ) : (
+            dir === 'rtl' ? <ChevronRight size={16} /> : <ChevronLeft size={16} />
+          )}
         </button>
 
         <div className={`p-4 border-b border-slate-100 bg-gradient-to-br from-slate-50 to-white overflow-hidden transition-all duration-300 ${isSidebarCollapsed ? 'py-6 px-2' : 'p-4'}`}>
@@ -536,13 +540,21 @@ const App: React.FC = () => {
                <>
                  <div className="overflow-hidden text-right flex-1">
                    <div className="text-[11px] font-black truncate leading-tight">{currentUser.full_name}</div>
-                   <div className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{currentUser.role === 'admin' ? 'مدير نظام' : currentUser.role === 'manager' ? 'مدير تنفيذي' : currentUser.role === 'supervisor' ? 'مدير مباشر' : 'مستخدم'}</div>
+                   <div className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{currentUser.role === 'admin' ? t('role.admin') : currentUser.role === 'manager' ? t('role.manager') : currentUser.role === 'supervisor' ? t('role.supervisor') : t('role.member')}</div>
                  </div>
                  <Settings size={14} className="text-slate-400 group-hover:text-white group-hover:rotate-90 transition-all duration-300" />
                </>
              )}
           </button>
           
+          {!isSidebarCollapsed && (
+             <div className="mt-4 flex flex-col items-center justify-center gap-1 opacity-70 hover:opacity-100 transition-opacity">
+                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Developed By</span>
+                <a href="https://zaco.sa" target="_blank" rel="noopener noreferrer">
+                   <img src="/dev.png" alt="ZACO" className="h-6 w-auto opacity-80 hover:opacity-100 transition-all" />
+                </a>
+             </div>
+           )}
 
         </div>
       </aside>
@@ -648,7 +660,7 @@ const App: React.FC = () => {
               <div className="text-right">
                 <div className="text-xs font-black text-slate-800">{currentUser.full_name}</div>
                 <div className="text-[10px] text-slate-500 font-bold">
-                  {currentUser.role === 'admin' ? 'مدير نظام' : currentUser.role === 'manager' ? 'مدير' : currentUser.role === 'supervisor' ? 'مشرف' : 'مستخدم'}
+                  {currentUser.role === 'admin' ? t('role.admin') : currentUser.role === 'manager' ? t('role.manager') : currentUser.role === 'supervisor' ? t('role.supervisor') : t('role.member')}
                 </div>
               </div>
               <div className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-white font-black text-xs overflow-hidden">

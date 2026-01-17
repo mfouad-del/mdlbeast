@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Correspondence, DocType } from '../types';
 import { FileBarChart, Download, Printer, Filter, Info } from 'lucide-react';
 import { formatDateTimeGregorian } from "@/lib/utils";
+import { useI18n } from '../lib/i18n-context';
 
 interface ReportGeneratorProps {
   docs: Correspondence[];
@@ -12,6 +13,7 @@ interface ReportGeneratorProps {
 }
 
 const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => {
+  const { t, dir, locale } = useI18n();
   const [startDate, setStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
 
@@ -56,16 +58,36 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
     if (!printWindow) return;
 
     // Use settings from localStorage if available, or fallbacks
-    const orgName = settings.orgName || 'نظام إدارة الوثائق';
+    const orgName = settings.orgName || t('app.title');
     const logoUrl = settings.logoUrl || '';
 
+    // Pre-translate strings for the print view
+    const reportTitle = t('reports.title');
+    const reportSubtitle = t('reports.subtitle');
+    const reportDateLabel = t('reports.reportDate');
+    const periodLabel = t('reports.period');
+    const totalLabel = t('reports.total');
+    const incomingLabel = t('reports.incoming');
+    const outgoingLabel = t('reports.outgoing');
+    
+    const thBarcode = t('archive.unifiedID');
+    const thSubject = t('archive.subject');
+    const thType = t('archive.type');
+    const thFromTo = t('archive.from') + ' / ' + t('archive.to');
+    const thDate = t('archive.date');
+    
+    const footerText = t('reports.footer');
+    
     const tableRows = filteredDocs.map(doc => {
       const barcode = doc.barcode || (doc.referenceNumber || '')
       const title = doc.subject || doc.title || doc.description || '—'
-      const typeStr = (doc.type === DocType.INCOMING || String(doc.status) === 'وارد' || String(barcode).toUpperCase().startsWith('IN')) ? 'وارد' : 'صادر'
-      const counterparty = (typeStr === 'صادر' || doc.type === DocType.OUTGOING)
+      const typeStr = (doc.type === DocType.INCOMING || String(doc.status) === 'وارد' || String(barcode).toUpperCase().startsWith('IN')) ? t('archive.incoming') : t('archive.outgoing')
+      /* const counterparty = (typeStr === t('archive.outgoing') || doc.type === DocType.OUTGOING) // FIX: logic with translated string is risky */
+      const isOutgoing = doc.type === DocType.OUTGOING || String(barcode).toUpperCase().startsWith('OUT');
+      const counterparty = isOutgoing
         ? (doc.receiver || (doc as any).recipient || '—')
         : (doc.sender || '—')
+        
       const dateStr = doc.date || doc.documentDate || (doc.created_at ? new Date(doc.created_at).toISOString().split('T')[0] : '—')
       return `
         <tr>
@@ -81,13 +103,14 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
     printWindow.document.write(`
       <html>
         <head>
-          <title>تقرير المعاملات - ${startDate} إلى ${endDate}</title>
+          <title>${reportTitle} - ${startDate} / ${endDate}</title>
           <style>
             @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap');
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
             @page { size: A4; margin: 10mm; }
             body { 
-              font-family: 'Tajawal', sans-serif; 
-              direction: rtl; 
+              font-family: ${locale === 'ar' ? "'Tajawal', sans-serif" : "'Inter', sans-serif"}; 
+              direction: ${dir}; 
               padding: 5mm;
               color: #0f172a;
               line-height: 1.5;
@@ -106,13 +129,13 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
               margin-bottom: 30px;
             }
             .header-right {
-              text-align: right;
+              text-align: ${dir === 'rtl' ? 'right' : 'left'};
             }
             .header-center {
               text-align: center;
             }
             .header-left {
-              text-align: left;
+              text-align: ${dir === 'rtl' ? 'left' : 'right'};
               font-size: 12px;
               color: #64748b;
             }
@@ -138,7 +161,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
             /* Stats Cards */
             .stats-grid { 
               display: grid; 
-              grid-template-cols: repeat(3, 1fr); 
+              grid-template-columns: repeat(3, 1fr); 
               gap: 15px; 
               margin-bottom: 30px;
             }
@@ -163,8 +186,9 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
               font-weight: 900; 
               print-color-adjust: exact;
               -webkit-print-color-adjust: exact;
+              text-align: ${dir === 'rtl' ? 'right' : 'left'};
             }
-            td { padding: 8px; border: 1px solid #cbd5e1; vertical-align: middle; }
+            td { padding: 8px; border: 1px solid #cbd5e1; vertical-align: middle; text-align: ${dir === 'rtl' ? 'right' : 'left'}; }
             
             /* Footer */
             .footer { 
@@ -193,37 +217,37 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
             </div>
             <div class="header-center">
               <h1 class="org-title">${orgName}</h1>
-              <div class="report-subtitle">تقرير المعاملات والإحصائيات</div>
+              <div class="report-subtitle">${reportSubtitle}</div>
             </div>
             <div class="header-left">
-              <div>تاريخ التقرير: ${new Date().toLocaleDateString('ar-SA')}</div>
-              <div>الفترة: ${startDate} - ${endDate}</div>
+              <div>${reportDateLabel}: ${new Date().toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US')}</div>
+              <div>${periodLabel}: ${startDate} - ${endDate}</div>
             </div>
           </div>
 
           <div class="stats-grid">
             <div class="stat-card">
               <span class="stat-value">${stats.total}</span>
-              <span class="stat-label">إجمالي المعاملات</span>
+              <span class="stat-label">${totalLabel}</span>
             </div>
             <div class="stat-card">
               <span class="stat-value">${stats.incoming}</span>
-              <span class="stat-label">المعاملات الواردة</span>
+              <span class="stat-label">${incomingLabel}</span>
             </div>
             <div class="stat-card">
               <span class="stat-value">${stats.outgoing}</span>
-              <span class="stat-label">المعاملات الصادرة</span>
+              <span class="stat-label">${outgoingLabel}</span>
             </div>
           </div>
 
           <table>
             <thead>
               <tr>
-                <th>رقم القيد / الباركود</th>
-                <th>الموضوع</th>
-                <th>النوع</th>
-                <th>الجهة / المرسل</th>
-                <th>التاريخ</th>
+                <th>${thBarcode}</th>
+                <th>${thSubject}</th>
+                <th>${thType}</th>
+                <th>${thFromTo}</th>
+                <th>${thDate}</th>
               </tr>
             </thead>
             <tbody>
@@ -232,7 +256,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
           </table>
 
           <div class="footer">
-            تم استخراج هذا التقرير آلياً من النظام | ${new Date().toLocaleString('ar-SA')}
+            ${footerText} | ${new Date().toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')}
           </div>
 
           <script>
@@ -249,8 +273,8 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
     <div className="space-y-8 animate-in fade-in duration-700">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 font-heading tracking-tight">مركز التقارير</h1>
-          <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mt-2">تصدير وطباعة تقارير الأداء والأرشفة</p>
+          <h1 className="text-4xl font-black text-slate-900 font-heading tracking-tight">{t('reports.title')}</h1>
+          <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mt-2">{t('reports.description')}</p>
         </div>
       </header>
 
@@ -263,14 +287,14 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
                 <Filter size={24} />
               </div>
               <div>
-                <h3 className="text-lg font-black text-slate-900">تخصيص التقرير</h3>
-                <p className="text-xs font-bold text-slate-400">حدد النطاق الزمني والنوع</p>
+                <h3 className="text-lg font-black text-slate-900">{t('reports.customize')}</h3>
+                <p className="text-xs font-bold text-slate-400">{t('reports.selectRange')}</p>
               </div>
             </div>
 
             <div className="space-y-6">
               <div className="space-y-2">
-                <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-1">من تاريخ</label>
+                <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-1">{t('reports.fromDate')}</label>
                 <input
                   type="date"
                   value={startDate}
@@ -280,7 +304,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-1">إلى تاريخ</label>
+                <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-1">{t('reports.toDate')}</label>
                 <input
                   type="date"
                   value={endDate}
@@ -290,12 +314,12 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-1">نوع المعاملات</label>
+                <label className="text-xs font-black text-slate-500 uppercase tracking-widest mr-1">{t('reports.type')}</label>
                 <div className="grid grid-cols-3 gap-2 p-1.5 bg-slate-100 rounded-xl">
                   {[
-                    { id: 'ALL', label: 'الكل' },
-                    { id: 'INCOMING', label: 'وارد' },
-                    { id: 'OUTGOING', label: 'صادر' }
+                    { id: 'ALL', label: t('archive.all') },
+                    { id: 'INCOMING', label: t('archive.incoming') },
+                    { id: 'OUTGOING', label: t('archive.outgoing') }
                   ].map((opt) => (
                     <button
                       key={opt.id}
@@ -315,7 +339,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
 
             <div className="mt-8 pt-8 border-t border-slate-100">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-slate-400">عدد النتائج</span>
+                <span className="text-xs font-bold text-slate-400">{t('reports.resultsCount')}</span>
                 <span className="text-xl font-black text-slate-900">{filteredDocs.length}</span>
               </div>
               <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
@@ -329,12 +353,12 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
             <div className="bg-blue-50 p-5 rounded-3xl border border-blue-100">
               <div className="text-blue-600 mb-2"><FileBarChart size={20} /></div>
               <div className="text-2xl font-black text-slate-900">{stats.incoming}</div>
-              <div className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">وارد</div>
+              <div className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">{t('archive.incoming')}</div>
             </div>
             <div className="bg-indigo-50 p-5 rounded-3xl border border-indigo-100">
               <div className="text-indigo-600 mb-2"><FileBarChart size={20} /></div>
               <div className="text-2xl font-black text-slate-900">{stats.outgoing}</div>
-              <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">صادر</div>
+              <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">{t('archive.outgoing')}</div>
             </div>
           </div>
         </div>
@@ -345,9 +369,12 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
             <div className="absolute top-0 left-0 w-64 h-64 bg-white/5 rounded-full -ml-20 -mt-20 blur-3xl"></div>
             
             <div className="relative z-10">
-              <h2 className="text-2xl font-black mb-2">تصدير التقرير</h2>
+              <h2 className="text-2xl font-black mb-2">{t('reports.exportTitle')}</h2>
               <p className="text-slate-400 text-sm font-medium mb-8 max-w-md">
-                سيتم إنشاء تقرير تفصيلي يتضمن {filteredDocs.length} معاملة للفترة من {startDate} إلى {endDate}
+                 {t('reports.exportDesc')
+                    .replace('{count}', filteredDocs.length.toString())
+                    .replace('{start}', startDate)
+                    .replace('{end}', endDate)}
               </p>
 
               <div className="flex flex-wrap gap-4">
@@ -357,7 +384,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
                   className="flex items-center gap-3 bg-white text-slate-900 px-8 py-4 rounded-2xl font-black hover:bg-blue-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-white/10"
                 >
                   <Printer size={20} />
-                  <span>طباعة التقرير (PDF)</span>
+                  <span>{t('reports.printPDF')}</span>
                 </button>
 
                 <button
@@ -368,7 +395,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
                   className="flex items-center gap-3 bg-slate-800 text-white px-8 py-4 rounded-2xl font-black hover:bg-slate-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-slate-700"
                 >
                   <Download size={20} />
-                  <span>تصدير Excel / CSV</span>
+                  <span>{t('reports.exportCSV')}</span>
                 </button>
               </div>
             </div>
@@ -377,7 +404,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
           <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm min-h-[300px]">
             <div className="flex items-center gap-3 mb-6">
               <Info size={20} className="text-slate-400" />
-              <h3 className="text-lg font-black text-slate-900">معاينة سريعة</h3>
+              <h3 className="text-lg font-black text-slate-900">{t('reports.preview')}</h3>
             </div>
 
             {filteredDocs.length > 0 ? (
@@ -391,21 +418,21 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
                     <span className={`text-[10px] font-black px-2 py-1 rounded-lg ${
                       doc.type === 'INCOMING' ? 'bg-blue-100 text-blue-700' : 'bg-indigo-100 text-indigo-700'
                     }`}>
-                      {doc.type === 'INCOMING' ? 'وارد' : 'صادر'}
+                      {doc.type === 'INCOMING' ? t('archive.incoming') : t('archive.outgoing')}
                     </span>
                   </div>
                 ))}
                 {filteredDocs.length > 5 && (
                   <div className="text-center py-4 text-xs font-bold text-slate-400">
-                    + {filteredDocs.length - 5} معاملات أخرى...
+                    + {filteredDocs.length - 5} {t('reports.moreDocs')}...
                   </div>
                 )}
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-48 text-slate-400">
                 <Filter size={32} className="mb-3 opacity-20" />
-                <p className="font-bold">لا توجد بيانات للعرض</p>
-                <p className="text-xs mt-1">قم بتغيير فلاتر البحث لإظهار النتائج</p>
+                <p className="font-bold">{t('reports.noData')}</p>
+                <p className="text-xs mt-1">{t('reports.changeFilters')}</p>
               </div>
             )}
           </div>

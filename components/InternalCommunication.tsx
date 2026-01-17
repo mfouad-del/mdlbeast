@@ -21,7 +21,7 @@ import { apiClient } from '../lib/api-client';
 import { User } from '../types';
 import { formatDistanceToNow } from 'date-fns';
 import { arSA, enUS } from 'date-fns/locale';
-import { useLanguage } from '../lib/language-context';
+import { useI18n } from '../lib/i18n-context'; // Updated Import
 
 interface Message {
   id: number;
@@ -52,7 +52,7 @@ interface InternalCommunicationProps {
 }
 
 export default function InternalCommunication({ currentUser, users: propUsers }: InternalCommunicationProps) {
-    const { t, language } = useLanguage();
+    const { t, locale, dir } = useI18n(); // Updated Hook
     const canStartChat = Boolean((currentUser as any)?.permissions?.communication?.access_chat);
 
     const [messages, setMessages] = useState<Message[]>([]);
@@ -349,7 +349,7 @@ export default function InternalCommunication({ currentUser, users: propUsers }:
             await refetchLoaded();
             messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
         } catch (e) {
-            alert('فشل الإرسال: تحقق من الاتصال');
+            alert(t('internal.send_error'));
         } finally {
             setSending(false);
         }
@@ -423,12 +423,12 @@ export default function InternalCommunication({ currentUser, users: propUsers }:
             cancelEdit();
             await refetchLoaded();
         } catch {
-            alert('فشل تعديل الرسالة');
+            alert(t('internal.edit_error'));
         }
     };
 
     const doDelete = async (id: number) => {
-        if (!confirm('حذف الرسالة؟')) return;
+        if (!confirm(t('internal.delete_confirm'))) return;
         try {
             await (apiClient as any).request(`/internal-comm/${id}`, {
                 method: 'DELETE',
@@ -436,7 +436,7 @@ export default function InternalCommunication({ currentUser, users: propUsers }:
             });
             await refetchLoaded();
         } catch {
-            alert('فشل حذف الرسالة');
+            alert(t('internal.delete_error'));
         }
     };
 
@@ -447,9 +447,9 @@ export default function InternalCommunication({ currentUser, users: propUsers }:
         <div className="p-5 border-b border-slate-100 bg-slate-50/50">
           <h3 className="font-black text-slate-800 flex items-center gap-2">
             <Users size={20} className="text-slate-400" />
-            توجيه الرسالة إلى
+            {t('internal.select_recipient_title')}
           </h3>
-          <p className="text-xs text-slate-400 mt-1 font-bold">اختر المستلمين لرؤية الرسالة</p>
+          <p className="text-xs text-slate-400 mt-1 font-bold">{t('internal.select_recipient_subtitle')}</p>
         </div>
         
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
@@ -467,7 +467,7 @@ export default function InternalCommunication({ currentUser, users: propUsers }:
                 <div className={`p-2 rounded-lg ${selectedMentions.length === users.length ? 'bg-slate-700' : 'bg-slate-100'}`}>
                     <Users size={18} />
                 </div>
-                <span className="font-bold text-sm">{t('chat.all')} ({users.length})</span>
+                <span className="font-bold text-sm">{t('internal.all')} ({users.length})</span>
             </div>
 
             {users.filter(u => Number(u.id) !== Number(currentUser.id)).map(user => {
@@ -525,7 +525,7 @@ export default function InternalCommunication({ currentUser, users: propUsers }:
                              <input
                                  value={queryText}
                                  onChange={(e) => setQueryText(e.target.value)}
-                                 placeholder={t('chat.search_placeholder')}
+                                 placeholder={t('internal.search_placeholder')}
                                  className="w-full md:w-80 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm font-bold outline-none focus:ring-2 focus:ring-slate-200"
                              />
                          </div>
@@ -536,7 +536,7 @@ export default function InternalCommunication({ currentUser, users: propUsers }:
                                  onChange={(e) => setHasAttachmentsOnly(e.target.checked)}
                                  className="w-4 h-4"
                              />
-                             {t('chat.attachments_only')}
+                             {t('internal.attachments_only')}
                          </label>
                      </div>
                  </div>
@@ -563,7 +563,7 @@ export default function InternalCommunication({ currentUser, users: propUsers }:
             {messages.length === 0 && !loading && (
                 <div className="text-center py-20 opacity-50">
                     <MessageSquare size={48} className="mx-auto mb-4" />
-                    <p className="font-bold">{t('chat.start_new')}</p>
+                    <p className="font-bold">{t('internal.start_new')}</p>
                 </div>
             )}
 
@@ -573,9 +573,9 @@ export default function InternalCommunication({ currentUser, users: propUsers }:
                                 {Object.values(typingUsers)
                                     .slice(0, 2)
                                     .map((t) => t.name)
-                                    .join(language === 'ar' ? '، ' : ', ')}
+                                    .join(locale === 'ar' ? '، ' : ', ')}
                                 {Object.keys(typingUsers).length > 2 ? ' ...' : ''}
-                                {t('chat.typing')}
+                                {t('internal.typing')}
                             </div>
                         )}
             
@@ -588,10 +588,10 @@ export default function InternalCommunication({ currentUser, users: propUsers }:
                                 <Lock size={20} className="text-slate-400" />
                                 <div className="flex-1">
                                     <p className="text-xs font-bold text-slate-700 mb-1">
-                                        رسالة خاصة من {msg.sender_full_name || msg.sender_name}
+                                        {t('internal.private_msg')} {msg.sender_full_name || msg.sender_name}
                                     </p>
                                     <div className="flex items-center gap-1 text-[10px]">
-                                        <span>إلى:</span>
+                                        <span>{t('internal.to')}</span>
                                         <div className="flex -space-x-2 space-x-reverse">
                                             {Array.isArray(msg.mentions) && msg.mentions.slice(0, 5).map(uid => (
                                                 <div key={uid} className="w-5 h-5 rounded-full bg-slate-300 border border-white flex items-center justify-center text-[8px] font-bold">
@@ -606,7 +606,7 @@ export default function InternalCommunication({ currentUser, users: propUsers }:
                                         </div>
                                     </div>
                                 </div>
-                                <span className="text-[10px] font-mono">{formatDistanceToNow(new Date(msg.created_at), { addSuffix: true, locale: language === 'ar' ? arSA : enUS })}</span>
+                                <span className="text-[10px] font-mono">{formatDistanceToNow(new Date(msg.created_at), { addSuffix: true, locale: locale === 'ar' ? arSA : enUS })}</span>
                             </div>
                         </div>
                     );
@@ -640,14 +640,14 @@ export default function InternalCommunication({ currentUser, users: propUsers }:
                         <div className={`flex flex-col max-w-[70%] ${isMe ? 'items-end' : 'items-start'}`}>
                             <div className="flex items-center gap-2 mb-1 px-1">
                                 <span className="text-xs font-bold text-slate-700">{msg.sender_full_name || msg.sender_name}</span>
-                                <span className="text-[10px] text-slate-400">{formatDistanceToNow(new Date(msg.created_at), { addSuffix: true, locale: language === 'ar' ? arSA : enUS })}</span>
+                                <span className="text-[10px] text-slate-400">{formatDistanceToNow(new Date(msg.created_at), { addSuffix: true, locale: locale === 'ar' ? arSA : enUS })}</span>
                                                                 {msg.is_pinned && (
                                                                     <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">
-                                                                        <Pin size={10} /> مثبتة
+                                                                        <Pin size={10} /> {t('internal.pinned')}
                                                                     </span>
                                                                 )}
                                                                 {msg.edited_at && !msg.is_deleted && (
-                                                                    <span className="text-[10px] text-slate-400 font-medium">(معدلة)</span>
+                                                                    <span className="text-[10px] text-slate-400 font-medium">{t('internal.edited')}</span>
                                                                 )}
                             </div>
                             
@@ -657,7 +657,7 @@ export default function InternalCommunication({ currentUser, users: propUsers }:
                                                                 : 'bg-white border border-slate-100 text-slate-800'
                                                         }`}>
                                                             {msg.is_deleted ? (
-                                                                <span className={isMe ? 'text-blue-200' : 'text-slate-400 italic'}>تم حذف الرسالة</span>
+                                                                <span className={isMe ? 'text-blue-200' : 'text-slate-400 italic'}>{t('internal.msg_deleted')}</span>
                                                             ) : isEditing ? (
                                                                 <div className="space-y-2 w-full min-w-[200px]">
                                                                     <textarea
@@ -667,8 +667,8 @@ export default function InternalCommunication({ currentUser, users: propUsers }:
                                                                         rows={3}
                                                                     />
                                                                     <div className="flex items-center gap-2 justify-end">
-                                                                        <button onClick={cancelEdit} className="text-xs font-bold px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-current transition-colors">إلغاء</button>
-                                                                        <button onClick={saveEdit} className="text-xs font-bold px-3 py-1.5 rounded-lg bg-emerald-500 text-white shadow-sm hover:bg-emerald-600 transition-colors">حفظ</button>
+                                                                        <button onClick={cancelEdit} className="text-xs font-bold px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-current transition-colors">{t('common.cancel')}</button>
+                                                                        <button onClick={saveEdit} className="text-xs font-bold px-3 py-1.5 rounded-lg bg-emerald-500 text-white shadow-sm hover:bg-emerald-600 transition-colors">{t('common.save')}</button>
                                                                     </div>
                                                                 </div>
                                                             ) : (
@@ -717,7 +717,7 @@ export default function InternalCommunication({ currentUser, users: propUsers }:
                                                                             ? 'bg-amber-50 border-amber-200 text-amber-600'
                                                                             : 'bg-white border-transparent hover:border-slate-200 text-slate-400'
                                                                     }`}
-                                                                    title="تمييز بنجمة"
+                                                                    title={t('internal.star')}
                                                                 >
                                                                     <Star size={12} className={msg.is_starred ? "fill-amber-500 text-amber-500" : ""} />
                                                                 </button>
@@ -726,7 +726,7 @@ export default function InternalCommunication({ currentUser, users: propUsers }:
                                                                     <button
                                                                         onClick={() => doPin(msg.id, !msg.is_pinned)}
                                                                         className="text-[10px] font-bold px-2 py-1 rounded-full border bg-white border-transparent hover:border-slate-200 text-slate-400 inline-flex items-center gap-1 transition-all"
-                                                                        title="تثبيت"
+                                                                        title={t('internal.pin')}
                                                                     >
                                                                         <Pin size={12} />
                                                                     </button>
@@ -736,7 +736,7 @@ export default function InternalCommunication({ currentUser, users: propUsers }:
                                                                     <button
                                                                         onClick={() => startEdit(msg)}
                                                                         className="text-[10px] font-bold px-2 py-1 rounded-full border bg-white border-transparent hover:border-slate-200 text-slate-400 inline-flex items-center gap-1 transition-all"
-                                                                        title="تعديل"
+                                                                        title={t('common.edit')}
                                                                     >
                                                                         <Pencil size={12} />
                                                                     </button>
@@ -746,7 +746,7 @@ export default function InternalCommunication({ currentUser, users: propUsers }:
                                                                     <button
                                                                         onClick={() => doDelete(msg.id)}
                                                                         className="text-[10px] font-bold px-2 py-1 rounded-full border bg-white border-transparent hover:border-slate-200 text-red-500 inline-flex items-center gap-1 transition-all"
-                                                                        title="حذف"
+                                                                        title={t('common.delete')}
                                                                     >
                                                                         <Trash2 size={12} />
                                                                     </button>
@@ -776,8 +776,8 @@ export default function InternalCommunication({ currentUser, users: propUsers }:
                                                                                             )}
                                                                                         </div>
                                                                                         <div className="flex-1 min-w-0 text-right">
-                                                                                            <div className={`text-xs font-bold truncate ${isMe ? 'text-white' : 'text-slate-900'}`}>{att.name || 'مرفق'}</div>
-                                                                                            <div className={`text-[10px] ${isMe ? 'text-blue-200' : 'text-slate-500'}`}>{isImage ? 'استعراض' : isPdf ? 'ملف PDF' : 'فتح'}</div>
+                                                                                            <div className={`text-xs font-bold truncate ${isMe ? 'text-white' : 'text-slate-900'}`}>{att.name || t('internal.attachment_default')}</div>
+                                                                                            <div className={`text-[10px] ${isMe ? 'text-blue-200' : 'text-slate-500'}`}>{isImage ? t('internal.preview') : isPdf ? t('internal.type_pdf') : t('internal.open')}</div>
                                                                                         </div>
                                                                                         <div className="flex items-center gap-2">
                                                                                             {(isImage || isPdf) && (
@@ -785,7 +785,7 @@ export default function InternalCommunication({ currentUser, users: propUsers }:
                                                                                                     onClick={() => setPreview({ url: fileUrl, name: att.name, type: att.type })}
                                                                                                     className={`text-[10px] font-bold px-2 py-1 rounded-lg ${isMe ? 'bg-blue-600 text-white hover:bg-blue-500' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
                                                                                                 >
-                                                                                                    معاينة
+                                                                                                    {t('internal.preview')}
                                                                                                 </button>
                                                                                             )}
                                                                                             <a
@@ -794,7 +794,7 @@ export default function InternalCommunication({ currentUser, users: propUsers }:
                                                                                                 rel="noopener noreferrer"
                                                                                                 className={`text-[10px] font-bold px-2 py-1 rounded-lg ${isMe ? 'bg-blue-600 text-white hover:bg-blue-500' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
                                                                                             >
-                                                                                                تنزيل
+                                                                                                {t('common.download')}
                                                                                             </a>
                                                                                         </div>
                                                                                     </div>
@@ -806,17 +806,17 @@ export default function InternalCommunication({ currentUser, users: propUsers }:
                             {/* Mentions Footer */}
                             <div className="mt-1 flex items-center gap-1 text-[10px] text-slate-400 px-1 opacity-70">
                                 <Shield size={10} />
-                                <span>خاص لـ : </span>
+                                <span>{t('internal.private_to')} </span>
                                 {Array.isArray(msg.mentions) && msg.mentions.length > 0 ? (
                                     <span>
-                                        {msg.mentions.length === users.length ? t('chat.all') : 
+                                        {msg.mentions.length === users.length ? t('internal.all') : 
                                          msg.mentions.map(id => {
                                              const u = users.find(user => Number(user.id) === Number(id));
                                              return u?.full_name || u?.username || id;
-                                         }).join(language === 'ar' ? '، ' : ', ')}
+                                         }).join(locale === 'ar' ? '، ' : ', ')}
                                     </span>
                                 ) : (
-                                    <span>{t('chat.only_me')} {msg.sender_name}</span>
+                                    <span>{t('internal.only_me')} {msg.sender_name}</span>
                                 )}
                             </div>
                         </div>
@@ -831,14 +831,14 @@ export default function InternalCommunication({ currentUser, users: propUsers }:
                          {!canStartChat && (
                              <div className="mb-2 flex items-center gap-2 text-red-600 text-xs font-bold bg-red-50 p-2 rounded-lg">
                                  <AlertCircle size={14} />
-                                 {t('chat.no_permission')}
+                                 {t('internal.no_permission')}
                              </div>
                          )}
 
                          {selectedMentions.length === 0 && canStartChat && (
                  <div className="mb-2 flex items-center gap-2 text-amber-600 text-xs font-bold bg-amber-50 p-2 rounded-lg animate-pulse">
                      <AlertCircle size={14} />
-                     {t('chat.select_recipient')}
+                     {t('internal.select_recipient')}
                  </div>
              )}
              
@@ -850,7 +850,7 @@ export default function InternalCommunication({ currentUser, users: propUsers }:
                                                     setInputText(e.target.value);
                                                     scheduleTyping();
                                                 }}
-                        placeholder={t('chat.type_message')}
+                        placeholder={t('internal.type_message')}
                         className="w-full bg-transparent border-none outline-none resize-none text-sm font-bold min-h-[40px] max-h-32 p-2"
                         rows={1}
                         onKeyDown={(e) => {
@@ -884,7 +884,7 @@ export default function InternalCommunication({ currentUser, users: propUsers }:
                                                                 <button
                                                                     onClick={() => setFiles((prev) => prev.filter((_, idx) => idx !== i))}
                                                                     className="text-indigo-700 hover:text-indigo-900"
-                                                                    title={t('common.remove')}
+                                                                    title={t('internal.remove')}
                                                                 >
                                                                     <X size={14} />
                                                                 </button>
@@ -917,7 +917,7 @@ export default function InternalCommunication({ currentUser, users: propUsers }:
                 <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setPreview(null)}>
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
                         <div className="p-3 border-b border-slate-100 flex items-center justify-between">
-                            <div className="text-sm font-black text-slate-800 truncate">{preview.name || t('common.preview')}</div>
+                            <div className="text-sm font-black text-slate-800 truncate">{preview.name || t('internal.preview')}</div>
                             <button className="p-2 rounded-xl hover:bg-slate-100" onClick={() => setPreview(null)}>
                                 <X size={18} className="text-slate-600" />
                             </button>

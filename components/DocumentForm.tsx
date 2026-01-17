@@ -16,6 +16,8 @@ import {
 } from "lucide-react"
 import AsyncButton from './ui/async-button'
 import type { User } from '@/types'
+import { useI18n } from "@/lib/i18n-context"
+
 
 interface FormInputProps {
   label: string
@@ -81,6 +83,7 @@ interface FormDataState {
 }
 
 export default function DocumentForm({ type, onSave, companies }: DocumentFormProps) {
+  const { t, dir } = useI18n()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [file, setFile] = useState<File | undefined>(undefined)
   const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null)
@@ -158,7 +161,7 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
       }
     } catch (err) {
       console.error('Upload failed', err)
-      alert('فشل رفع الملف. حاول لاحقاً.')
+      alert(t('archive.upload_failed'))
       return
     }
 
@@ -188,12 +191,12 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
           </div>
           <div>
             <h2 className="text-3xl font-black text-slate-900 font-heading tracking-tight">
-              قيد {type === "INCOMING" ? "وارد" : "صادر"} جديد
+              {type === "INCOMING" ? t('archive.newIncoming') : t('archive.newOutgoing')}
             </h2>
             <p className="text-slate-400 font-bold text-[11px] uppercase tracking-[0.2em] mt-1">
-              المؤسسة المستقلة: زوايا البناء
+              {t('archive.institutionName')}
             </p>
-            <p className="text-xs text-slate-500 mt-2">ملاحظة: سيُولد رقم المعاملة تلقائياً عند الحفظ بشكل رقمي متسلسل (مثال: 0000001).</p>
+            <p className="text-xs text-slate-500 mt-2">{t('archive.barcodeNote')}</p>
           </div>
         </header>
 
@@ -201,7 +204,7 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <div className="md:col-span-2">
               <FormInput
-                label="موضوع المعاملة"
+                label={t('archive.subject')}
                 icon={ClipboardList}
                 name="title"
                 value={formData.title}
@@ -214,7 +217,7 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
             {/* Sender Field - للوارد: حقل حر، للصادر: نحن */}
             <div className="space-y-2">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-tight flex items-center gap-1.5 mr-1">
-                <Landmark size={12} className="text-slate-400" /> من جهة
+                <Landmark size={12} className="text-slate-400" /> {t('archive.sender')}
               </label>
               { type === 'OUTGOING' ? (
                 <div className="w-full p-4 bg-slate-100 border border-slate-200 rounded-2xl text-slate-700 font-bold text-sm cursor-not-allowed">
@@ -225,7 +228,7 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
                   required
                   type="text"
                   name="sender"
-                  placeholder="أدخل اسم الجهة المرسلة"
+                  placeholder={t('archive.senderPlaceholder')}
                   className="w-full p-4 bg-white border border-slate-200 rounded-2xl outline-none focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 transition-all text-slate-900 font-bold text-sm placeholder:text-slate-300 shadow-sm"
                   value={formData.sender}
                   onChange={handleInputChange}
@@ -236,7 +239,7 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
             {/* Recipient Field - للوارد: نحن، للصادر: حقل حر */}
             <div className="space-y-2">
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-tight flex items-center gap-1.5 mr-1">
-                <UserIcon size={12} className="text-slate-400" /> إلى جهة
+                <UserIcon size={12} className="text-slate-400" /> {t('archive.recipient')}
               </label>
               { type === 'INCOMING' ? (
                 <div className="w-full p-4 bg-slate-100 border border-slate-200 rounded-2xl text-slate-700 font-bold text-sm cursor-not-allowed">
@@ -247,7 +250,7 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
                   required
                   type="text"
                   name="recipient"
-                  placeholder="أدخل اسم الجهة المستقبلة"
+                  placeholder={t('archive.recipientPlaceholder')}
                   className="w-full p-4 bg-white border border-slate-200 rounded-2xl outline-none focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 transition-all text-slate-900 font-bold text-sm placeholder:text-slate-300 shadow-sm"
                   value={formData.recipient}
                   onChange={handleInputChange}
@@ -255,7 +258,7 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
               )}
             </div>
             <FormInput
-              label="تاريخ الصادر/الوارد"
+              label={t('archive.docDate')}
               icon={ClipboardList}
               name="documentDate"
               value={formData.documentDate}
@@ -265,7 +268,7 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
             />
             <div className="space-y-2">
               <label className="text-[11px] font-black text-slate-500 uppercase mr-1 tracking-widest">
-                المرفقات
+                {t('archive.attachments')}
               </label>
               <input
                 type="text"
@@ -273,7 +276,7 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
                 value={formData.attachmentCount}
                 onChange={(e) => handleInputChange(e as any)}
                 className="w-full p-4 bg-white border border-slate-200 rounded-2xl outline-none focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 transition-all text-slate-900 font-bold text-sm placeholder:text-slate-300 shadow-sm"
-                placeholder="مثال: 1 اسطوانة"
+                placeholder={t('archive.attachmentsPlaceholder')}
               />
             </div>
           </div>
@@ -281,45 +284,45 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-2">
               <label className="text-[11px] font-black text-slate-500 uppercase mr-1 tracking-widest">
-                تصنيف السرية
+                {t('archive.classification')}
               </label>
               <select
                 className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-black text-slate-900 text-sm outline-none focus:border-slate-900 transition-all cursor-pointer"
                 value={formData.security}
                 onChange={(e) => handleSelectChange("security", e.target.value)}
               >
-                <option value="عادي">عادي - متاح للجميع</option>
-                <option value="سري">سري - محدود الوصول</option>
+                <option value="عادي">{t('archive.security.normal')}</option>
+                <option value="سري">{t('archive.security.secret')}</option>
               </select>
             </div>
             <div className="space-y-2">
               <label className="text-[11px] font-black text-slate-500 uppercase mr-1 tracking-widest">
-                أهمية المعاملة
+                {t('archive.priority')}
               </label>
               <select
                 className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-black text-slate-900 text-sm outline-none focus:border-slate-900 transition-all cursor-pointer"
                 value={formData.priority}
                 onChange={(e) => handleSelectChange("priority", e.target.value)}
               >
-                <option value="عادي">معالجة اعتيادية</option>
-                <option value="عاجل">معالجة عاجلة</option>
+                <option value="عادي">{t('archive.priority.normal')}</option>
+                <option value="عاجل">{t('archive.priority.urgent')}</option>
               </select>
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="text-[11px] font-black text-slate-500 uppercase mr-1 tracking-widest">البيان (اختياري)</label>
+            <label className="text-[11px] font-black text-slate-500 uppercase mr-1 tracking-widest">{t('archive.statement')}</label>
             <textarea
               name="statement"
               value={formData.statement}
               onChange={(e) => setFormData((prev) => ({ ...prev, statement: e.target.value }))}
-              placeholder={`البيان والوصف الرسمي:\nتم قيد هذه المعاملة رقميًا وتوثيقها في السجل الموحد للمؤسسة، وتعتبر هذه النسخة أصلية بموجب\nالباركود المرجعي المسجل في أنظمة الحوكمة الرقمية`}
+              placeholder={t('archive.statementPlaceholder')}
               className="w-full min-h-[120px] p-4 bg-white border border-slate-200 rounded-2xl outline-none focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 transition-all text-slate-900 font-bold text-sm"
             />
           </div>
 
           <div className="p-12 bg-slate-50 rounded-[2.5rem] border-2 border-dashed border-slate-200 text-center hover:bg-slate-100/50 transition-all">
-            <div className="mb-4 text-sm font-black text-slate-700">عدد صفحات المرفق: <span className="font-extrabold">{file ? filePageCount || 1 : 0}</span></div>
+            <div className="mb-4 text-sm font-black text-slate-700">{t('archive.file.page_count')} <span className="font-extrabold">{file ? filePageCount || 1 : 0}</span></div>
 
             {!file ? (
               <div className="flex flex-col items-center gap-4">
@@ -328,9 +331,9 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
                 </div>
                 <div>
                   <h4 className="font-black text-slate-900 text-base font-heading">
-                    رفع المستند الأصلي لدمغه بالباركود
+                    {t('archive.file.upload_title')}
                   </h4>
-                  <p className="text-[11px] text-slate-400 font-bold uppercase mt-1 tracking-widest">تنسيق PDF فقط</p>
+                  <p className="text-[11px] text-slate-400 font-bold uppercase mt-1 tracking-widest">{t('archive.file.pdf_only')}</p>
                 </div>
                 <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".pdf" className="hidden" />
                 <button
@@ -338,7 +341,7 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
                   onClick={() => fileInputRef.current?.click()}
                   className="bg-slate-900 text-white px-10 py-3.5 rounded-xl font-black text-xs hover:bg-black transition-all mt-4"
                 >
-                  اختيار ملف PDF
+                  {t('archive.file.choose_pdf')}
                 </button>
               </div>
             ) : (
@@ -350,7 +353,7 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
                   <div>
                     <div className="font-black text-slate-900 text-sm">{file.name}</div>
                     <div className="text-[10px] font-black text-slate-400 uppercase">{(file.size/1024/1024).toFixed(2)} MB</div>
-                    {filePreviewUrl && <a href={filePreviewUrl} target="_blank" className="text-xs text-blue-600 underline">عرض المعاينة</a>}
+                    {filePreviewUrl && <a href={filePreviewUrl} target="_blank" className="text-xs text-blue-600 underline">{t('archive.file.preview')}</a>}
                   </div>
                 </div>
                 <button
@@ -369,7 +372,7 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
             onClickAsync={async () => { await handleSubmit() }}
             className="w-full bg-slate-900 text-white py-6 rounded-[1.5rem] font-black text-xl shadow-2xl hover:bg-black transition-all active:scale-[0.98] flex items-center justify-center gap-4 font-heading group"
           >
-            توليد الباركود الرقمي الموحد
+            {t('archive.file.generate_barcode')}
             <Shield size={24} className="text-blue-500 group-hover:scale-110 transition-transform" />
           </AsyncButton>
         </form>

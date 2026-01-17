@@ -11,6 +11,7 @@ import OfficialReceipt from "./OfficialReceipt"
 import PdfStamper from "./PdfStamper"
 import { apiClient } from "@/lib/api-client"
 import { Spinner } from "./ui/spinner"
+import { useI18n } from "@/lib/i18n-context"
 
 interface DocumentListProps {
   docs: Correspondence[]
@@ -22,6 +23,7 @@ interface DocumentListProps {
 }
 
 export default function DocumentList({ docs, settings, currentUser, users: _users, tenants, onRefresh }: DocumentListProps) {
+  const { t, locale, dir } = useI18n()
   const [searchTerm, setSearchTerm] = useState("")
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
@@ -105,13 +107,13 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
             return d
           })
         })
-        alert('تم إضافة المرفق بنجاح')
+        alert(t('archive.attachment_added'))
       } else {
-        alert('تم رفع الملف لكن فشل تحديث العرض. يرجى تحديث الصفحة.')
+        alert(t('archive.attachment_view_error'))
       }
     } catch (err: any) {
       console.error('Add attachment failed', err)
-      alert('فشل إضافة المرفق: ' + (err?.message || err))
+      alert(t('archive.attachment_failed') + (err?.message || err))
     } finally {
       setUploadingAttachmentFor(null)
       if (e.target) (e.target as any).value = ''
@@ -164,15 +166,15 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
       {/* Search & Filter Bar */}
       <div className="bg-white p-6 rounded-3xl border border-slate-300 shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-6 lg:grid-cols-12 gap-6 items-end">
-          {/* Search Input */}
+        {/* Search Input */}
           <div className="md:col-span-6 lg:col-span-4 space-y-2">
-            <label className="text-xs font-bold text-slate-500 mr-2">بحث سريع</label>
+            <label className="text-xs font-bold text-slate-500 mr-2">{t('archive.searchTitle')}</label>
             <div className="relative group">
-              <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={20} />
+              <Search className={`absolute ${dir==='rtl' ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors`} size={20} />
               <input
                 type="text"
-                placeholder="الباركود، الموضوع، الجهة..."
-                className="w-full pr-12 pl-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-bold text-sm"
+                placeholder={t('archive.searchPlaceholder')}
+                className={`w-full ${dir==='rtl' ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-bold text-sm`}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -183,7 +185,7 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
           <div className="md:col-span-6 lg:col-span-4 grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 mr-2 flex items-center gap-1">
-                <Calendar size={12} /> من تاريخ
+                <Calendar size={12} /> {t('common.fromDate')}
               </label>
               <input
                 type="date"
@@ -194,7 +196,7 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
             </div>
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 mr-2 flex items-center gap-1">
-                <Calendar size={12} /> إلى تاريخ
+                <Calendar size={12} /> {t('common.toDate')}
               </label>
               <input
                 type="date"
@@ -227,18 +229,18 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
             <button
               onClick={() => { setSearchTerm(""); setStartDate(""); setEndDate(""); setDirectionFilter("ALL"); }}
               className="p-3.5 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 hover:text-slate-700 transition-all"
-              title="إعادة تعيين الفلاتر"
-              aria-label="إعادة تعيين جميع الفلاتر"
+              title="Reset Filters"
+              aria-label="Reset Filters"
             >
               <ArrowRightLeft size={20} />
             </button>
             <button
               onClick={() => exportToCSV(filtered, "Registry_Report")}
               className="flex-1 bg-slate-900 text-white px-4 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-slate-800 transition-all shadow-lg hover:shadow-xl active:scale-95"
-              aria-label="استخراج تقرير بصيغة CSV"
+              aria-label={t('archive.extractReport')}
             >
               <FileSpreadsheet size={18} />
-              <span>استخراج تقرير</span>
+              <span>{t('archive.extractReport')}</span>
             </button>
           </div>
         </div>
@@ -250,20 +252,20 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
           <>
             {/* Desktop Table View */}
             <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-right border-collapse">
+              <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-slate-100 border-b border-slate-300">
                     <th className="px-6 py-4 text-[11px] font-black text-slate-700 uppercase tracking-wider text-center w-48">
-                      المعرف الموحد
+                      {t('archive.unifiedID')}
                     </th>
-                    <th className="px-6 py-4 text-[11px] font-black text-slate-700 uppercase tracking-wider">
-                      تفاصيل القيد
+                    <th className={`px-6 py-4 text-[11px] font-black text-slate-700 uppercase tracking-wider ${dir==='rtl' ? 'text-right' : 'text-left'}`}>
+                      {t('archive.docDetails')}
                     </th>
-                    <th className="px-6 py-4 text-[11px] font-black text-slate-700 uppercase tracking-wider w-64">
-                      البيانات الإضافية
+                    <th className={`px-6 py-4 text-[11px] font-black text-slate-700 uppercase tracking-wider w-64 ${dir==='rtl' ? 'text-right' : 'text-left'}`}>
+                      {t('archive.addDetails')}
                     </th>
-                    <th className="px-6 py-4 text-[11px] font-black text-slate-700 uppercase tracking-wider text-left w-48">
-                      الإجراءات
+                    <th className={`px-6 py-4 text-[11px] font-black text-slate-700 uppercase tracking-wider w-48 ${dir==='rtl' ? 'text-left' : 'text-right'}`}>
+                      {t('archive.actions')}
                     </th>
                   </tr>
                 </thead>
@@ -280,7 +282,7 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
                               ? 'bg-blue-50 text-blue-600 border-blue-100' 
                               : 'bg-purple-50 text-purple-600 border-purple-100'
                           }`}>
-                            {doc.type === 'INCOMING' ? 'وارد' : 'صادر'}
+                            {doc.type === 'INCOMING' ? t('archive.incoming') : t('archive.outgoing')}
                           </span>
                         </div>
                       </td>
@@ -293,11 +295,11 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
                           
                           <div className="flex flex-wrap gap-y-1 gap-x-4 text-xs text-slate-500">
                             <div className="flex items-center gap-1.5">
-                              <span className="font-bold text-slate-400">من:</span>
+                              <span className="font-bold text-slate-400">{t('archive.from')}:</span>
                               <span className="font-medium text-slate-700">{doc.sender || '—'}</span>
                             </div>
                             <div className="flex items-center gap-1.5">
-                              <span className="font-bold text-slate-400">إلى:</span>
+                              <span className="font-bold text-slate-400">{t('archive.to')}:</span>
                               <span className="font-medium text-slate-700">
                                 {doc.recipient || '—'}
                               </span>
@@ -312,7 +314,7 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
                                   try {
                                     const d = new Date((doc as any).displayDate || doc.date || doc.documentDate || '');
                                     if (isNaN(d.getTime())) return '---';
-                                    return d.toLocaleString('en-GB', { 
+                                    return d.toLocaleString(locale === 'ar' ? 'en-GB' : 'en-US', { 
                                       day: '2-digit', month: '2-digit', year: 'numeric', 
                                       hour: '2-digit', minute: '2-digit', hour12: true 
                                     }).replace(',', '');
@@ -343,7 +345,7 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
                                     )}
                                   </div>
                                   <div className="flex flex-col leading-none pl-1">
-                                    <span className="text-[9px] text-slate-400 font-bold mb-0.5">بواسطة</span>
+                                    <span className="text-[9px] text-slate-400 font-bold mb-0.5">{t('archive.by')}</span>
                                     <span className="text-[10px] font-black text-indigo-700">{creatorName}</span>
                                   </div>
                                </div>
@@ -355,7 +357,7 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
                       <td className="px-6 py-4 align-top">
                         <div className="space-y-2">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[10px] font-bold text-slate-400">المرفقات:</span>
+                            <span className="text-[10px] font-bold text-slate-400">{t('archive.attachments')}:</span>
                           </div>
                           
                           <div className="flex flex-wrap gap-1.5">
@@ -371,13 +373,13 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
                                       } catch(_e) { alert('فشل فتح المرفق') }
                                     }}
                                     className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-600 text-[10px] font-black flex items-center justify-center transition-all border border-slate-200 shadow-sm"
-                                    title={`عرض المرفق ${idx + 1}`}
+                                    title={`Preview ${idx + 1}`}
                                   >
                                     {idx + 1}
                                   </button>
                                   <button
                                     onClick={async () => {
-                                      if (!confirm(`هل تريد حذف المرفق ${idx + 1}؟`)) return
+                                      if (!confirm("Are you sure?")) return
                                       try {
                                         await apiClient.deleteAttachment(doc.id, idx)
                                         // Update local state immediately without refresh
@@ -396,13 +398,12 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
                                             return d
                                           })
                                         )
-                                        alert('تم حذف المرفق بنجاح')
                                       } catch(e: any) {
-                                        alert('فشل حذف المرفق: ' + (e?.message || e))
+                                        alert('Error: ' + (e?.message || e))
                                       }
                                     }}
                                     className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 hover:bg-red-600 text-white text-[8px] font-bold flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
-                                    title="حذف المرفق"
+                                    title="Delete Attachment"
                                   >
                                     ×
                                   </button>
@@ -419,7 +420,7 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
                             ) : (
                               <button 
                                 className="w-7 h-7 rounded-lg bg-white border border-dashed border-slate-300 text-slate-400 hover:border-blue-400 hover:text-blue-500 flex items-center justify-center transition-all"
-                                title="إضافة مرفق"
+                                title={t('common.create')}
                                 onClick={() => {
                                   const el = document.getElementById('addAttachmentInput') as HTMLInputElement | null
                                   if (!el) return
@@ -445,10 +446,10 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
                           <button
                             onClick={() => setStamperDoc(doc)}
                             className="px-3 h-7 rounded-lg bg-slate-900 text-white hover:bg-black flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg active:scale-95"
-                            title="ختم المستند"
+                            title={t('archive.stamp')}
                           >
                             <ScanText size={14} />
-                            <span className="text-[10px] font-bold">ختم المستند</span>
+                            <span className="text-[10px] font-bold">{t('archive.stamp')}</span>
                           </button>
 
                           <div className="flex items-center gap-1 opacity-100 sm:opacity-60 sm:group-hover:opacity-100 transition-opacity">
@@ -473,7 +474,7 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
                                     })
                                   }}
                                   className="w-7 h-7 flex items-center justify-center bg-blue-50 border border-blue-100 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm"
-                                  title="تعديل"
+                                  title={t('common.edit')}
                                 >
                                   <Edit3 size={14} />
                                 </button>
@@ -481,7 +482,7 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
                                 <AsyncButton
                                   className="w-7 h-7 flex items-center justify-center bg-red-50 border border-red-100 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition-all shadow-sm"
                                   onClickAsync={async () => {
-                                    if (!confirm('هل أنت متأكد من حذف هذا المستند؟')) return
+                                    if (!confirm(t('common.confirm') + '?')) return
                                     await apiClient.deleteDocument(doc.barcode)
                                     setLocalDocs(prev => prev.filter(d => d.barcode !== doc.barcode))
                                   }}
@@ -513,14 +514,14 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
                           ? 'bg-blue-50 text-blue-600 border-blue-100' 
                           : 'bg-purple-50 text-purple-600 border-purple-100'
                       }`}>
-                        {doc.type === 'INCOMING' ? 'وارد' : 'صادر'}
+                        {doc.type === 'INCOMING' ? t('archive.incoming') : t('archive.outgoing')}
                       </span>
                     </div>
                     <div className="flex gap-2">
                       <button
                         onClick={() => setStamperDoc(doc)}
                         className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-md active:scale-95"
-                        title="ختم المستند"
+                        title={t('archive.stamp')}
                       >
                         <ScanText size={16} />
                       </button>
@@ -534,11 +535,11 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
                     </h3>
                     <div className="flex flex-col gap-1 text-xs text-slate-500">
                       <div className="flex items-center gap-1">
-                        <span className="font-bold text-slate-400">من:</span>
+                        <span className="font-bold text-slate-400">{t('archive.from')}:</span>
                         <span>{doc.sender || '—'}</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <span className="font-bold text-slate-400">إلى:</span>
+                        <span className="font-bold text-slate-400">{t('archive.to')}:</span>
                         <span>{doc.recipient || '—'}</span>
                       </div>
                       {(doc.date || doc.documentDate || (doc as any).displayDate) && (
@@ -549,7 +550,7 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
                               try {
                                 const d = new Date((doc as any).displayDate || doc.date || doc.documentDate || '');
                                 if (isNaN(d.getTime())) return '---';
-                                return d.toLocaleString('en-GB', { 
+                                return d.toLocaleString(locale === 'ar' ? 'en-GB' : 'en-US', { 
                                   day: '2-digit', 
                                   month: '2-digit', 
                                   year: 'numeric', 
@@ -619,7 +620,7 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
                           </div>
                         ))
                       ) : (
-                        <span className="text-[10px] text-slate-300 font-bold">لا يوجد مرفقات</span>
+                        <span className="text-[10px] text-slate-300 font-bold">{t('archive.noAttachments')}</span>
                       )}
                       <button 
                         className="w-8 h-8 rounded-lg bg-white border border-dashed border-slate-300 text-slate-400 flex items-center justify-center"
@@ -658,7 +659,7 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
                         <AsyncButton
                           className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center"
                           onClickAsync={async () => {
-                            if (!confirm('هل أنت متأكد من حذف هذا المستند؟')) return
+                            if (!confirm(t('common.confirm') + '?')) return
                             await apiClient.deleteDocument(doc.barcode)
                             setLocalDocs(prev => prev.filter(d => d.barcode !== doc.barcode))
                           }}
@@ -674,10 +675,10 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
 
             {/* Pagination */}
             {filtered.length > 0 && (
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-slate-50 border-t border-slate-200">
+              <div className={`flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-slate-50 border-t border-slate-200 ${dir==='rtl' ? 'flex-col-reverse sm:flex-row' : ''}`}>
                 <div className="flex items-center gap-4">
                   <span className="text-sm text-slate-500 font-bold">
-                    عرض <span className="text-slate-900 font-black">{Math.min((currentPage - 1) * itemsPerPage + 1, filtered.length)}</span> - <span className="text-slate-900 font-black">{Math.min(currentPage * itemsPerPage, filtered.length)}</span> من أصل <span className="text-slate-900 font-black">{filtered.length}</span>
+                    {t('archive.pagination')} <span className="text-slate-900 font-black">{Math.min((currentPage - 1) * itemsPerPage + 1, filtered.length)}</span> - <span className="text-slate-900 font-black">{Math.min(currentPage * itemsPerPage, filtered.length)}</span> {t('archive.paginationOf')} <span className="text-slate-900 font-black">{filtered.length}</span>
                   </span>
                   
                   <select
@@ -685,28 +686,28 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
                     onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}
                     className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:ring-2 focus:ring-slate-200 outline-none"
                   >
-                    <option value={10}>10 / صفحة</option>
-                    <option value={20}>20 / صفحة</option>
-                    <option value={50}>50 / صفحة</option>
-                    <option value={100}>100 / صفحة</option>
+                    <option value={10}>10 / {t('archive.page')}</option>
+                    <option value={20}>20 / {t('archive.page')}</option>
+                    <option value={50}>50 / {t('archive.page')}</option>
+                    <option value={100}>100 / {t('archive.page')}</option>
                   </select>
                 </div>
 
                 {totalPages > 1 && (
-                  <div className="flex items-center gap-1">
+                  <div className={`flex items-center gap-1 ${dir==='rtl' ? 'flex-row-reverse' : ''}`}>
                     <button
                       onClick={() => setCurrentPage(1)}
                       disabled={currentPage === 1}
                       className="p-2 rounded-lg hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                     >
-                      <ChevronsRight size={16} className="text-slate-600" />
+                      {dir === 'rtl' ? <ChevronsRight size={16} className="text-slate-600" /> : <ChevronsLeft size={16} className="text-slate-600" />}
                     </button>
                     <button
                       onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                       disabled={currentPage === 1}
                       className="p-2 rounded-lg hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                     >
-                      <ChevronRight size={16} className="text-slate-600" />
+                      {dir === 'rtl' ? <ChevronRight size={16} className="text-slate-600" /> : <ChevronLeft size={16} className="text-slate-600" />}
                     </button>
 
                     <div className="flex items-center gap-1 px-2">
@@ -742,14 +743,14 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
                       disabled={currentPage === totalPages}
                       className="p-2 rounded-lg hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                     >
-                      <ChevronLeft size={16} className="text-slate-600" />
+                      {dir === 'rtl' ? <ChevronLeft size={16} className="text-slate-600" /> : <ChevronRight size={16} className="text-slate-600" />}
                     </button>
                     <button
                       onClick={() => setCurrentPage(totalPages)}
                       disabled={currentPage === totalPages}
                       className="p-2 rounded-lg hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                     >
-                      <ChevronsLeft size={16} className="text-slate-600" />
+                      {dir === 'rtl' ? <ChevronsLeft size={16} className="text-slate-600" /> : <ChevronsRight size={16} className="text-slate-600" />}
                     </button>
                   </div>
                 )}
@@ -761,13 +762,13 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
             <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">
               <Search size={32} className="opacity-20" />
             </div>
-            <p className="font-bold text-lg text-slate-600">لا توجد نتائج</p>
-            <p className="text-sm">جرب تغيير معايير البحث أو الفلاتر</p>
+            <p className="font-bold text-lg text-slate-600">{t('archive.noResults')}</p>
+            <p className="text-sm">{t('archive.tryChangingFilters')}</p>
             <button 
               onClick={() => { setSearchTerm(""); setStartDate(""); setEndDate(""); setDirectionFilter("ALL"); }}
               className="mt-4 text-blue-600 text-sm font-bold hover:underline"
             >
-              إعادة تعيين الفلاتر
+              {t('common.reset')}
             </button>
           </div>
         )}
@@ -815,10 +816,10 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
                   // Also refresh the main documents list to ensure consistency
                   if (onRefresh) onRefresh()
                   setEditingDoc(null)
-                  alert('تم حفظ التعديلات بنجاح')
+                  alert(t('archive.saveSuccess'))
                 } catch (err: any) {
                   console.error('Failed to update document', err)
-                  alert('فشل حفظ التعديلات: ' + (err?.message || 'حدث خطأ'))
+                  alert(t('archive.saveError') + ': ' + (err?.message || 'Error'))
                 } finally {
                   setEditPending(false)
                 }
@@ -827,44 +828,44 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
             >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-black text-slate-700 block">من (الجهة الأولى) *</label>
+                  <label className="text-sm font-black text-slate-700 block">{t('archive.from')} *</label>
                   <input
                     type="text"
                     required
                     value={editFormData.sender}
                     onChange={(e) => setEditFormData({...editFormData, sender: e.target.value})}
                     className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all font-bold"
-                    placeholder="اسم الجهة الأولى"
+                    placeholder={t('archive.sender')}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-black text-slate-700 block">إلى (الجهة الثانية) *</label>
+                  <label className="text-sm font-black text-slate-700 block">{t('archive.to')} *</label>
                   <input
                     type="text"
                     required
                     value={editFormData.receiver}
                     onChange={(e) => setEditFormData({...editFormData, receiver: e.target.value})}
                     className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all font-bold"
-                    placeholder="اسم الجهة الثانية"
+                    placeholder={t('archive.recipient')}
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-black text-slate-700 block">الموضوع/العنوان *</label>
+                <label className="text-sm font-black text-slate-700 block">{t('archive.subject')} *</label>
                 <input
                   type="text"
                   required
                   value={editFormData.subject}
                   onChange={(e) => setEditFormData({...editFormData, subject: e.target.value})}
                   className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all font-bold"
-                  placeholder="موضوع المعاملة"
+                  placeholder={t('archive.subject')}
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-black text-slate-700 block">التاريخ *</label>
+                  <label className="text-sm font-black text-slate-700 block">{t('archive.date')} *</label>
                   <input
                     type="date"
                     required
@@ -874,49 +875,49 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-black text-slate-700 block">الأولوية</label>
+                  <label className="text-sm font-black text-slate-700 block">{t('archive.priority')}</label>
                   <select
                     value={editFormData.priority}
                     onChange={(e) => setEditFormData({...editFormData, priority: e.target.value})}
                     className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all font-bold cursor-pointer"
                   >
-                    <option value="عاديه">عادي</option>
-                    <option value="عاجله">عاجل</option>
-                    <option value="عاجل">أولوية عالية</option>
+                    <option value="عاديه">{t('archive.normal')}</option>
+                    <option value="عاجله">{t('archive.urgent')}</option>
+                    <option value="عاجل">{t('archive.topPriority')}</option>
                   </select>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-black text-slate-700 block">المرفقات</label>
+                <label className="text-sm font-black text-slate-700 block">{t('archive.attachments')}</label>
                 <input
                   type="text"
                   value={editFormData.attachmentCount || ''}
                   onChange={(e) => setEditFormData({...editFormData, attachmentCount: e.target.value})}
                   className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all font-bold"
-                  placeholder="مثال: 1 اسطوانة"
+                  placeholder="e.g. 1 CD"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-black text-slate-700 block">التصنيف</label>
+                <label className="text-sm font-black text-slate-700 block">{t('archive.classification')}</label>
                 <select
                   value={editFormData.classification}
                   onChange={(e) => setEditFormData({...editFormData, classification: e.target.value})}
                   className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all font-bold cursor-pointer"
                 >
-                  <option value="عادي">عادي</option>
-                  <option value="سري">سري</option>
+                  <option value="عادي">{t('archive.normal')}</option>
+                  <option value="سري">{t('archive.secret')}</option>
                 </select>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-black text-slate-700 block">ملاحظات</label>
+                <label className="text-sm font-black text-slate-700 block">{t('archive.notes')}</label>
                 <textarea
                   value={editFormData.notes}
                   onChange={(e) => setEditFormData({...editFormData, notes: e.target.value})}
                   className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all font-bold min-h-[100px]"
-                  placeholder="ملاحظات إضافية"
+                  placeholder={t('archive.notesPlaceholder')}
                 />
               </div>
 
@@ -926,7 +927,7 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
                   disabled={editPending}
                   className="flex-1 bg-blue-600 text-white py-4 rounded-xl font-black text-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-lg shadow-blue-600/20"
                 >
-                  {editPending ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+                  {editPending ? t('common.saving') : t('common.save')}
                 </button>
                 <button
                   type="button"
@@ -934,7 +935,7 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
                   disabled={editPending}
                   className="flex-1 bg-slate-200 text-slate-700 py-4 rounded-xl font-black text-lg hover:bg-slate-300 disabled:opacity-60 transition-all"
                 >
-                  إلغاء
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>

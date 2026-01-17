@@ -27,7 +27,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { apiClient } from '../lib/api-client'
 import { useToast } from '../hooks/use-toast'
-import { useLanguage } from '../lib/language-context'
+import { useI18n } from '@/lib/i18n-context'
 import type { User } from '../types'
 import { ReactFlow, Background, Controls, useNodesState, useEdgesState, Position, useReactFlow, Node, Edge, ReactFlowProvider, Handle, MarkerType } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
@@ -137,25 +137,8 @@ interface CustomNode {
 // CONSTANTS
 // ============================================================================
 
-const POSITIONS = [
-  { value: '', label: '-- لم يُحدد --' },
-  { value: 'مدير عام', label: 'مدير عام' },
-  { value: 'مدير مشاريع', label: 'مدير مشاريع' },
-  { value: 'مدير قسم', label: 'مدير قسم' },
-  { value: 'مشرف', label: 'مشرف' },
-  { value: 'مهندس', label: 'مهندس' },
-  { value: 'فني', label: 'فني' },
-  { value: 'موظف', label: 'موظف' },
-  { value: 'متدرب', label: 'متدرب' },
-  { value: 'استشاري خارجي', label: 'استشاري خارجي' },
-]
+// Constants definitions moved to inner component
 
-const SCOPES = [
-  { value: 'self', label: 'بياناته فقط' },
-  { value: 'children', label: 'المرؤوسين المباشرين' },
-  { value: 'tree', label: 'كامل الفرع' },
-  { value: 'all', label: 'كل النظام' },
-]
 
 // ============================================================================
 // الصلاحيات الافتراضية - مشروع الاتصالات الإدارية
@@ -312,6 +295,7 @@ const getLayoutedElements = (nodes: CustomNode[], edges: Edge[], direction = 'TB
 
 const UserNode = ({ data }: { data: { user: UserWithChildren, onEdit: (user: UserWithChildren) => void, onDelete: (user: UserWithChildren) => void } }) => {
   const { user, onEdit, onDelete } = data
+  const { t } = useI18n()
 
   const getRoleIcon = (role: string) => {
     const r = String(role).toLowerCase()
@@ -330,7 +314,7 @@ const UserNode = ({ data }: { data: { user: UserWithChildren, onEdit: (user: Use
   }
 
   const getRoleLabel = (role: string) => { 
-      return user.role === 'admin' ? 'مدير نظام' : user.role === 'manager' ? 'مدير' : user.role === 'supervisor' ? 'مشرف' : 'مستخدم'
+      return t(`user.role.${role.toLowerCase()}`)
   }
 
   return (
@@ -446,7 +430,7 @@ interface PermissionsEditorProps {
 }
 
 const PermissionsEditor: React.FC<PermissionsEditorProps> = ({ permissions, onChange, canManagePermissions, role }) => {
-  const { t } = useLanguage()
+  const { t } = useI18n()
   const updatePermission = (category: keyof UserPermissions, action: string, value: boolean) => {
     const updated = { ...permissions }
     if (!updated[category]) {
@@ -469,80 +453,80 @@ const PermissionsEditor: React.FC<PermissionsEditorProps> = ({ permissions, onCh
   const permissionCategories = [
     {
       id: 'archive_tab',
-      label: 'الاتصالات الإدارية',
-      description: 'إدارة المستندات والصادر والوارد والختم الإلكتروني',
+      label: t('permissions.archive'),
+      description: t('permissions.archive.desc'),
       groups: [
-        { title: 'الوصول', moduleId: 'archive', actions: ['view_idx', 'view_all', 'view_own'] },
-        { title: 'إدارة المستندات', moduleId: 'archive', actions: ['create', 'edit', 'delete'] },
-        { title: 'الأدوات', moduleId: 'archive', actions: ['stamp', 'export'] }
+        { title: t('permissions.group.access'), moduleId: 'archive', actions: ['view_idx', 'view_all', 'view_own'] },
+        { title: t('permissions.group.manage'), moduleId: 'archive', actions: ['create', 'edit', 'delete'] },
+        { title: t('permissions.group.tools'), moduleId: 'archive', actions: ['stamp', 'export'] }
       ]
     },
     {
       id: 'reports_tab',
-      label: 'التقارير',
-      description: 'عرض وإنشاء وتصدير التقارير',
+      label: t('permissions.reports'),
+      description: t('permissions.reports.desc'),
       groups: [
-        { title: 'الوصول', moduleId: 'reports', actions: ['view_idx', 'view_all', 'view_own'] },
-        { title: 'الإدارة', moduleId: 'reports', actions: ['create', 'export'] }
+        { title: t('permissions.group.access'), moduleId: 'reports', actions: ['view_idx', 'view_all', 'view_own'] },
+        { title: t('permissions.group.manage'), moduleId: 'reports', actions: ['create', 'export'] }
       ]
     },
     {
       id: 'users_tab',
-      label: 'المستخدمين',
-      description: 'إدارة المستخدمين والصلاحيات',
+      label: t('permissions.users'),
+      description: t('permissions.users.desc'),
       groups: [
-        { title: 'إدارة المستخدمين', moduleId: 'users', actions: ['view_idx', 'view_list', 'create', 'edit', 'delete'] },
-        { title: 'الأمان', moduleId: 'users', actions: ['manage_permissions', 'view_audit_logs'] }
+        { title: t('permissions.group.manage'), moduleId: 'users', actions: ['view_idx', 'view_list', 'create', 'edit', 'delete'] },
+        { title: t('permissions.group.security'), moduleId: 'users', actions: ['manage_permissions', 'view_audit_logs'] }
       ]
     },
     {
       id: 'system_tab',
-      label: 'النظام',
-      description: 'إعدادات النظام والنسخ الاحتياطي',
+      label: t('permissions.system'),
+      description: t('permissions.system.desc'),
       groups: [
-        { title: 'الإعدادات', moduleId: 'system', actions: ['view_idx', 'manage_settings', 'manage_backups'] }
+        { title: t('permissions.group.settings'), moduleId: 'system', actions: ['view_idx', 'manage_settings', 'manage_backups'] }
       ]
     },
     {
       id: 'communication_tab',
-      label: 'التواصل',
-      description: 'الدردشة الداخلية والإعلانات',
+      label: t('permissions.communication'),
+      description: t('permissions.communication.desc'),
       groups: [
-        { title: 'الدردشة', moduleId: 'communication', actions: ['access_chat', 'view_announcements', 'moderate_chat'] }
+        { title: t('permissions.group.chat'), moduleId: 'communication', actions: ['access_chat', 'view_announcements', 'moderate_chat'] }
       ]
     },
     {
       id: 'approvals_tab',
-      label: 'الاعتمادات',
-      description: 'الموافقات والطلبات',
+      label: t('permissions.approvals'),
+      description: t('permissions.approvals.desc'),
       groups: [
-        { title: 'العرض', moduleId: 'approvals', actions: ['view_idx', 'view_own', 'view_pending'] },
-        { title: 'الإجراءات', moduleId: 'approvals', actions: ['action_approve', 'action_reject'] }
+        { title: t('permissions.group.display'), moduleId: 'approvals', actions: ['view_idx', 'view_own', 'view_pending'] },
+        { title: t('permissions.group.actions'), moduleId: 'approvals', actions: ['action_approve', 'action_reject'] }
       ]
     }
   ]
 
   // Arabic Labels
   const actionLabels: Record<string, string> = {
-    view_idx: 'عرض في السايدبار',
-    view_all: 'عرض الكل',
-    view_own: 'عرض الخاص فقط',
-    create: 'إنشاء جديد',
-    edit: 'تعديل',
-    delete: 'حذف',
-    stamp: 'الختم الإلكتروني',
-    export: 'تصدير/طباعة',
-    view_list: 'عرض القائمة',
-    manage_permissions: 'إدارة الصلاحيات',
-    view_audit_logs: 'سجل العمليات',
-    manage_settings: 'إعدادات النظام',
-    manage_backups: 'النسخ الاحتياطي',
-    access_chat: 'الوصول للدردشة',
-    view_announcements: 'مشاهدة الإعلانات',
-    moderate_chat: 'إدارة الدردشة',
-    view_pending: 'الطلبات المعلقة',
-    action_approve: 'الموافقة',
-    action_reject: 'الرفض'
+    view_idx: t('permissions.action.view_idx'),
+    view_all: t('permissions.action.view_all'),
+    view_own: t('permissions.action.view_own'),
+    create: t('permissions.action.create'),
+    edit: t('permissions.action.edit'),
+    delete: t('permissions.action.delete'),
+    stamp: t('permissions.action.stamp'),
+    export: t('permissions.action.export'),
+    view_list: t('permissions.action.view_list'),
+    manage_permissions: t('permissions.action.manage_permissions'),
+    view_audit_logs: t('permissions.action.view_audit_logs'),
+    manage_settings: t('permissions.action.manage_settings'),
+    manage_backups: t('permissions.action.manage_backups'),
+    access_chat: t('permissions.action.access_chat'),
+    view_announcements: t('permissions.action.view_announcements'),
+    moderate_chat: t('permissions.action.moderate_chat'),
+    view_pending: t('permissions.action.view_pending'),
+    action_approve: t('permissions.action.action_approve'),
+    action_reject: t('permissions.action.action_reject')
   }
 
   const [activeTab, setActiveTab] = React.useState('archive_tab')
@@ -576,8 +560,8 @@ const PermissionsEditor: React.FC<PermissionsEditorProps> = ({ permissions, onCh
       <div className="bg-white border-b border-slate-100 p-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h4 className="text-xl font-bold text-slate-800 tracking-tight">إدارة الصلاحيات</h4>
-            <p className="text-sm text-slate-500 mt-1">تحكم دقيق بصلاحيات الوصول والعمليات في النظام</p>
+            <h4 className="text-xl font-bold text-slate-800 tracking-tight">{t('permissions.manage_title')}</h4>
+            <p className="text-sm text-slate-500 mt-1">{t('permissions.manage_subtitle')}</p>
           </div>
           
           <div className="flex bg-slate-50 p-1.5 rounded-xl border border-slate-200">
@@ -590,7 +574,7 @@ const PermissionsEditor: React.FC<PermissionsEditorProps> = ({ permissions, onCh
                   : 'text-slate-500 hover:text-slate-900'
               }`}
             >
-              وراثة (Role Based)
+              {t('permissions.mode_inherit')}
             </button>
             <button
               type="button"
@@ -601,7 +585,7 @@ const PermissionsEditor: React.FC<PermissionsEditorProps> = ({ permissions, onCh
                   : 'text-slate-500 hover:text-slate-900'
               }`}
             >
-              مخصص (Custom)
+              {t('permissions.mode_custom')}
             </button>
           </div>
         </div>
@@ -609,7 +593,7 @@ const PermissionsEditor: React.FC<PermissionsEditorProps> = ({ permissions, onCh
         {currentMode === 'custom' && (
           <div className="mt-4 p-3 bg-amber-50 border border-amber-100 rounded-lg text-amber-800 text-xs font-bold flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
-            تنبيه: أنت الآن في الوضع المخصص. لن يتأثر هذا المستخدم بأي تحديثات مستقبلية لصلاحيات دوره الأساسي.
+            {t('permissions.custom_warning')}
           </div>
         )}
       </div>
@@ -736,7 +720,28 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
   currentUserEmail: _currentUserEmail, 
   currentUserRole 
 }) => {
-  const { t, language } = useLanguage()
+  const { t, locale } = useI18n()
+  
+  const POSITIONS = [
+    { value: '', label: t('user.position.none') },
+    { value: 'مدير عام', label: t('user.position.general_manager') },
+    { value: 'مدير مشاريع', label: t('user.position.project_manager') },
+    { value: 'مدير قسم', label: t('user.position.department_manager') },
+    { value: 'مشرف', label: t('user.position.supervisor') },
+    { value: 'مهندس', label: t('user.position.engineer') },
+    { value: 'فني', label: t('user.position.technician') },
+    { value: 'موظف', label: t('user.position.employee') },
+    { value: 'متدرب', label: t('user.position.intern') },
+    { value: 'استشاري خارجي', label: t('user.position.consultant') },
+  ]
+
+  const SCOPES = [
+    { value: 'self', label: t('user.scope.self') },
+    { value: 'children', label: t('user.scope.children') },
+    { value: 'tree', label: t('user.scope.tree') },
+    { value: 'all', label: t('user.scope.all') },
+  ]
+
   const [viewMode, setViewMode] = useState<'tree' | 'list'>('tree')
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingUser, setEditingUser] = useState<UserWithChildren | null>(null)
@@ -983,8 +988,10 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
 
   const handleDelete = async (user: UserWithChildren) => {
     const confirmMsg = user.children && user.children.length > 0
-      ? `هل أنت متأكد من حذف "${user.full_name}"؟ لديه ${user.children.length} تابعين سيصبحون بدون مدير.`
-      : `هل أنت متأكد من حذف "${user.full_name}"؟`
+      ? t('user.delete_confirm_children')
+          .replace('{name}', user.full_name || user.username)
+          .replace('{count}', String(user.children.length))
+      : t('user.delete_confirm').replace('{name}', user.full_name || user.username)
     
     if (!confirm(confirmMsg)) return
 
@@ -992,16 +999,16 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
       await apiClient.deleteUser(String(user.id))
       
       toast({
-        title: "تم الحذف",
-        description: "تم حذف المستخدم بنجاح"
+        title: t('common.deleted'),
+        description: t('user.delete_success')
       })
       
       const updatedUsers = await apiClient.getUsers()
       onUpdateUsers(updatedUsers)
     } catch (err) {
       toast({
-        title: "خطأ",
-        description: "فشل حذف المستخدم",
+        title: t('common.error'),
+        description: t('user.delete_error'),
         variant: "destructive"
       })
     }
@@ -1203,10 +1210,10 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
         <div>
           <h2 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
             <Users className="text-blue-600" size={32} />
-            إدارة المستخدمين
+            {t('user.header.title')}
           </h2>
           <p className="text-slate-500 mt-2 font-medium">
-            الهيكل التنظيمي وإدارة الصلاحيات
+            {t('user.header.subtitle')}
           </p>
         </div>
         
@@ -1219,7 +1226,7 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
                 viewMode === 'tree' ? 'bg-white text-slate-900 shadow' : 'text-slate-500'
               }`}
             >
-              🌳 شجرة
+              🌳 {t('user.view.tree')}
             </button>
             <button
               onClick={() => setViewMode('list')}
@@ -1227,7 +1234,7 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
                 viewMode === 'list' ? 'bg-white text-slate-900 shadow' : 'text-slate-500'
               }`}
             >
-              📋 قائمة
+              📋 {t('user.view.list')}
             </button>
           </div>
           
@@ -1245,7 +1252,7 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
             }`}
           >
             {showAddForm ? <X size={18} /> : <UserPlus size={18} />}
-            {showAddForm ? 'إلغاء' : 'إضافة مستخدم'}
+            {showAddForm ? t('user.action.cancel') : t('user.action.add')}
           </button>
         </div>
       </div>
@@ -1258,7 +1265,7 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
         >
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xl font-black text-slate-900">
-              {editingUser ? 'تعديل مستخدم' : 'إضافة مستخدم جديد'}
+              {editingUser ? t('user.form.title.edit') : t('user.form.title.add')}
             </h3>
             <button 
               type="button" 
@@ -1273,7 +1280,7 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
             {/* Basic Info */}
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                الاسم الكامل *
+                {t('user.form.fullname')} *
               </label>
               <div className="relative">
                 <UserCircle className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
@@ -1289,7 +1296,7 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
 
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                البريد الإلكتروني *
+                {t('user.form.email')} *
               </label>
               <div className="relative">
                 <Mail className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
@@ -1310,7 +1317,7 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
 
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                كلمة المرور {!editingUser && '*'}
+                {t('user.form.password')} {!editingUser && '*'}
               </label>
               <div className="relative">
                 <Lock className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
@@ -1319,7 +1326,7 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
                   required={!editingUser}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder={editingUser ? 'اتركه فارغاً للإبقاء على القديم' : '••••••••'}
+                  placeholder={editingUser ? t('user.form.password_ph_edit') : '••••••••'}
                   className="w-full pr-12 p-4 bg-slate-50 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 font-bold transition-all"
                 />
               </div>
@@ -1327,7 +1334,7 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
 
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                الصلاحية الأساسية
+                {t('user.form.role')}
               </label>
               <div className="relative">
                 <Shield className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
@@ -1341,18 +1348,18 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
                   }}
                   className="w-full pr-12 p-4 bg-slate-50 rounded-xl outline-none font-bold transition-all appearance-none focus:bg-white focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="member">مستخدم عادي</option>
-                  <option value="supervisor">مشرف (صلاحيات إشراف)</option>
-                  <option value="accountant">محاسب (صلاحيات مالية)</option>
-                  <option value="manager">مدير (تحكم محدود)</option>
-                  <option value="admin">مدير نظام (تحكم كامل)</option>
+                  <option value="member">{t('user.role.desc.member')}</option>
+                  <option value="supervisor">{t('user.role.desc.supervisor')}</option>
+                  <option value="accountant">{t('user.role.desc.accountant')}</option>
+                  <option value="manager">{t('user.role.desc.manager')}</option>
+                  <option value="admin">{t('user.role.desc.admin')}</option>
                 </select>
               </div>
             </div>
 
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                المنصب الإداري
+                {t('user.form.position')}
               </label>
               <div className="relative">
                 <Building2 className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
@@ -1361,16 +1368,23 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
                   onChange={(e) => setFormData({ ...formData, position: e.target.value })}
                   className="w-full pr-12 p-4 bg-slate-50 rounded-xl outline-none font-bold transition-all appearance-none focus:bg-white focus:ring-2 focus:ring-blue-500"
                 >
-                  {POSITIONS.map(p => (
-                    <option key={p.value} value={p.value}>{p.label}</option>
-                  ))}
+                  <option value="">{t('position.none')}</option>
+                  <option value="General Manager">{t('position.gm')}</option>
+                  <option value="Project Manager">{t('position.pm')}</option>
+                  <option value="Department Manager">{t('position.dept_manager')}</option>
+                  <option value="Supervisor">{t('position.supervisor')}</option>
+                  <option value="Engineer">{t('position.engineer')}</option>
+                  <option value="Technician">{t('position.technician')}</option>
+                  <option value="Employee">{t('position.employee')}</option>
+                  <option value="Trainee">{t('position.trainee')}</option>
+                  <option value="External Consultant">{t('position.consultant')}</option>
                 </select>
               </div>
             </div>
 
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                المدير المباشر (التبعية)
+                {t('user.form.manager')}
               </label>
               <div className="relative">
                 <UserCircle className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
@@ -1379,7 +1393,7 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
                   onChange={(e) => setFormData({ ...formData, parent_id: e.target.value ? Number(e.target.value) : null })}
                   className="w-full pr-12 p-4 bg-slate-50 rounded-xl outline-none font-bold transition-all appearance-none focus:bg-white focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">-- بدون مدير (أعلى الهيكل) --</option>
+                  <option value="">{t('user.form.no_manager')}</option>
                   {flatUsers.map(u => (
                     <option key={u.id} value={u.id}>{u.full_name || u.username}</option>
                   ))}
@@ -1389,7 +1403,7 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
 
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                نطاق الرؤية
+                {t('user.form.scope')}
               </label>
               <select
                 value={formData.scope}
@@ -1397,14 +1411,14 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
                 className="w-full p-4 bg-slate-50 rounded-xl outline-none font-bold transition-all appearance-none focus:bg-white focus:ring-2 focus:ring-blue-500"
               >
                 {SCOPES.map(s => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
+                  <option key={s.value} value={s.value}>{t(`scope.${s.value}`)}</option>
                 ))}
               </select>
             </div>
 
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                رقم الهاتف
+                {t('user.form.phone')}
               </label>
               <div className="relative">
                 <Phone className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
@@ -1420,7 +1434,7 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
 
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                القسم
+                {t('user.form.department')}
               </label>
               <input
                 type="text"
@@ -1434,7 +1448,7 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
           {/* Notifications */}
           <div className="mt-6 p-4 bg-slate-50 rounded-xl">
             <h4 className="text-sm font-black text-slate-700 mb-3 flex items-center gap-2">
-              <Bell size={16} /> إعدادات الإشعارات
+              <Bell size={16} /> {t('user.form.notifications')}
             </h4>
             <div className="flex flex-wrap gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
@@ -1444,7 +1458,7 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
                   onChange={(e) => setFormData({ ...formData, notify_on_document: e.target.checked })}
                   className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-sm text-slate-600">القيود</span>
+                <span className="text-sm text-slate-600">{t('user.form.notify_doc')}</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -1453,7 +1467,7 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
                   onChange={(e) => setFormData({ ...formData, notify_on_approval: e.target.checked })}
                   className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-sm text-slate-600">الاعتمادات</span>
+                <span className="text-sm text-slate-600">{t('user.form.notify_approval')}</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -1462,7 +1476,7 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
                   onChange={(e) => setFormData({ ...formData, notify_on_report: e.target.checked })}
                   className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-sm text-slate-600">التقارير</span>
+                <span className="text-sm text-slate-600">{t('user.form.notify_report')}</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -1471,7 +1485,7 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
                   onChange={(e) => setFormData({ ...formData, notify_on_password_change: e.target.checked })}
                   className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-sm text-slate-600">تغيير كلمة المرور</span>
+                <span className="text-sm text-slate-600">{t('user.form.notify_password')}</span>
               </label>
             </div>
           </div>
@@ -1480,19 +1494,19 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
           {['manager', 'admin', 'supervisor'].includes(formData.role) && (
             <div className="mt-6 p-4 bg-emerald-50 rounded-xl border border-emerald-200">
               <h4 className="text-sm font-black text-emerald-700 mb-4 flex items-center gap-2">
-                <FileSignature size={16} /> التوقيع والختم
+                <FileSignature size={16} /> {t('user.form.signature_stamp')}
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Signature */}
                 <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
                   <div className="text-xs font-black text-slate-500 uppercase tracking-widest">
-                    التوقيع الشخصي
+                    {t('user.form.signature')}
                   </div>
                   {(signaturePreviewUrl || formData.signature_url) ? (
                     <div className="bg-slate-50 p-3 rounded-lg border border-green-200 min-h-[70px] flex items-center justify-center">
                       <img
                         src={signaturePreviewUrl || formData.signature_url}
-                        alt="التوقيع"
+                        alt="Signature"
                         className="h-14 w-full object-contain"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
@@ -1501,7 +1515,7 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
                     </div>
                   ) : (
                     <div className="bg-slate-50 p-3 rounded-lg border-2 border-dashed border-slate-300 min-h-[70px] flex items-center justify-center">
-                      <p className="text-sm text-slate-400 font-bold">لا يوجد توقيع</p>
+                      <p className="text-sm text-slate-400 font-bold">{t('user.form.no_signature')}</p>
                     </div>
                   )}
                   <label className={`cursor-pointer flex items-center justify-center gap-2 p-2.5 rounded-lg font-bold text-sm transition-all ${
@@ -1510,7 +1524,7 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
                       : 'bg-emerald-600 hover:bg-emerald-700'
                   } text-white`}>
                     <Upload size={14} className={isUploadingSignature ? 'animate-bounce' : ''} />
-                    {isUploadingSignature ? 'جارٍ الرفع...' : (signaturePreviewUrl || formData.signature_url) ? 'تغيير التوقيع' : 'رفع توقيع'}
+                    {isUploadingSignature ? t('user.form.uploading') : (signaturePreviewUrl || formData.signature_url) ? t('user.form.change_signature') : t('user.form.upload_signature')}
                     <input
                       type="file"
                       accept="image/*"
@@ -1527,13 +1541,13 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
                 {/* Stamp */}
                 <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
                   <div className="text-xs font-black text-slate-500 uppercase tracking-widest">
-                    ختم القسم
+                    {t('user.form.stamp')}
                   </div>
                   {(stampPreviewUrl || formData.stamp_url) ? (
                     <div className="bg-slate-50 p-3 rounded-lg border border-green-200 min-h-[70px] flex items-center justify-center">
                       <img
                         src={stampPreviewUrl || formData.stamp_url}
-                        alt="الختم"
+                        alt="Stamp"
                         className="h-14 w-full object-contain"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
@@ -1542,7 +1556,7 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
                     </div>
                   ) : (
                     <div className="bg-slate-50 p-3 rounded-lg border-2 border-dashed border-slate-300 min-h-[70px] flex items-center justify-center">
-                      <p className="text-sm text-slate-400 font-bold">لا يوجد ختم</p>
+                      <p className="text-sm text-slate-400 font-bold">{t('user.form.no_stamp')}</p>
                     </div>
                   )}
                   <label className={`cursor-pointer flex items-center justify-center gap-2 p-2.5 rounded-lg font-bold text-sm transition-all ${
@@ -1551,7 +1565,7 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
                       : 'bg-emerald-600 hover:bg-emerald-700'
                   } text-white`}>
                     <Stamp size={14} className={isUploadingStamp ? 'animate-bounce' : ''} />
-                    {isUploadingStamp ? 'جارٍ الرفع...' : (stampPreviewUrl || formData.stamp_url) ? 'تغيير الختم' : 'رفع ختم'}
+                    {isUploadingStamp ? t('user.form.uploading') : (stampPreviewUrl || formData.stamp_url) ? t('user.form.change_stamp') : t('user.form.upload_stamp')}
                     <input
                       type="file"
                       accept="image/*"
@@ -1566,7 +1580,7 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
                 </div>
               </div>
               <p className="text-xs text-emerald-600 mt-3 text-center">
-                ✨ التوقيع والختم يُستخدمان في الاعتمادات والتقارير
+                {t('user.form.signature_hint')}
               </p>
             </div>
           )}
@@ -1596,12 +1610,12 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
             {isSaving ? (
               <>
                 <Loader2 size={20} className="animate-spin" />
-                جارٍ الحفظ...
+                {t('user.form.saving')}
               </>
             ) : (
               <>
                 <Check size={20} />
-                {editingUser ? 'حفظ التغييرات' : 'إنشاء المستخدم'}
+                {editingUser ? t('user.form.save_changes') : t('user.form.create_user')}
               </>
             )}
           </button>
@@ -1617,7 +1631,7 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
                 <Loader2 size={32} className="animate-spin text-white" />
               </div>
             </div>
-            <p className="text-slate-700 font-bold">جارٍ تحميل البيانات...</p>
+            <p className="text-slate-700 font-bold">{t('common.loading_data')}</p>
           </div>
         ) : viewMode === 'tree' ? (
           <ReactFlow
@@ -1648,11 +1662,11 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
           <table className="w-full text-right">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100">
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('users.user')}</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('users.role')}</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('users.position')}</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('users.manager')}</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-left">{t('common.actions')}</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('user.table.user')}</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('user.table.role')}</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('user.table.position')}</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('user.table.manager')}</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-left">{t('user.table.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
