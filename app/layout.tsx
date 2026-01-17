@@ -1,6 +1,7 @@
 import '../styles/globals.css'
 import InstallPWA from '../components/InstallPWA'
 import ServiceWorkerRegister from '../components/ServiceWorkerRegister'
+import Providers from './providers'
 
 export const metadata = {
   title: 'MDLBEAST Communications Center',
@@ -18,7 +19,7 @@ export default function RootLayout({
       <body>
         <ServiceWorkerRegister />
         <InstallPWA />
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   )
