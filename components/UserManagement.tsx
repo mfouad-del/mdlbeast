@@ -776,7 +776,8 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
   const currentUser = users.find(u => u.email === _currentUserEmail || u.username === _currentUserEmail)
     || users.find(u => u.role?.toLowerCase() === currentUserRole?.toLowerCase())
   const userPerms = currentUser?.permissions?.users || {}
-  const canManagePermissions = userPerms.manage_permissions === true
+  // Admin can always manage permissions, or if explicitly has manage_permissions
+  const canManagePermissions = currentUser?.role?.toLowerCase() === 'admin' || userPerms.manage_permissions === true
 
   const reactFlowRef = useRef<HTMLDivElement>(null)
   const { getNodes } = useReactFlow()
