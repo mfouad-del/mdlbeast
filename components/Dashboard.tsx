@@ -122,7 +122,7 @@ export default function Dashboard({ docs }: DashboardProps) {
             <PieChart size={18} className="text-slate-400" />
           </div>
           
-          <div className="h-52">
+          <div style={{ width: '100%', height: 208, minHeight: 208 }}>
             <ResponsiveContainer width="100%" height="100%">
               <RechartsPie>
                 <Pie
@@ -170,7 +170,7 @@ export default function Dashboard({ docs }: DashboardProps) {
             <TrendingUp size={18} className="text-emerald-500" />
           </div>
           
-          <div className="h-52">
+          <div style={{ width: '100%', height: 208, minHeight: 208 }}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={monthlyTrend}>
                 <defs>
@@ -217,7 +217,7 @@ export default function Dashboard({ docs }: DashboardProps) {
             <Activity size={18} className="text-slate-400" />
           </div>
           
-          <div className="h-56">
+          <div style={{ width: '100%', height: 224, minHeight: 224 }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={typeData} barSize={60}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />

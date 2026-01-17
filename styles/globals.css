@@ -122,13 +122,17 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    font-family: 'Tajawal', sans-serif !important;
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Tajawal', sans-serif;
+    font-family: 'Tajawal', sans-serif !important;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Tajawal', sans-serif;
+    font-family: 'Tajawal', sans-serif !important;
     font-weight: 900;
+  }
+  input, textarea, select, button {
+    font-family: 'Tajawal', sans-serif !important;
   }
 }

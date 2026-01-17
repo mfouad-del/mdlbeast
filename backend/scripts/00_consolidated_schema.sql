@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS documents (
   classification VARCHAR(50) DEFAULT 'public',
   notes TEXT,
   attachments JSONB DEFAULT '[]'::jsonb,
+  attachment_count VARCHAR(255) DEFAULT '0',
   user_id INTEGER REFERENCES users(id),
   tenant_id INTEGER,
   created_at TIMESTAMP DEFAULT NOW(),

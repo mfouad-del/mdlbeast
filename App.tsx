@@ -36,7 +36,7 @@ const App: React.FC = () => {
   
   const [settings] = useState<SystemSettings>({
     primaryColor: '#0f172a',
-    footerText: 'MDLBEAST Communications Center - جميع الحقوق محفوظة © 2025',
+    footerText: 'MDLBEAST Communications Center - جميع الحقوق محفوظة © 2026',
     showStamp: true,
     companies: []
   });
@@ -344,10 +344,10 @@ const App: React.FC = () => {
              <Settings size={14} className="text-slate-400 group-hover:text-white group-hover:rotate-90 transition-all duration-300" />
           </button>
           
-          <div className="flex flex-col items-center justify-center gap-1.5 mt-4 opacity-50 hover:opacity-100 transition-all">
+          <a href="https://zaco.sa" target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center gap-1.5 mt-4 opacity-50 hover:opacity-100 transition-all">
             <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest">Developed By</span>
             <img src="/dev.png" className="h-6 w-auto object-contain grayscale hover:grayscale-0 transition-all duration-500" alt="Developer" />
-          </div>
+          </a>
         </div>
       </aside>
 
