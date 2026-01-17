@@ -222,7 +222,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
         console.log('[Approvals] Manager email check:', { managerId: manager_id, email: managerData.rows[0]?.email, hasEmail: !!managerData.rows[0]?.email })
         
         if (managerData.rows[0]?.email) {
-        const baseUrl = process.env.FRONTEND_URL || 'https://zaco.sa'
+        const baseUrl = process.env.FRONTEND_URL || 'https://mdlbeast.com'
         const dashboardUrl = `${baseUrl}/dashboard`
         
         const emailHtml = generateApprovalRequestEmail({
@@ -361,7 +361,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
         console.log('[Approvals] Requester email check for rejection:', { requesterId: row.requester_id, email: requesterData.rows[0]?.email, hasEmail: !!requesterData.rows[0]?.email })
         
         if (requesterData.rows[0]?.email) {
-          const baseUrl = process.env.FRONTEND_URL || 'https://zaco.sa'
+          const baseUrl = process.env.FRONTEND_URL || 'https://mdlbeast.com'
           const dashboardUrl = `${baseUrl}/dashboard`
           
           const emailHtml = generateApprovalRejectedEmail({
@@ -487,7 +487,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
         console.log('[Approvals] Requester email check for approval:', { requesterId: row.requester_id, email: requesterData.rows[0]?.email, hasEmail: !!requesterData.rows[0]?.email })
         
         if (requesterData.rows[0]?.email) {
-          const baseUrl = process.env.FRONTEND_URL || 'https://zaco.sa'
+          const baseUrl = process.env.FRONTEND_URL || 'https://mdlbeast.com'
           const dashboardUrl = `${baseUrl}/dashboard`
           
           const emailHtml = generateApprovalApprovedEmail({

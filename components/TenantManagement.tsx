@@ -107,7 +107,7 @@ export default function TenantManagement({ companies, onUpdate }: TenantManageme
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Entity Name (English)</label>
               <input 
                 type="text" 
-                placeholder="Example: ZAWAYA ARCHITECTURE" 
+                placeholder="Example: MDLBEAST ENTERTAINMENT" 
                 className="w-full p-4 md:p-5 bg-slate-50 border border-slate-200 rounded-2xl font-black focus:border-slate-900 outline-none transition-all text-slate-900 text-sm md:text-base" 
                 value={newCompany.nameEn} 
                 onChange={e => setNewCompany({...newCompany, nameEn: e.target.value})} 
@@ -152,7 +152,7 @@ export default function TenantManagement({ companies, onUpdate }: TenantManageme
             
             {editingCompanyId && (
               <button 
-                onClick={() => { setEditingCompanyId(null); setNewCompany({ nameAr: '', nameEn: '', logoUrl: 'https://www.zaco.sa/logo2.png', signatureUrl: '' }); }}
+                onClick={() => { setEditingCompanyId(null); setNewCompany({ nameAr: '', nameEn: '', logoUrl: '/mdlbeast/logo.png', signatureUrl: '' }); }}
                 className="w-full bg-slate-100 text-slate-500 py-3 rounded-[1rem] font-bold text-sm hover:bg-slate-200 transition-all"
               >
                 إلغاء التعديل

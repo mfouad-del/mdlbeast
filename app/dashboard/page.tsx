@@ -280,7 +280,7 @@ export default function DashboardPage() {
 
   const handleLogout = () => {
     apiClient.clearToken()
-    localStorage.removeItem("archivx_session_user")
+    localStorage.removeItem("mdlbeast_session_user")
     router.push("/")
   }
 

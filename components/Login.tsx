@@ -41,7 +41,7 @@ export default function Login({ onLogin, logoUrl }: { onLogin?: (u: any) => void
       }
 
       const data = await apiClient.login(username, password)
-      localStorage.setItem("archivx_session_user", JSON.stringify(data.user))
+      localStorage.setItem("mdlbeast_session_user", JSON.stringify(data.user))
       if (onLogin) onLogin(data.user)
       router.push("/dashboard")
     } catch (err: any) {
@@ -155,7 +155,7 @@ export default function Login({ onLogin, logoUrl }: { onLogin?: (u: any) => void
 
             <div className="space-y-4 flex flex-col items-center">
               <a 
-                href="https://zaco.sa/mdlbeast/clear-cache.html"
+                href="/mdlbeast/clear-cache.html"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-6 py-3 bg-amber-100 text-amber-900 border border-amber-200 rounded-xl text-xs font-black hover:bg-amber-200 transition-colors shadow-sm"
@@ -164,7 +164,7 @@ export default function Login({ onLogin, logoUrl }: { onLogin?: (u: any) => void
               </a>
 
               <a 
-                href="https://zaco.sa/mdlbeast/app.apk"
+                href="/mdlbeast/app.apk"
                 className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg text-[10px] font-bold hover:bg-green-100 transition-colors"
               >
                 <Smartphone size={14} />

@@ -99,7 +99,7 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('archivx_session_user');
+    const savedUser = localStorage.getItem('mdlbeast_session_user');
     if (savedUser) setCurrentUser(JSON.parse(savedUser));
 
     // If user token exists, try to fetch current user and then load data
@@ -244,7 +244,7 @@ const App: React.FC = () => {
     }
   };
 
-  if (!currentUser) return <Login onLogin={(u) => { setCurrentUser(u); localStorage.setItem('archivx_session_user', JSON.stringify(u)); }} logoUrl={currentCompany?.logoUrl || '/mdlbeast/logo.png'} />;
+  if (!currentUser) return <Login onLogin={(u) => { setCurrentUser(u); localStorage.setItem('mdlbeast_session_user', JSON.stringify(u)); }} logoUrl={currentCompany?.logoUrl || '/mdlbeast/logo.png'} />;
 
   const NavItem = ({ id, label, icon: Icon, adminOnly = false }: any) => {
     // Show admin-only items for users whose role is 'admin' (case-insensitive)
@@ -300,7 +300,7 @@ const App: React.FC = () => {
         </nav>
 
         <div className="p-6 border-t border-slate-100 bg-slate-50/30">
-          <button onClick={() => { localStorage.removeItem('archivx_session_user'); setCurrentUser(null); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-black text-red-600 hover:bg-red-50 transition-all mb-4"><LogOut size={16} /> تسجيل الخروج</button>
+          <button onClick={() => { localStorage.removeItem('mdlbeast_session_user'); setCurrentUser(null); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-black text-red-600 hover:bg-red-50 transition-all mb-4"><LogOut size={16} /> تسجيل الخروج</button>
           <div className="p-4 bg-slate-900 rounded-[1.5rem] flex items-center gap-3 text-white shadow-2xl mb-6">
              <div className="w-9 h-9 rounded-xl bg-slate-700 flex items-center justify-center font-black text-sm">{currentUser.full_name?.substring(0, 1) || 'U'}</div>
              <div className="overflow-hidden">

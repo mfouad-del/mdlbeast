@@ -7,8 +7,8 @@ import bcrypt from "bcrypt"
 
 async function generatePasswords() {
   const passwords = [
-    { username: "admin@zaco.sa", password: "admin123" },
-    { username: "user@zaco.sa", password: "user123" },
+    { username: process.env.SUPER_ADMIN_EMAIL || "admin@mdlbeast.com", password: process.env.SUPER_ADMIN_PASSWORD || "admin123" },
+    { username: process.env.TEST_USER_EMAIL || "user@mdlbeast.com", password: process.env.TEST_USER_PASSWORD || "user123" },
   ]
 
   console.log("\n🔐 Generated Bcrypt Password Hashes:\n")

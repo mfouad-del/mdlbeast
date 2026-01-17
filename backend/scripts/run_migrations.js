@@ -10,7 +10,7 @@ const path = require('path');
 
 // Add your Render database URL here or use environment variable
 const DATABASE_URL = process.env.DATABASE_URL || 
-  'postgresql://zacodb_user:ToKNTzF4XsvJHTxLqYYqCeyk7YAMjICO@dpg-d54jrg6mcj7s73esp1i0-a.oregon-postgres.render.com/zacodb';
+  'postgresql://user:password@localhost:5432/mdlbeastdb';
 
 const migrations = [
   'scripts/03_create_modules_tables.sql',

@@ -93,7 +93,7 @@ app.locals.loginLimiter = loginLimiter;
 app.use(helmet())
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "https://zaco.sa",
+    origin: process.env.FRONTEND_URL || "https://mdlbeast.com",
     credentials: true,
   }),
 )
@@ -164,7 +164,7 @@ app.get("/api/version", (_req, res) => {
 app.get("/", (req, res) => {
   res.status(200).json({
     status: "ok",
-    service: "zaco-backend",
+    service: "mdlbeast-backend",
     uptime: process.uptime()
   })
 })
@@ -445,13 +445,15 @@ app.post("/debug/set-admin-password", async (req, res) => {
     const hasEmail = colRes.rows.length > 0
 
     const bcrypt = await import("bcrypt")
-    const hashed = await bcrypt.hash("admin123", 10)
+    const adminEmail = process.env.SUPER_ADMIN_EMAIL || 'admin@mdlbeast.com'
+    const adminPassword = process.env.SUPER_ADMIN_PASSWORD || 'admin123'
+    const hashed = await bcrypt.hash(adminPassword, 10)
 
     let upd: any
     if (hasEmail) {
-      upd = await query("UPDATE users SET password = $1 WHERE username = $2 OR email = $2 RETURNING id, username", [hashed, "admin@zaco.sa"])
+      upd = await query("UPDATE users SET password = $1 WHERE username = $2 OR email = $2 RETURNING id, username", [hashed, adminEmail])
     } else {
-      upd = await query("UPDATE users SET password = $1 WHERE username = $2 RETURNING id, username", [hashed, "admin@zaco.sa"])
+      upd = await query("UPDATE users SET password = $1 WHERE username = $2 RETURNING id, username", [hashed, adminEmail])
     }
 
     console.log("Set admin password: updated", upd.rowCount)
