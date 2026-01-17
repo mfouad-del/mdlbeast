@@ -673,7 +673,7 @@ async function runAllowedMigrationsOnStartup() {
   try {
     if (String(process.env.AUTO_RUN_MIGRATIONS || '').toLowerCase() !== 'true') return
 
-    const allowed = ["01_create_tables.sql", "02_seed_data.sql", "03_create_modules_tables.sql", "04_seed_modules.sql", "05_create_indexes.sql", "06_add_documents_tenant.sql", "07_create_sequences.sql", "09_create_doc_seq.sql"]
+    const allowed = ["01_create_tables.sql", "02_seed_data.sql", "03_create_modules_tables.sql", "04_seed_modules.sql", "05_create_indexes.sql", "07_create_sequences.sql", "09_create_doc_seq.sql"]
 
     const fs = await import('fs')
     const path = await import('path')
