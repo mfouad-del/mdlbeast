@@ -13,7 +13,7 @@ interface I18nContextType {
 const I18nContext = createContext<I18nContextType | undefined>(undefined)
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>('ar')
+  const [locale, setLocaleState] = useState<Locale>('en')
   const [translations, setTranslations] = useState<Record<string, string>>({})
 
   useEffect(() => {
@@ -30,9 +30,14 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
       .then((module) => setTranslations(module.default))
       .catch(() => setTranslations({}))
     
-    // Update document
-    document.documentElement.lang = locale
-    document.documentElement.dir = locale === 'ar' ? 'rtl' : 'ltr'
+    // Update document attributes immediately for proper rendering
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = locale
+      document.documentElement.dir = locale === 'ar' ? 'rtl' : 'ltr'
+      document.documentElement.setAttribute('data-locale', locale)
+      // Force body class update for styling
+      document.body.className = locale === 'ar' ? 'rtl' : 'ltr'
+    }
   }, [locale])
 
   const setLocale = (newLocale: Locale) => {

@@ -1,5 +1,5 @@
 // MDLBEAST Service Worker for PWA
-const CACHE_NAME = 'mdlbeast-v1';
+const CACHE_NAME = 'mdlbeast-v2-2026-01-17';
 const urlsToCache = [
   '/mdlbeast/',
   '/mdlbeast/index.html',
@@ -29,15 +29,21 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
+      console.log('[SW] Cleaning old caches:', cacheNames);
       return Promise.all(
         cacheNames
           .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name))
+          .map((name) => {
+            console.log('[SW] Deleting cache:', name);
+            return caches.delete(name);
+          })
       );
+    }).then(() => {
+      console.log('[SW] Activated with cache:', CACHE_NAME);
     })
   );
   // Take control of all pages immediately
-  self.clients.claim();
+  return self.clients.claim();
 });
 
 // Fetch event - network first, then cache
