@@ -88,9 +88,48 @@ app.locals.loginLimiter = loginLimiter;
 
 // Middleware
 app.use(helmet())
+
+// Define allowed origins
+const allowedOrigins = [
+  "https://zaco.sa",
+  "https://www.zaco.sa", 
+  "https://mdlbeast.com",
+  "http://localhost:3000",
+  "null" // Handle local file system or postman
+];
+
+// Add FRONTEND_URL to allowed origins (stripping path if present)
+if (process.env.FRONTEND_URL) {
+  try {
+    const url = new URL(process.env.FRONTEND_URL);
+    // Add origin (protocol + host)
+    if (!allowedOrigins.includes(url.origin)) {
+      allowedOrigins.push(url.origin);
+    }
+  } catch (e) {
+    // If invalid URL, assume it's just a domain and allow it if needed, or ignore
+    console.warn('[CORS] Invalid FRONTEND_URL for origin extraction:', process.env.FRONTEND_URL);
+  }
+}
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "https://zaco.sa",
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      
+      // Check for subdomains or special cases if needed
+      // For now, strict check against allowed list
+      
+      // Fallback: if origin matches FRONTEND_URL exactly (even with path? no, origin header never has path)
+      // Just in case user put a domain in FRONTEND_URL without protocol
+      
+      callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
   }),
 )

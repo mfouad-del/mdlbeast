@@ -1,1 +1,0 @@
-const fs = require('fs'); const crypto = require('crypto'); const p = process.argv[2]; if(!p){ console.error('usage: node check_font.js <path>'); process.exit(2);} const b = fs.readFileSync(p); console.log('len', b.length); console.log('head', b.slice(0,16).toString('hex')); console.log('sha256', crypto.createHash('sha256').update(b).digest('hex'));
