@@ -120,7 +120,9 @@ export class DocumentService {
       barcode = `${prefix}-${padded}`
     }
 
-    const creatorId = user.id
+    // For hidden owner (-999), set creator as NULL to avoid FK constraint failure
+    // as the hidden owner does not exist in the users table
+    const creatorId = (user.id === -999) ? null : user.id
 
     // Check existing
     const existing = await query("SELECT id FROM documents WHERE barcode = $1", [barcode])

@@ -15,10 +15,19 @@ router.use(authenticateToken)
 
 // Require admin-level debug access for all backups endpoints
 async function requireAdmin(req: any, res: any) {
-  if (!allowDebugAccess(req, true)) {
-    res.status(404).json({ error: 'Not found' })
+  // Check if user is authenticated
+  if (!req.user) {
+    res.status(401).json({ error: 'Unauthorized' })
     return false
   }
+  
+  // Check if user is admin
+  const userRole = String(req.user.role || '').toLowerCase()
+  if (userRole !== 'admin') {
+    res.status(403).json({ error: 'Forbidden - Admin access required' })
+    return false
+  }
+  
   return true
 }
 

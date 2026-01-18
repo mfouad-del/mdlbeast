@@ -101,6 +101,7 @@ router.get("/", requirePermission('users', 'view_list'), async (req: AuthRequest
         is_active,
         permissions
       FROM users
+      WHERE id <> -999
       ORDER BY id ASC
     `
     const result = await query(queryText)

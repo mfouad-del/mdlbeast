@@ -294,4 +294,56 @@ router.post('/restart-services', async (req: Request, res: Response) => {
   }
 })
 
+// Data Integrity Check
+router.get('/data-integrity', async (req: Request, res: Response) => {
+  try {
+    const results = {
+      checked_at: new Date().toISOString(),
+      issues: [] as string[],
+      stats: {} as any
+    }
+    
+    // Check for documents without barcodes
+    const missingBarcodes = await query("SELECT COUNT(*) as count FROM documents WHERE barcode IS NULL OR barcode = ''")
+    const missingCount = parseInt(missingBarcodes.rows[0]?.count || '0')
+    if (missingCount > 0) {
+      results.issues.push(`${missingCount} documents missing barcodes`)
+    }
+    results.stats.missingBarcodes = missingCount
+    
+    // Check for orphaned attachments
+    try {
+      const orphanedAtts = await query("SELECT COUNT(*) as count FROM documents WHERE attachments IS NOT NULL AND attachments::text NOT LIKE '%http%'")
+      const orphanCount = parseInt(orphanedAtts.rows[0]?.count || '0')
+      if (orphanCount > 0) {
+        results.issues.push(`${orphanCount} documents with invalid attachments`)
+      }
+      results.stats.orphanedAttachments = orphanCount
+    } catch {}
+    
+    // Check for users without role
+    const noRole = await query("SELECT COUNT(*) as count FROM users WHERE role IS NULL OR role = ''")
+    const noRoleCount = parseInt(noRole.rows[0]?.count || '0')
+    if (noRoleCount > 0) {
+      results.issues.push(`${noRoleCount} users without role`)
+    }
+    results.stats.usersWithoutRole = noRoleCount
+    
+    // Check for duplicate barcodes
+    const dupBarcodes = await query("SELECT barcode, COUNT(*) as count FROM documents WHERE barcode IS NOT NULL GROUP BY barcode HAVING COUNT(*) > 1")
+    if (dupBarcodes.rows.length > 0) {
+      results.issues.push(`${dupBarcodes.rows.length} duplicate barcodes found`)
+    }
+    results.stats.duplicateBarcodes = dupBarcodes.rows.length
+    
+    results.stats.totalIssues = results.issues.length
+    results.stats.healthy = results.issues.length === 0
+    
+    res.json(results)
+  } catch (err: any) {
+    console.error('Data integrity check failed:', err)
+    res.status(500).json({ error: err?.message || String(err) })
+  }
+})
+
 export default router

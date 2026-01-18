@@ -607,15 +607,7 @@ router.post('/:barcode/stamp', async (req, res) => {
     try {
       // first prefer explicit English fields if present
       companyNameEnglish = String(doc.company_en || doc.companyEn || doc.companyNameEn || '').trim()
-      // if none, try to read tenant name (may be English)
-      if (!companyNameEnglish && doc.tenant_id) {
-        try {
-          const t = await query('SELECT name FROM tenants WHERE id = $1 LIMIT 1', [doc.tenant_id])
-          if (t.rows.length) companyNameEnglish = String(t.rows[0].name || '').trim()
-        } catch (e) {
-          // ignore
-        }
-      }
+      
       // fallback to configured org name or a sensible default
       if (!companyNameEnglish) companyNameEnglish = process.env.ORG_NAME_EN || 'Zaco'
     } catch (e) {
@@ -682,7 +674,7 @@ router.post('/:barcode/stamp', async (req, res) => {
     const rawAttachmentLabel = `المرفقات: ${attachmentText}`
     
     // Use company name directly (canvas will handle all Arabic processing)
-    const companyName = 'MDLBEAST COMPANY'
+    const companyName = 'MDLBEAST'
     
     console.debug('Stamp: texts to render:', {
       companyName,

