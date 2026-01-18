@@ -50,5 +50,16 @@ coverage/
 .nyc_output/
 
 # Temporary files
+*.temp.json
+*.tmp
+*.log
+*.bak
+
+# Build artifacts
+out.zip
+build-errors.txt
+.trigger_ci
+
+# Temporary files
 *.tmp
 *.log
