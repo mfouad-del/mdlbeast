@@ -1,5 +1,6 @@
 "use client"
 
+import { useI18n } from '@/lib/i18n-context'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Bell, Check, Trash2, RefreshCcw, MailOpen, AlertCircle } from 'lucide-react'
 import { apiClient } from '@/lib/api-client'
@@ -20,6 +21,7 @@ type NotificationItem = {
 }
 
 export default function NotificationCenter() {
+  const { t, locale } = useI18n()
   const [items, setItems] = useState<NotificationItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -32,11 +34,11 @@ export default function NotificationCenter() {
       const res = await apiClient.getNotifications({ limit: 100, offset: 0, unreadOnly })
       setItems((res as any)?.data || [])
     } catch (e: any) {
-      setError(String(e?.message || e || 'فشل تحميل الإشعارات'))
+      setError(String(e?.message || e || t('notifications.error_load')))
     } finally {
       setLoading(false)
     }
-  }, [unreadOnly])
+  }, [unreadOnly, t])
 
   useEffect(() => {
     load()
@@ -68,8 +70,8 @@ export default function NotificationCenter() {
               <Bell size={18} />
             </div>
             <div>
-              <div className="text-lg font-black text-slate-900">مركز الإشعارات</div>
-              <div className="text-xs text-slate-500 font-bold">غير مقروء: {unreadCount}</div>
+              <div className="text-lg font-black text-slate-900">{t('notifications.center')}</div>
+              <div className="text-xs text-slate-500 font-bold">{t('notifications.unread')}{unreadCount}</div>
             </div>
           </div>
 
@@ -78,17 +80,17 @@ export default function NotificationCenter() {
               className={`px-3 py-2 rounded-xl text-xs font-black border transition-all ${unreadOnly ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'}`}
               onClick={() => setUnreadOnly(v => !v)}
             >
-              {unreadOnly ? 'عرض الكل' : 'غير المقروء فقط'}
+              {unreadOnly ? t('notifications.view_all') : t('notifications.unread_only')}
             </button>
 
             <AsyncButton onClickAsync={onReadAll} className="px-3 py-2 rounded-xl text-xs font-black bg-emerald-600 text-white hover:bg-emerald-700">
               <MailOpen size={14} className="ml-2" />
-              قراءة الكل
+              {t('notifications.markAllRead')}
             </AsyncButton>
 
             <AsyncButton onClickAsync={load} className="px-3 py-2 rounded-xl text-xs font-black bg-slate-100 text-slate-800 hover:bg-slate-200">
               <RefreshCcw size={14} className="ml-2" />
-              تحديث
+              {t('notifications.refresh')}
             </AsyncButton>
           </div>
         </div>
@@ -102,11 +104,11 @@ export default function NotificationCenter() {
 
       <div className="space-y-3">
         {loading ? (
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm text-slate-600 font-bold">جارِ التحميل...</div>
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm text-slate-600 font-bold">{t('notifications.loading')}</div>
         ) : items.length === 0 ? (
           <div className="bg-white p-10 rounded-3xl border border-slate-200 shadow-sm text-center">
-            <div className="text-slate-900 font-black">لا توجد إشعارات</div>
-            <div className="text-slate-500 text-sm mt-1">سيظهر هنا كل جديد متعلق بالنظام والمعاملات</div>
+            <div className="text-slate-900 font-black">{t('notifications.no_notifications')}</div>
+            <div className="text-slate-500 text-sm mt-1">{t('notifications.no_notifications_desc')}</div>
           </div>
         ) : (
           items.map((n) => (
@@ -114,11 +116,11 @@ export default function NotificationCenter() {
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <div className="text-sm font-black text-slate-900">{n.title}</div>
-                  {!n.is_read && <span className="text-[10px] font-black bg-blue-600 text-white px-2 py-0.5 rounded-full">جديد</span>}
+                  {!n.is_read && <span className="text-[10px] font-black bg-blue-600 text-white px-2 py-0.5 rounded-full">{t('notifications.new_badge')}</span>}
                 </div>
                 {n.message && <div className="text-sm text-slate-600 mt-1 leading-relaxed">{n.message}</div>}
                 <div className="text-[11px] text-slate-400 font-bold mt-2">
-                  {n.created_at ? new Date(n.created_at).toLocaleString('ar-SA') : ''}
+                  {n.created_at ? new Date(n.created_at).toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US') : ''}
                 </div>
               </div>
 
@@ -129,7 +131,7 @@ export default function NotificationCenter() {
                     className="px-3 py-2 rounded-xl text-xs font-black bg-slate-900 text-white hover:bg-black"
                   >
                     <Check size={14} className="ml-2" />
-                    قراءة
+                    {t('notifications.mark_read_action')}
                   </AsyncButton>
                 )}
 
@@ -138,7 +140,7 @@ export default function NotificationCenter() {
                   className="px-3 py-2 rounded-xl text-xs font-black bg-red-50 text-red-700 hover:bg-red-100"
                 >
                   <Trash2 size={14} className="ml-2" />
-                  حذف
+                  {t('notifications.delete')}
                 </AsyncButton>
               </div>
             </div>

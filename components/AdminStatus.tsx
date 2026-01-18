@@ -125,7 +125,7 @@ export default function AdminStatus() {
   }, [autoRefresh, load])
 
   const formatUptime = (seconds?: number) => {
-    if (!seconds) return '0 دقيقة'
+    if (!seconds) return t('admin.uptime.format.zero_minutes')
     const days = Math.floor(seconds / 86400)
     const hours = Math.floor((seconds % 86400) / 3600)
     const minutes = Math.floor((seconds % 3600) / 60)

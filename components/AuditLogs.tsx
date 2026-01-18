@@ -12,125 +12,126 @@ import {
   Code2, List, FileJson
 } from 'lucide-react'
 
-// Translation Dictionary for JSON keys
-const KEY_TRANSLATIONS: Record<string, string> = {
+// Translation Dictionary for JSON keys - Updated to use i18n
+// Keeping keys map for dynamic lookup but values will be translation keys
+const KEY_TRANSLATION_KEYS: Record<string, string> = {
   // General
-  id: "المعرف",
-  crated_at: "تاريخ الإنشاء",
-  created_at: "تاريخ الإنشاء",
-  updated_at: "تاريخ التحديث",
-  status: "الحالة",
-  name: "الاسم",
-  description: "الوصف",
-  title: "العنوان",
-  type: "النوع",
+  id: "audit.field.id",
+  crated_at: "audit.field.created_at",
+  created_at: "audit.field.created_at",
+  updated_at: "audit.field.updated_at",
+  status: "audit.field.status",
+  name: "audit.field.name",
+  description: "audit.field.description",
+  title: "audit.field.title",
+  type: "audit.field.type",
   
   // Payment / Financial
-  amount: "المبلغ",
-  project_id: "رقم المشروع",
-  project_name: "اسم المشروع",
-  note: "ملاحظة",
-  notes: "ملاحظات",
-  message: "الرسالة",
-  payment_method: "طريقة الدفع",
-  bank_name: "اسم البنك",
-  transfer_number: "رقم التحويل",
-  invoice_number: "رقم الفاتورة",
-  response_notes: "ملاحظات الرد",
-  transfer_image: "صورة التحويل",
-  invoice_image: "صورة الفاتورة",
+  amount: "audit.field.amount",
+  project_id: "audit.field.project_id",
+  project_name: "audit.field.project_name",
+  note: "audit.field.note",
+  notes: "audit.field.notes",
+  message: "audit.field.message",
+  payment_method: "audit.field.payment_method",
+  bank_name: "audit.field.bank_name",
+  transfer_number: "audit.field.transfer_number",
+  invoice_number: "audit.field.invoice_number",
+  response_notes: "audit.field.response_notes",
+  transfer_image: "audit.field.transfer_image",
+  invoice_image: "audit.field.invoice_image",
   
   // Users & Permissions
-  username: "اسم المستخدم",
-  email: "البريد الإلكتروني",
-  role: "الدور",
-  phone: "رقم الهاتف",
-  full_name: "الاسم الكامل",
-  permissions: "الصلاحيات",
-  user_id: "معرف المستخدم",
+  username: "audit.field.username",
+  email: "audit.field.email",
+  role: "audit.field.role",
+  phone: "audit.field.phone",
+  full_name: "audit.field.full_name",
+  permissions: "audit.field.permissions",
+  user_id: "audit.field.user_id",
   
   // Documents & Files
-  file_name: "اسم الملف",
-  file_size: "حجم الملف",
-  file_type: "نوع الملف",
-  url: "الرابط",
-  pdf_url: "رابط PDF",
-  filename: "اسم الملف",
+  file_name: "audit.field.file_name",
+  file_size: "audit.field.file_size",
+  file_type: "audit.field.file_type",
+  url: "audit.field.url",
+  pdf_url: "audit.field.pdf_url",
+  filename: "audit.field.filename",
   
   // System
-  ip_address: "عنوان IP",
-  user_agent: "وكيل المستخدم",
-  success: "نجاح",
-  error: "خطأ",
-  method: "الطريقة",
+  ip_address: "audit.field.ip_address",
+  user_agent: "audit.field.user_agent",
+  success: "audit.field.success",
+  error: "audit.field.error",
+  method: "audit.field.method",
   
   // Reports
-  report_number: "رقم التقرير",
-  report_type: "نوع التقرير",
-  visit_date: "تاريخ الزيارة",
-  engineer_id: "المهندس",
-  completion_percentage: "نسبة الإنجاز",
-  work_description: "وصف الأعمال",
-  recommendations: "التوصيات",
+  report_number: "audit.field.report_number",
+  report_type: "audit.field.report_type",
+  visit_date: "audit.field.visit_date",
+  engineer_id: "audit.field.engineer_id",
+  completion_percentage: "audit.field.completion_percentage",
+  work_description: "audit.field.work_description",
+  recommendations: "audit.field.recommendations",
   
   // Projects
-  contract_value: "قيمة العقد",
-  total_collected: "إجمالي المحصل",
-  new_total_collected: "المحصل الجديد",
-  client_id: "العميل",
-  location: "الموقع",
+  contract_value: "audit.field.contract_value",
+  total_collected: "audit.field.total_collected",
+  new_total_collected: "audit.field.new_total_collected",
+  client_id: "audit.field.client_id",
+  location: "audit.field.location",
   
   // Custom
-  urgency: "الأهمية",
-  phase: "المرحلة",
-  client_name: "اسم العميل",
-  previous_status: "الحالة السابقة",
-  new_status: "الحالة الجديدة",
-  action: "الإجراء",
-  entity_type: "نوع الكيان",
-  entity_id: "معرف الكيان"
+  urgency: "audit.field.urgency",
+  phase: "audit.field.phase",
+  client_name: "audit.field.client_name",
+  previous_status: "audit.field.previous_status",
+  new_status: "audit.field.new_status",
+  action: "audit.field.action",
+  entity_type: "audit.field.entity_type",
+  entity_id: "audit.field.entity_id"
 }
 
 // Helper to translate values if needed (e.g. status)
-const VALUE_TRANSLATIONS: Record<string, string> = {
+const VALUE_TRANSLATION_KEYS: Record<string, string> = {
   // Statuses
-  pending: "قيد الانتظار",
-  pending_approval: "بانتظار الاعتماد",
-  approved: "معتمد",
-  rejected: "مرفوض",
-  completed: "مكتمل", 
-  collected: "تم التحصيل",
-  received: "تم الاستلام",
-  paid: "مدفوع",
-  active: "نشط",
-  inactive: "غير نشط",
-  draft: "مسودة",
-  revision_requested: "مطلوب تعديل",
+  pending: "audit.value.pending",
+  pending_approval: "audit.value.pending_approval",
+  approved: "audit.value.approved",
+  rejected: "audit.value.rejected",
+  completed: "audit.value.completed", 
+  collected: "audit.value.collected",
+  received: "audit.value.received",
+  paid: "audit.value.paid",
+  active: "audit.value.active",
+  inactive: "audit.value.inactive",
+  draft: "audit.value.draft",
+  revision_requested: "audit.value.revision_requested",
   
   // Urgency/Priority
-  high: "عالي",
-  low: "منخفض",
-  normal: "عادي",
-  urgent: "عاجل",
+  high: "audit.value.high",
+  low: "audit.value.low",
+  normal: "audit.value.normal",
+  urgent: "audit.value.urgent",
   
   // Roles
-  admin: "مدير النظام",
-  manager: "مدير",
-  accountant: "محاسب",
-  supervisor: "مشرف",
-  member: "عضو",
+  admin: "role.admin",
+  manager: "role.manager",
+  accountant: "user.role.accountant",
+  supervisor: "role.supervisor",
+  member: "role.member",
   
   // Actions
-  created: "تم الإنشاء",
-  updated: "تم التحديث",
-  deleted: "تم الحذف",
-  downloaded: "تم التحميل",
-  printed: "تم الطباعة",
-  pdf_regenerated: "تم إعادة توليد PDF",
+  created: "audit.value.created",
+  updated: "audit.value.updated",
+  deleted: "audit.value.deleted",
+  downloaded: "audit.value.downloaded",
+  printed: "audit.value.printed",
+  pdf_regenerated: "audit.value.pdf_regenerated",
   
   // Boolean
-  true: "نعم",
-  false: "لا"
+  true: "audit.value.true",
+  false: "audit.value.false"
 }
 
 interface AuditLog {
@@ -148,7 +149,9 @@ interface AuditLog {
 
 // Component to render JSON details nicely
 const DetailsViewer = ({ details }: { details: string }) => {
-  if (!details) return <span className="text-slate-400 text-xs">لا توجد تفاصيل</span>
+  const { t } = useI18n()
+
+  if (!details) return <span className="text-slate-400 text-xs">{t('audit.details.none')}</span>
 
   let parsedDetails: any = null
   let isJson = false
@@ -179,10 +182,10 @@ const DetailsViewer = ({ details }: { details: string }) => {
                 return (
                     <div key={idx} className={`flex items-center text-xs p-2 ${idx !== Object.keys(parsedDetails).length - 1 ? 'border-b border-slate-100' : ''}`}>
                         <span className="font-bold text-slate-500 w-1/3 truncate pl-2 border-l border-slate-200 ml-2">
-                             {KEY_TRANSLATIONS[key] || key}
+                             {KEY_TRANSLATION_KEYS[key] ? t(KEY_TRANSLATION_KEYS[key]) : key}
                         </span>
                         <span className="font-bold text-slate-800 flex-1 break-all">
-                             {VALUE_TRANSLATIONS[String(value).toLowerCase()] || String(value)}
+                             {VALUE_TRANSLATION_KEYS[String(value).toLowerCase()] ? t(VALUE_TRANSLATION_KEYS[String(value).toLowerCase()]) : String(value)}
                         </span>
                     </div>
                 )
@@ -226,46 +229,46 @@ export default function AuditLogs() {
     const act = action.toLowerCase()
     
     // Login/Logout
-    if (act.includes('login')) return { icon: LogIn, color: 'text-emerald-600', bg: 'bg-emerald-100', label: act.includes('fail') ? 'فشل دخول' : 'تسجيل دخول' }
-    if (act.includes('logout')) return { icon: LogOut, color: 'text-slate-600', bg: 'bg-slate-100', label: 'تسجيل خروج' }
+    if (act.includes('login')) return { icon: LogIn, color: 'text-emerald-600', bg: 'bg-emerald-100', label: act.includes('fail') ? t('audit.action.login_fail') : t('audit.action.login') }
+    if (act.includes('logout')) return { icon: LogOut, color: 'text-slate-600', bg: 'bg-slate-100', label: t('audit.action.logout') }
     
     // Create/Add
-    if (act.includes('create') || act.includes('add') || act.includes('إنشاء')) return { icon: FilePlus, color: 'text-blue-600', bg: 'bg-blue-100', label: 'إنشاء/إضافة' }
+    if (act.includes('create') || act.includes('add') || act.includes('إنشاء')) return { icon: FilePlus, color: 'text-blue-600', bg: 'bg-blue-100', label: t('audit.action.create') }
     
     // Update/Edit
-    if (act.includes('update') || act.includes('edit') || act.includes('تعديل') || act.includes('تحديث')) return { icon: Edit, color: 'text-amber-600', bg: 'bg-amber-100', label: 'تعديل' }
+    if (act.includes('update') || act.includes('edit') || act.includes('تعديل') || act.includes('تحديث')) return { icon: Edit, color: 'text-amber-600', bg: 'bg-amber-100', label: t('audit.action.update') }
     
     // Delete/Remove
-    if (act.includes('delete') || act.includes('remove') || act.includes('حذف')) return { icon: Trash2, color: 'text-red-600', bg: 'bg-red-100', label: 'حذف' }
+    if (act.includes('delete') || act.includes('remove') || act.includes('حذف')) return { icon: Trash2, color: 'text-red-600', bg: 'bg-red-100', label: t('audit.action.delete') }
     
     // Print/Download/PDF
-    if (act.includes('print') || act.includes('طباعة')) return { icon: Activity, color: 'text-indigo-600', bg: 'bg-indigo-100', label: 'طباعة' }
-    if (act.includes('download') || act.includes('تحميل') || act.includes('pdf')) return { icon: FileDown, color: 'text-purple-600', bg: 'bg-purple-100', label: 'تحميل' }
-    if (act.includes('view') || act.includes('read') || act.includes('عرض')) return { icon: Activity, color: 'text-slate-500', bg: 'bg-slate-100', label: 'عرض' }
+    if (act.includes('print') || act.includes('طباعة')) return { icon: Activity, color: 'text-indigo-600', bg: 'bg-indigo-100', label: t('audit.action.print') }
+    if (act.includes('download') || act.includes('تحميل') || act.includes('pdf')) return { icon: FileDown, color: 'text-purple-600', bg: 'bg-purple-100', label: t('audit.action.download') }
+    if (act.includes('view') || act.includes('read') || act.includes('عرض')) return { icon: Activity, color: 'text-slate-500', bg: 'bg-slate-100', label: t('audit.action.view') }
     
     // Approve/Reject/Review
-    if (act.includes('approve') || act.includes('اعتماد') || act.includes('موافق')) return { icon: Activity, color: 'text-green-600', bg: 'bg-green-100', label: 'اعتماد' }
-    if (act.includes('reject') || act.includes('رفض')) return { icon: Activity, color: 'text-red-600', bg: 'bg-red-100', label: 'رفض' }
+    if (act.includes('approve') || act.includes('اعتماد') || act.includes('موافق')) return { icon: Activity, color: 'text-green-600', bg: 'bg-green-100', label: t('audit.action.approve') }
+    if (act.includes('reject') || act.includes('رفض')) return { icon: Activity, color: 'text-red-600', bg: 'bg-red-100', label: t('audit.action.reject') }
     
     // Payment requests
-    if (act.includes('payment') || act.includes('دفع') || act.includes('دفعة')) return { icon: Activity, color: 'text-cyan-600', bg: 'bg-cyan-100', label: 'طلب دفع' }
+    if (act.includes('payment') || act.includes('دفع') || act.includes('دفعة')) return { icon: Activity, color: 'text-cyan-600', bg: 'bg-cyan-100', label: t('audit.action.payment') }
     
     // Supervision reports
-    if (act.includes('supervision') || act.includes('إشراف') || act.includes('تقرير')) return { icon: Activity, color: 'text-violet-600', bg: 'bg-violet-100', label: 'تقرير إشراف' }
+    if (act.includes('supervision') || act.includes('إشراف') || act.includes('تقرير')) return { icon: Activity, color: 'text-violet-600', bg: 'bg-violet-100', label: t('audit.action.supervision') }
     
     // User management
-    if (act.includes('user') || act.includes('مستخدم') || act.includes('صلاحي')) return { icon: Users, color: 'text-teal-600', bg: 'bg-teal-100', label: 'إدارة مستخدمين' }
+    if (act.includes('user') || act.includes('مستخدم') || act.includes('صلاحي')) return { icon: Users, color: 'text-teal-600', bg: 'bg-teal-100', label: t('audit.action.user_mgmt') }
     
     // Projects
-    if (act.includes('project') || act.includes('مشروع')) return { icon: Activity, color: 'text-orange-600', bg: 'bg-orange-100', label: 'مشاريع' }
+    if (act.includes('project') || act.includes('مشروع')) return { icon: Activity, color: 'text-orange-600', bg: 'bg-orange-100', label: t('audit.action.project') }
     
     // Archive/Documents
-    if (act.includes('archive') || act.includes('document') || act.includes('أرشيف') || act.includes('مستند')) return { icon: Activity, color: 'text-rose-600', bg: 'bg-rose-100', label: 'أرشيف' }
+    if (act.includes('archive') || act.includes('document') || act.includes('أرشيف') || act.includes('مستند')) return { icon: Activity, color: 'text-rose-600', bg: 'bg-rose-100', label: t('audit.action.archive') }
     
     // Sync/Backup
-    if (act.includes('sync') || act.includes('backup') || act.includes('نسخ') || act.includes('مزامنة')) return { icon: Database, color: 'text-gray-600', bg: 'bg-gray-100', label: 'نسخ/مزامنة' }
+    if (act.includes('sync') || act.includes('backup') || act.includes('نسخ') || act.includes('مزامنة')) return { icon: Database, color: 'text-gray-600', bg: 'bg-gray-100', label: t('audit.action.backup') }
 
-    return { icon: Activity, color: 'text-slate-600', bg: 'bg-slate-100', label: 'نشاط' }
+    return { icon: Activity, color: 'text-slate-600', bg: 'bg-slate-100', label: t('audit.action.activity') }
   }
 
   const filteredLogs = useMemo(() => {

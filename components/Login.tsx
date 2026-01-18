@@ -116,8 +116,8 @@ export default function Login({ onLogin, logoUrl }: { onLogin?: (u: any) => void
       if (data.type === 'mdlbeast:clear-cache:done') {
         setIsClearCacheOpen(false)
         toast({
-          title: locale === 'ar' ? 'تم تنظيف الكاش' : 'Cache cleared',
-          description: locale === 'ar' ? 'جرّب تسجيل الدخول مرة أخرى.' : 'Please try logging in again.',
+          title: t('login.cache_cleared'),
+          description: t('login.cache_cleared_desc'),
         })
       }
 

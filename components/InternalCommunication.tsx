@@ -228,7 +228,7 @@ export default function InternalCommunication({ currentUser, users: propUsers }:
                                         continue;
                                     }
                                     next[senderId] = {
-                                        name: p.sender_full_name || p.sender_name || 'مستخدم',
+                                        name: p.sender_full_name || p.sender_name || t('common.user'),
                                         ts: Date.now()
                                     };
                                 }
