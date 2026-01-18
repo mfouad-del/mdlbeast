@@ -1,185 +1,204 @@
-# 📬 MDLBEAST Archive & Communications System
+# MDLBEAST Archive & Communications System
 
-<div align="center">
+**Enterprise Document Management and Internal Communications Platform**
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/mfouad-del/mdlbeast)
-[![License](https://img.shields.io/badge/license-Proprietary-red.svg)](./LICENSE)
-[![Status](https://img.shields.io/badge/status-Production-success.svg)](https://zaco.sa/mdlbeast)
-
-**Archive and Communications Management System for MDLBEAST Entertainment Company**
-
-[Live Demo](https://zaco.sa/mdlbeast) · [API Docs](https://mdlbeast.onrender.com/api) · [Report Issue](https://github.com/mfouad-del/mdlbeast/issues)
-
-</div>
+Version 2.0.0 | Production Ready | Proprietary Software
 
 ---
 
-## 🌟 Overview
+## Overview
 
-A comprehensive enterprise-grade document and communications management system designed specifically for MDLBEAST Entertainment Company. Built with modern technologies to streamline administrative workflows, enhance security, and provide powerful archival capabilities.
+Enterprise-grade archive and communications management system designed for MDLBEAST Entertainment Company. Provides comprehensive document lifecycle management, secure internal communications, and advanced workflow automation capabilities.
 
-## ✨ Key Features
+**Production URL:** https://zaco.sa/mdlbeast  
+**API Endpoint:** https://mdlbeast.onrender.com/api
 
-### 📄 Document Management
-- **Smart Archive System** - Centralized document repository with advanced search and filtering
-- **Barcode Integration** - Automatic barcode generation and scanning for physical-digital linkage
-- **Multi-format Support** - Handle PDFs, images, and various document formats
-- **Version Control** - Track document revisions and maintain audit trails
+## Core Features
 
-### 🔐 Security & Permissions
-- **Granular RBAC** - Role-Based Access Control with custom permission overrides
-- **Hierarchical Management** - Manager-subordinate relationship with delegation support
-- **Audit Logging** - Complete activity tracking for compliance and accountability
-- **Secure Authentication** - JWT-based authentication with refresh tokens
+## Core Features
 
-### 🔄 Workflow Automation
-- **Approval System** - Multi-level approval workflows with digital signatures
-- **Document Stamping** - Official stamp and signature embedding on PDFs
-- **Status Tracking** - Real-time document lifecycle monitoring
-- **Notifications** - Instant alerts for pending actions and updates
+### Document Management
+- Smart archive system with advanced search and filtering capabilities
+- Automatic barcode generation and scanning for document tracking
+- Multi-format support (PDF, images, office documents)
+- Document version control and audit trail
+- Digital signature and official stamp embedding
+- Secure document storage on Cloudflare R2
 
-### 💬 Internal Communications
-- **Real-time Chat** - Team messaging and collaboration tools
-- **Announcements** - Company-wide broadcast messaging
-- **File Sharing** - Secure internal file exchange
+### Security & Access Control
+- Granular Role-Based Access Control (RBAC)
+- Four-tier role hierarchy (Admin, Manager, Supervisor, Member)
+- Custom permission overrides at user level
+- Hierarchical manager-subordinate relationships
+- Complete audit logging for compliance
+- JWT-based secure authentication with refresh tokens
 
-### 📊 Reporting & Analytics
-- **Custom Reports** - Generate detailed reports by date, type, or user
-- **Export Options** - PDF, Excel, and CSV export capabilities
-- **Dashboard Insights** - Visual analytics and KPI tracking
-- **Historical Data** - Comprehensive data retention and retrieval
+### Workflow Automation
+- Multi-level approval workflows
+- Digital signature integration
+- Document status tracking and lifecycle management
+- Automated notifications for pending actions
+- Electronic stamping capabilities
+- Approval delegation support
 
-### 🌍 Localization
-- **Bilingual Support** - Full Arabic and English interface
-- **RTL Layout** - Right-to-left design for Arabic users
-- **Cultural Adaptation** - Date formats, number systems, and conventions
+### Internal Communications
+- Real-time team messaging and collaboration
+- Company-wide announcements system
+- Secure file sharing within organization
+- User presence and activity indicators
 
-### 📱 Modern UX/UI
-- **Responsive Design** - Seamless experience across desktop, tablet, and mobile
-- **Dark Mode** - Eye-friendly interface option
-- **Accessibility** - WCAG compliant for inclusive access
-- **PWA Ready** - Progressive Web App for offline capabilities
+### Reporting & Analytics
+- Customizable report generation by date, type, and user
+- Export functionality (PDF, Excel, CSV)
+- Visual dashboard with key performance indicators
+- Historical data analysis and retention
+- Document activity tracking
 
-### ☁️ Cloud Infrastructure
-- **Cloudflare R2** - Distributed object storage for scalability
-- **PostgreSQL** - Robust relational database with JSONB support
-- **Redis Caching** - High-performance data caching layer
-- **Automatic Backups** - Scheduled database snapshots
+### Localization & Accessibility
+- Full bilingual support (Arabic and English)
+- Right-to-left (RTL) layout for Arabic interface
+- Responsive design across all devices
+- Dark mode support
+- Progressive Web App (PWA) capabilities
+- WCAG accessibility compliance
 
-## 🏗️ Technology Stack
+### Infrastructure & Performance
+- Cloudflare R2 distributed object storage
+- PostgreSQL database with JSONB support
+- Automated backup system with encryption
+- High-availability deployment on Render.com
+- Redis caching layer for performance optimization
 
-### Frontend
-- **React 18** - Modern UI library
-- **TypeScript** - Type-safe development
-- **Vite** - Lightning-fast build tool
-- **Tailwind CSS** - Utility-first styling
-- **shadcn/ui** - Premium component library
+## Technology Stack
 
-### Backend
-- **Node.js** - JavaScript runtime
-- **Express.js** - Web application framework
-- **TypeScript** - Type safety on the server
-- **PostgreSQL** - Primary database
-- **JWT** - Secure authentication
+**Frontend**
+- React 18 with TypeScript
+- Vite build system
+- Tailwind CSS for styling
+- shadcn/ui component library
+- React Query for state management
 
-### Infrastructure
-- **Cloudflare R2** - Object storage
-- **Render.com** - Application hosting
-- **GitHub Actions** - CI/CD pipeline
+**Backend**
+- Node.js with Express.js
+- TypeScript for type safety
+- PostgreSQL relational database
+- JWT authentication
+- Bcrypt password hashing
 
-## 🚀 Quick Start
+**Infrastructure**
+- Cloudflare R2 object storage
+- Render.com application hosting
+- GitHub for version control
+- Automated CI/CD pipeline
 
-### Prerequisites
-```bash
-Node.js >= 18.x
-PostgreSQL >= 14.x
-npm or pnpm
-```
+## Installation & Setup
 
-### Installation
+## Installation & Setup
 
-1. **Clone Repository**
+**System Requirements**
+- Node.js 18.x or higher
+- PostgreSQL 14.x or higher
+- npm or pnpm package manager
+
+**Installation Steps**
+
+1. Clone the repository
 ```bash
 git clone https://github.com/mfouad-del/mdlbeast.git
 cd mdlbeast
 ```
 
-2. **Install Dependencies**
+2. Install dependencies
 ```bash
 npm install
 cd backend && npm install
 ```
 
-3. **Environment Setup**
+3. Configure environment variables
 ```bash
 cp .env.example .env.local
 cd backend && cp .env.example .env
 ```
 
-4. **Database Setup**
+4. Initialize database
 ```bash
 cd backend
 node scripts/run_migration.js
 ```
 
-5. **Start Development Servers**
+5. Start development servers
 ```bash
-# Frontend (port 3000)
+# Frontend (http://localhost:3000)
 npm run dev
 
-# Backend (port 3001)
-cd backend
-npm run dev
+# Backend (http://localhost:3001)
+cd backend && npm run dev
 ```
 
-6. **Access Application**
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:3001/api
+## Version History
 
-## 📝 Version
+**Version 2.0.0** (January 2026)
+- Complete permission system refactor with granular RBAC
+- Custom permission overrides for individual users
+- Enhanced security middleware and authentication
+- Database migration for permissions structure
+- Improved user management interface
 
-**Current Version:** 2.0.0 (January 2026)
+**Version 1.3.0**
+- Approval workflows with digital signatures
+- Multi-level approval delegation
+- Electronic document stamping
 
-### Changelog
-- **v2.0.0** - Complete permission system overhaul with granular RBAC
-- **v1.3.0** - Approval workflows and digital signatures
-- **v1.2.0** - Barcode system and document stamping
-- **v1.1.0** - Internal communications module
-- **v1.0.0** - Initial release with core archival features
+**Version 1.2.0**
+- Barcode generation and scanning system
+- Document tracking enhancements
 
-## 🔗 Deployment
+**Version 1.1.0**
+- Internal communications module
+- Real-time messaging capabilities
 
-### Production URLs
-- **Application:** https://zaco.sa/mdlbeast
-- **API Endpoint:** https://mdlbeast.onrender.com/api
-- **Company Website:** https://mdlbeast.com
+**Version 1.0.0**
+- Initial production release
+- Core archive and document management features
 
-### Environment Variables
-See `.env.example` for required configuration variables.
+## Production Deployment
 
-## 👨‍💻 Developer
+**Live Application:** https://zaco.sa/mdlbeast  
+**API Endpoint:** https://mdlbeast.onrender.com/api
 
-**Mahmoud Fouad**
-- Email: mahmoud.a.fouad2@gmail.com
-- Phone: +966 530 047 640 | +20 111 658 8189
-- GitHub: [@mfouad-del](https://github.com/mfouad-del)
+Environment variables must be configured according to `.env.example` specifications. Contact the developer for production deployment credentials and configuration details.
 
-## 📄 License
+## Developer Information
 
-This software is proprietary and confidential. Unauthorized copying, modification, distribution, or use of this software, via any medium, is strictly prohibited without explicit written permission from the copyright holder.
+**Mahmoud Fouad**  
+Full-Stack Software Engineer
+
+Email: mahmoud.a.fouad2@gmail.com  
+Phone: +966 530 047 640 | +20 111 658 8189  
+GitHub: @mfouad-del
+
+## Legal & Licensing
+
+This software is proprietary and confidential. Unauthorized copying, modification, distribution, or use of this software is strictly prohibited without explicit written permission from the copyright holder.
 
 **Copyright © 2024-2026 Mahmoud Fouad. All Rights Reserved.**
 
-See [LICENSE](./LICENSE) for full terms.
+All intellectual property rights, including but not limited to source code, design, architecture, algorithms, and documentation, are the exclusive property of Mahmoud Fouad.
 
-## 🏢 About MDLBEAST
+For licensing inquiries or legal matters, please contact the developer directly.
 
-MDLBEAST is an entertainment company rooted in music culture. Based in Saudi Arabia and shared globally – amplifying the unseen and unheard voices in the music industry.
+See [LICENSE](./LICENSE) for complete terms and conditions.
+
+## Contributing
+
+This is proprietary software developed exclusively for MDLBEAST Entertainment Company. External contributions are not accepted without prior written authorization.
+
+For authorized contributors, please review [CONTRIBUTING.md](./CONTRIBUTING.md) for development guidelines and workflow procedures.
+
+## About MDLBEAST
+
+MDLBEAST is an entertainment company rooted in music culture, based in Saudi Arabia and shared globally, amplifying unseen and unheard voices in the music industry.
 
 ---
 
-<div align="center">
-
-**Built with ❤️ for MDLBEAST Entertainment Company**
-
-</div>
+**Developed by Mahmoud Fouad for MDLBEAST Entertainment Company**

@@ -1,211 +1,456 @@
 PROPRIETARY SOFTWARE LICENSE AGREEMENT
 
-Copyright © 2024-2026 Mahmoud Fouad. All Rights Reserved.
+================================================================================
+SOFTWARE IDENTIFICATION
+================================================================================
 
-MDLBEAST Archive & Communications System ("the Software")
+Software Name: MDLBEAST Archive & Communications System
+Version: 2.0.0
+Copyright: © 2024-2026 Mahmoud Fouad. All Rights Reserved.
 
-Developer Information:
+================================================================================
+COPYRIGHT HOLDER INFORMATION
+================================================================================
+
 Name: Mahmoud Fouad
 Email: mahmoud.a.fouad2@gmail.com
-Phone: +966 530 047 640 | +20 111 658 8189
+Phone: +966 530 047 640
+Alternative Phone: +20 111 658 8189
+Nationality: Egyptian / Saudi Arabian Resident
 
 ================================================================================
-IMPORTANT NOTICE
+LEGAL NOTICE
 ================================================================================
 
-This software and associated documentation files (the "Software") are the 
-exclusive property of Mahmoud Fouad ("the Developer" or "Copyright Holder"). 
-This Software is protected by copyright laws and international copyright treaties, 
-as well as other intellectual property laws and treaties.
+This software and all associated documentation, source code, object code, 
+design documents, algorithms, user interfaces, and related materials 
+(collectively, "the Software") are the exclusive property of Mahmoud Fouad 
+("the Copyright Holder" or "the Developer").
+
+The Software is protected by:
+- Copyright laws of the Kingdom of Saudi Arabia
+- Copyright laws of the Arab Republic of Egypt
+- International copyright treaties and conventions
+- Intellectual property laws and trade secret protections
+
+This Software contains proprietary information that is confidential and 
+constitutes valuable trade secrets of the Copyright Holder.
 
 ================================================================================
 LICENSE GRANT
 ================================================================================
 
-Subject to the terms and conditions of this Agreement, the Developer grants 
-MDLBEAST Entertainment Company ("the Licensee") a non-exclusive, non-transferable, 
-limited license to use the Software solely for internal business operations.
+Subject to the terms and conditions of this Agreement, the Copyright Holder 
+grants MDLBEAST Entertainment Company ("the Licensee") a limited, 
+non-exclusive, non-transferable, revocable license to:
+
+1. Use the Software solely for internal business operations
+2. Access the Software through authorized user accounts
+3. Store and process data using the Software
+4. Receive updates and maintenance as separately agreed
+
+This license does NOT grant permission to:
+- Copy, reproduce, or duplicate the Software
+- Modify, adapt, or create derivative works
+- Distribute, sublicense, or transfer the Software
+- Reverse engineer or decompile the Software
+- Remove proprietary notices or attributions
 
 ================================================================================
-RESTRICTIONS
+================================================================================
+PROHIBITED ACTIONS
 ================================================================================
 
-Without the express written consent of the Developer, you may NOT:
+Without explicit written authorization from the Copyright Holder, you are 
+strictly prohibited from:
 
-1. Copy, reproduce, or duplicate the Software or any portion thereof
-2. Modify, alter, adapt, translate, or create derivative works
-3. Reverse engineer, decompile, or disassemble the Software
-4. Remove, alter, or obscure any copyright, trademark, or proprietary notices
-5. Distribute, sublicense, rent, lease, or lend the Software
-6. Transfer, assign, or convey rights to any third party
-7. Use the Software for commercial purposes beyond the scope granted
-8. Extract or reuse any code, algorithms, or design patterns
-9. Create competitive or similar products based on the Software
-10. Disclose or share access credentials or source code
-
-================================================================================
-OWNERSHIP & INTELLECTUAL PROPERTY
-================================================================================
-
-The Software, including all source code, object code, documentation, design, 
-architecture, algorithms, trade secrets, and all intellectual property rights 
-therein, is and shall remain the sole and exclusive property of Mahmoud Fouad.
-
-No title or ownership rights are transferred to the Licensee. This Agreement 
-grants only a limited right to use the Software under the terms specified herein.
+1. Copying, reproducing, or duplicating any part of the Software
+2. Modifying, altering, adapting, or translating the Software
+3. Creating derivative works based on the Software
+4. Reverse engineering, decompiling, or disassembling the Software
+5. Removing, altering, or obscuring copyright or proprietary notices
+6. Distributing, sublicensing, renting, leasing, or lending the Software
+7. Transferring or conveying rights to third parties
+8. Using the Software beyond the authorized scope
+9. Extracting or reusing code, algorithms, or design patterns
+10. Developing competitive or similar products based on the Software
+11. Disclosing source code or access credentials to unauthorized parties
+12. Selling, reselling, or commercializing the Software
+13. Using the Software for illegal or unauthorized purposes
+14. Accessing the Software using unauthorized methods
+15. Circumventing security measures or access controls
 
 ================================================================================
-CONFIDENTIALITY
+INTELLECTUAL PROPERTY OWNERSHIP
 ================================================================================
 
-The Software contains proprietary and confidential information. The Licensee 
-agrees to:
+The Software, including but not limited to:
+- Source code and object code
+- Database schemas and structures
+- User interface designs and layouts
+- Algorithms and business logic
+- Documentation and technical specifications
+- Trade secrets and proprietary methods
+- Trademarks, logos, and branding elements
+- All intellectual property rights therein
 
-1. Maintain the confidentiality of the Software and related materials
+...is and shall remain the sole, exclusive, and absolute property of 
+Mahmoud Fouad.
+
+No ownership rights, title, or intellectual property interests are transferred 
+to the Licensee under this Agreement. This license grants only a limited right 
+to use the Software under the conditions specified herein.
+
+The Copyright Holder retains all rights not expressly granted in this Agreement.
+
+================================================================================
+================================================================================
+CONFIDENTIALITY OBLIGATIONS
+================================================================================
+
+The Software contains confidential, proprietary, and trade secret information 
+of substantial value. The Licensee acknowledges this and agrees to:
+
+1. Maintain strict confidentiality of the Software and related materials
 2. Not disclose any portion of the Software to third parties
-3. Use the Software only as authorized under this Agreement
+3. Use the Software only as explicitly authorized in this Agreement
 4. Implement reasonable security measures to prevent unauthorized access
-5. Immediately notify the Developer of any unauthorized use or disclosure
+5. Restrict access to authorized personnel only
+6. Not discuss or publish information about the Software's internal workings
+7. Immediately notify the Copyright Holder of any unauthorized disclosure
+8. Cooperate in protecting the Copyright Holder's intellectual property rights
+9. Return or destroy all copies upon termination of this Agreement
+10. Maintain confidentiality obligations indefinitely, even after termination
+
+Breach of confidentiality obligations may result in immediate termination and 
+legal action for damages, injunctive relief, and recovery of attorney fees.
 
 ================================================================================
-DATA PROTECTION & PRIVACY
+DATA OWNERSHIP & PRIVACY
 ================================================================================
 
-Any data processed or stored by the Software remains the property of the 
-Licensee. The Developer:
+Data Ownership:
+- All data entered, processed, or stored by the Licensee remains the property 
+  of the Licensee
+- The Copyright Holder claims no ownership rights to Licensee data
+- Data privacy and protection are governed by applicable laws and regulations
 
-1. Does not claim ownership of client data
-2. Implements industry-standard security practices
-3. Complies with applicable data protection regulations
-4. Will not access client data without explicit authorization
+Developer Responsibilities:
+- Implement industry-standard security measures
+- Protect data integrity and confidentiality
+- Comply with applicable data protection regulations (GDPR, CCPA, etc.)
+- Not access Licensee data without explicit authorization
+- Provide data export capabilities upon request
+- Maintain data backups as separately agreed
+
+Licensee Responsibilities:
+- Ensure lawful collection and processing of data
+- Maintain appropriate data backup procedures
+- Comply with applicable privacy laws
+- Not store illegal or prohibited content
 
 ================================================================================
-SUPPORT & MAINTENANCE
+SUPPORT, MAINTENANCE & UPDATES
 ================================================================================
 
 Support and maintenance services are provided separately and may be subject to 
-additional fees and terms. The Developer reserves the right to:
+additional fees and terms. The Copyright Holder:
 
-1. Provide updates, patches, and improvements at their discretion
-2. Charge for premium support services
-3. Modify support terms with reasonable notice
+1. May provide updates, patches, and improvements at their sole discretion
+2. Reserves the right to modify features or functionality
+3. May charge fees for premium support services
+4. May modify support terms with reasonable advance notice
+5. Is not obligated to provide indefinite support
+6. May discontinue support for older versions
+7. Determines support response times and priorities
+
+Updates and modifications to the Software remain subject to all terms of this 
+Agreement. Installation of updates constitutes acceptance of updated terms.
 
 ================================================================================
-WARRANTY DISCLAIMER
+================================================================================
+DISCLAIMER OF WARRANTIES
 ================================================================================
 
-THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
-IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS 
-FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND.
 
-The Developer does not warrant that:
-- The Software will meet all requirements
-- The Software will be uninterrupted or error-free
-- All defects will be corrected
-- The Software is free from viruses or harmful components
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE COPYRIGHT HOLDER EXPRESSLY 
+DISCLAIMS ALL WARRANTIES, WHETHER EXPRESS, IMPLIED, OR STATUTORY, INCLUDING 
+BUT NOT LIMITED TO:
+
+- Warranties of merchantability
+- Warranties of fitness for a particular purpose
+- Warranties of non-infringement
+- Warranties of title
+- Warranties of accuracy or completeness
+- Warranties arising from course of dealing or usage of trade
+
+The Copyright Holder does NOT warrant that:
+- The Software will meet all requirements or expectations
+- The Software will operate uninterrupted or error-free
+- All defects or errors will be corrected
+- The Software is free from viruses, malware, or harmful components
+- Results obtained from the Software will be accurate or reliable
+- The Software is compatible with all systems or configurations
+
+Use of the Software is at the Licensee's own risk. The Licensee assumes full 
+responsibility for selecting the Software to achieve intended results and for 
+the installation, use, and results obtained from the Software.
 
 ================================================================================
 LIMITATION OF LIABILITY
 ================================================================================
 
 TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL THE 
-DEVELOPER BE LIABLE FOR ANY SPECIAL, INCIDENTAL, INDIRECT, CONSEQUENTIAL, 
-OR PUNITIVE DAMAGES WHATSOEVER, INCLUDING WITHOUT LIMITATION:
+COPYRIGHT HOLDER BE LIABLE FOR ANY DAMAGES WHATSOEVER, INCLUDING WITHOUT 
+LIMITATION:
 
-1. Loss of profits, revenue, or business opportunities
-2. Loss of data or information
-3. Business interruption or downtime
-4. Cost of procurement of substitute goods or services
-5. Any other commercial damages or losses
+Direct Damages:
+- Loss of use or functionality
+- Cost of substitute software or services
+- Costs of recovery or restoration
 
-This limitation applies regardless of the legal theory (contract, tort, 
-negligence, strict liability, or otherwise), even if the Developer has been 
-advised of the possibility of such damages.
+Indirect and Consequential Damages:
+- Loss of profits, revenue, or business opportunities
+- Loss of data, information, or goodwill
+- Business interruption or downtime
+- Loss of savings or anticipated benefits
+- Damage to reputation or business relationships
+- Any other commercial damages or losses
 
-THE DEVELOPER'S TOTAL LIABILITY SHALL NOT EXCEED THE AMOUNT PAID BY THE 
-LICENSEE FOR THE SOFTWARE IN THE TWELVE (12) MONTHS PRECEDING THE CLAIM.
+Special, Incidental, and Punitive Damages:
+- Regardless of the theory of liability (contract, tort, negligence, strict 
+  liability, breach of warranty, or otherwise)
+- Even if advised of the possibility of such damages
+- Even if remedies fail of their essential purpose
 
+MAXIMUM LIABILITY LIMITATION:
+The Copyright Holder's total cumulative liability under this Agreement shall 
+not exceed the amount actually paid by the Licensee to the Copyright Holder 
+for the Software in the twelve (12) months immediately preceding the claim.
+
+This limitation applies regardless of:
+- The number of claims made
+- The theory of liability asserted
+- Whether damages were foreseeable
+- The failure of any remedy
+
+Some jurisdictions do not allow limitation of liability for certain types of 
+damages. In such jurisdictions, the Copyright Holder's liability is limited 
+to the maximum extent permitted by law.
+
+================================================================================
 ================================================================================
 TERMINATION
 ================================================================================
 
-This license is effective until terminated. Your rights under this license 
-will terminate automatically without notice if you fail to comply with any 
-term(s) of this Agreement.
+This license remains effective until terminated.
 
-Upon termination, you must:
-1. Cease all use of the Software immediately
-2. Destroy all copies of the Software in your possession
-3. Certify in writing to the Developer that all copies have been destroyed
+Automatic Termination:
+This Agreement terminates automatically without notice upon:
+1. Breach of any term or condition of this Agreement
+2. Failure to make required payments
+3. Unauthorized use, copying, or distribution of the Software
+4. Breach of confidentiality obligations
+5. Bankruptcy or insolvency of the Licensee
+6. Cessation of business operations by the Licensee
 
-The following sections survive termination: Ownership & Intellectual Property, 
-Confidentiality, Warranty Disclaimer, Limitation of Liability, and Governing Law.
+Termination by Copyright Holder:
+The Copyright Holder may terminate this Agreement:
+1. For any reason with thirty (30) days written notice
+2. Immediately upon material breach by the Licensee
+3. If required by law or legal order
+
+Effects of Termination:
+Upon termination, the Licensee must immediately:
+1. Cease all use of the Software
+2. Delete or destroy all copies of the Software
+3. Remove the Software from all systems and devices
+4. Return all documentation and materials to the Copyright Holder
+5. Certify in writing that all copies have been destroyed
+6. Pay all outstanding fees and charges
+
+Survival of Terms:
+The following provisions survive termination:
+- Intellectual Property Ownership
+- Confidentiality Obligations
+- Disclaimer of Warranties
+- Limitation of Liability
+- Indemnification
+- Governing Law and Jurisdiction
+- Payment obligations incurred prior to termination
+
+The Copyright Holder reserves the right to pursue all legal remedies for 
+breaches occurring before or after termination.
 
 ================================================================================
 MODIFICATIONS & UPDATES
 ================================================================================
 
-The Developer reserves the right to:
-1. Release updates, upgrades, and new versions
-2. Modify features or functionality
-3. Discontinue support for older versions
-4. Change license terms with reasonable notice
+The Copyright Holder reserves the exclusive right to:
 
-Continued use of the Software after modifications constitutes acceptance of 
-the updated terms.
+1. Release updates, upgrades, patches, and new versions
+2. Modify features, functionality, or user interface
+3. Add or remove capabilities
+4. Discontinue support for older versions
+5. Change license terms with reasonable advance notice
+6. Adjust pricing for support and maintenance services
+7. Modify technical requirements or system specifications
+
+Notice of Changes:
+- Material changes will be communicated with reasonable advance notice
+- Continued use after changes constitutes acceptance
+- Users may terminate if changes are unacceptable
+
+Updates and modifications remain subject to all terms of this Agreement unless 
+explicitly stated otherwise in writing.
 
 ================================================================================
 INDEMNIFICATION
 ================================================================================
 
-The Licensee agrees to indemnify, defend, and hold harmless the Developer from 
-and against any and all claims, damages, losses, liabilities, costs, and 
-expenses (including reasonable attorneys' fees) arising from:
+The Licensee agrees to indemnify, defend, and hold harmless the Copyright 
+Holder from and against any and all:
 
-1. Breach of this Agreement
-2. Misuse of the Software
-3. Violation of applicable laws or regulations
-4. Infringement of third-party rights
+Claims, Demands, and Actions:
+- Arising from Licensee's use or misuse of the Software
+- Related to breach of this Agreement by the Licensee
+- Resulting from violation of applicable laws or regulations
+- Based on infringement of third-party intellectual property rights
+- Arising from unauthorized access or disclosure
 
+Losses, Damages, and Expenses:
+- Legal fees and attorney costs
+- Court costs and litigation expenses
+- Settlement amounts and judgments
+- Investigation and defense costs
+- Lost time and resources
+
+The Copyright Holder will:
+- Promptly notify the Licensee of any claim
+- Cooperate reasonably in the defense
+- Allow the Licensee to control defense and settlement (with approval)
+
+This indemnification obligation survives termination of this Agreement.
+
+================================================================================
 ================================================================================
 EXPORT COMPLIANCE
 ================================================================================
 
-The Licensee agrees to comply with all applicable export and import laws and 
-regulations. The Software shall not be exported, re-exported, or transferred 
-to prohibited countries, entities, or individuals.
+The Licensee acknowledges that the Software may be subject to export control 
+laws and regulations. The Licensee agrees to:
+
+1. Comply with all applicable export and import laws and regulations
+2. Not export, re-export, or transfer the Software to prohibited destinations
+3. Not provide the Software to prohibited persons or entities
+4. Obtain necessary export licenses when required
+5. Comply with sanctions and trade restrictions
+6. Not use the Software for prohibited purposes
+7. Maintain records of Software distribution and access
+
+Prohibited destinations may include countries subject to trade embargoes or 
+sanctions. The Licensee is responsible for determining and complying with 
+applicable export regulations.
+
+Violation of export control laws may result in severe civil and criminal 
+penalties, including termination of this Agreement.
 
 ================================================================================
 GOVERNING LAW & JURISDICTION
 ================================================================================
 
+Applicable Law:
 This Agreement shall be governed by and construed in accordance with the laws 
 of the Kingdom of Saudi Arabia and the Arab Republic of Egypt, without regard 
 to conflict of law principles.
 
-Any disputes arising from this Agreement shall be resolved through:
-1. Good faith negotiation between parties
-2. Mediation if negotiation fails
-3. Arbitration in accordance with applicable arbitration rules
-4. Courts of competent jurisdiction as a last resort
+The United Nations Convention on Contracts for the International Sale of Goods 
+does not apply to this Agreement.
+
+Dispute Resolution:
+Disputes arising from this Agreement shall be resolved in the following order:
+
+1. Good Faith Negotiation:
+   - Parties shall attempt to resolve disputes through direct negotiation
+   - Written notice of dispute must be provided to the other party
+   - Parties have thirty (30) days to reach resolution
+
+2. Mediation:
+   - If negotiation fails, disputes shall be submitted to mediation
+   - Conducted by mutually agreed mediator or mediation service
+   - Costs of mediation shared equally unless otherwise agreed
+
+3. Arbitration:
+   - If mediation fails, disputes shall be submitted to binding arbitration
+   - Conducted in accordance with applicable arbitration rules
+   - Location: Riyadh, Saudi Arabia or Cairo, Egypt (as agreed)
+   - Language: Arabic and/or English
+   - Arbitrator's decision is final and binding
+
+4. Judicial Proceedings:
+   - As a last resort, disputes may be submitted to courts of competent 
+     jurisdiction
+   - Venue: Courts of Riyadh, Kingdom of Saudi Arabia
+
+Exceptions:
+The Copyright Holder may seek immediate injunctive or equitable relief in any 
+court of competent jurisdiction for:
+- Breach of confidentiality
+- Infringement of intellectual property rights
+- Unauthorized use or distribution of the Software
+
+Language:
+This Agreement is executed in English. In case of translation, the English 
+version shall prevail in case of discrepancy.
 
 ================================================================================
 ENTIRE AGREEMENT
 ================================================================================
 
 This Agreement constitutes the entire agreement between the parties concerning 
-the Software and supersedes all prior or contemporaneous oral or written 
-agreements, understandings, and communications.
+the Software and supersedes all prior or contemporaneous:
+- Oral or written agreements
+- Proposals or negotiations
+- Understandings or communications
+- Representations or warranties
+- Statements or promises
 
-No amendment or modification of this Agreement shall be valid unless made in 
-writing and signed by both parties.
+No Prior Agreements:
+All previous agreements, whether written or oral, relating to the subject 
+matter hereof are superseded by this Agreement.
+
+Amendments:
+No amendment, modification, or waiver of this Agreement shall be valid or 
+binding unless:
+1. Made in writing
+2. Signed by both parties
+3. Explicitly referencing this Agreement
+4. Dated and acknowledged
+
+Verbal modifications or informal communications do not amend this Agreement.
+
+Integration Clause:
+This Agreement represents the complete understanding between the parties and 
+may not be contradicted by evidence of prior, contemporaneous, or subsequent 
+oral agreements.
 
 ================================================================================
 SEVERABILITY
 ================================================================================
 
 If any provision of this Agreement is held to be invalid, illegal, or 
-unenforceable, the remaining provisions shall continue in full force and effect.
+unenforceable by a court of competent jurisdiction:
+
+1. The remaining provisions shall continue in full force and effect
+2. The invalid provision shall be modified to achieve the original intent
+3. If modification is not possible, the provision shall be severed
+4. The Agreement shall be interpreted as if the invalid provision never existed
+5. The validity of the remaining provisions shall not be affected
+
+The parties agree to negotiate in good faith to replace any invalid provision 
+with a valid provision that achieves the original intent to the greatest extent 
+possible under applicable law.
 
 ================================================================================
 WAIVER
@@ -213,26 +458,255 @@ WAIVER
 
 The failure of either party to enforce any right or provision in this Agreement 
 shall not constitute a waiver of such right or provision unless acknowledged 
-and agreed to in writing.
+and agreed to in writing by both parties.
+
+No waiver of any breach or default shall be deemed a waiver of any subsequent 
+breach or default. The waiver of one provision does not constitute a waiver of 
+any other provision.
+
+Any waiver must be:
+1. In writing
+2. Signed by the waiving party
+3. Specific as to the provision being waived
+4. Limited to the particular instance
+
+The rights and remedies provided in this Agreement are cumulative and not 
+exclusive of any rights or remedies provided by law.
 
 ================================================================================
-CONTACT INFORMATION
+ASSIGNMENT
 ================================================================================
 
-For licensing inquiries, support requests, or legal matters, contact:
+The Licensee may NOT assign, transfer, delegate, or sublicense this Agreement 
+or any rights or obligations hereunder without the prior written consent of 
+the Copyright Holder. Any attempted assignment in violation of this provision 
+is void and of no effect.
 
-Mahmoud Fouad
+The Copyright Holder may assign this Agreement and all rights and obligations 
+hereunder without notice or consent.
+
+This Agreement shall be binding upon and inure to the benefit of the parties 
+and their respective successors and permitted assigns.
+
+================================================================================
+NOTICES
+================================================================================
+
+All notices, demands, or communications required or permitted under this 
+Agreement shall be:
+
+1. In writing
+2. Delivered by one of the following methods:
+   - Personal delivery
+   - Registered or certified mail
+   - Recognized courier service (e.g., DHL, FedEx)
+   - Email with delivery confirmation
+
+Notices to Copyright Holder:
+Name: Mahmoud Fouad
 Email: mahmoud.a.fouad2@gmail.com
 Phone: +966 530 047 640
-Alternative: +20 111 658 8189
+Alternative Phone: +20 111 658 8189
+
+Notices are deemed effective:
+- Upon personal delivery
+- Three (3) business days after mailing
+- Upon confirmed email delivery
+- When delivered by courier
+
+Parties must notify each other of any change in contact information within 
+fifteen (15) days.
 
 ================================================================================
+FORCE MAJEURE
+================================================================================
 
-BY USING THE SOFTWARE, YOU ACKNOWLEDGE THAT YOU HAVE READ THIS AGREEMENT, 
-UNDERSTAND IT, AND AGREE TO BE BOUND BY ITS TERMS AND CONDITIONS.
+Neither party shall be liable for failure or delay in performance due to causes 
+beyond reasonable control, including but not limited to:
 
-IF YOU DO NOT AGREE TO THESE TERMS, DO NOT INSTALL, COPY, OR USE THE SOFTWARE.
+- Acts of God (earthquakes, floods, storms)
+- War, terrorism, or civil unrest
+- Government actions, laws, or regulations
+- Strikes or labor disputes
+- Pandemics or epidemics
+- Telecommunications or internet failures
+- Power outages or utility failures
+- Fire, explosion, or natural disasters
+
+The affected party must:
+1. Promptly notify the other party of the force majeure event
+2. Use reasonable efforts to minimize impact
+3. Resume performance as soon as reasonably possible
+
+If force majeure continues for more than sixty (60) days, either party may 
+terminate this Agreement upon written notice.
+
+================================================================================
+================================================================================
+ATTORNEY FEES
+================================================================================
+
+In the event of any dispute, litigation, or arbitration arising from or related 
+to this Agreement, the prevailing party shall be entitled to recover from the 
+non-prevailing party:
+
+1. Reasonable attorney fees and legal costs
+2. Court costs and filing fees
+3. Expert witness fees and expenses
+4. Investigation and discovery costs
+5. Costs of enforcement and collection
+6. Any other reasonable expenses incurred
+
+This provision applies to all proceedings, including appeals and post-judgment 
+enforcement actions.
+
+================================================================================
+AUDIT RIGHTS
+================================================================================
+
+The Copyright Holder reserves the right to audit the Licensee's use of the 
+Software to ensure compliance with this Agreement.
+
+Audit Procedures:
+1. Copyright Holder may request access to relevant records and systems
+2. Reasonable advance notice will be provided (minimum 15 days)
+3. Audits conducted during normal business hours
+4. Licensee must provide full cooperation and access
+5. Results remain confidential unless breach is discovered
+
+If an audit reveals:
+- Non-compliance: Licensee must remedy within 30 days
+- Material breach: Copyright Holder may terminate immediately
+- Unauthorized use: Licensee must pay for unauthorized instances plus penalties
+- Under-reporting: Licensee pays audit costs plus back payments with interest
+
+================================================================================
+THIRD-PARTY COMPONENTS
+================================================================================
+
+The Software may include third-party open source or commercial components. 
+Such components are licensed under their respective license terms.
+
+The Licensee agrees to:
+1. Comply with all third-party license terms
+2. Not hold the Copyright Holder liable for third-party components
+3. Review and accept third-party licenses before use
+
+A list of third-party components and their licenses may be provided separately 
+or included in the Software documentation.
+
+================================================================================
+NO IMPLIED LICENSES
+================================================================================
+
+No rights or licenses are granted except as expressly set forth in this 
+Agreement. All rights not explicitly granted are reserved by the Copyright 
+Holder.
+
+This Agreement does NOT grant:
+- Patent licenses
+- Trademark licenses (except as necessary for authorized use)
+- Rights to use Copyright Holder's name or likeness
+- Rights to create derivative works
+- Rights to any future versions or updates
+- Any implied or tacit permissions
+
+================================================================================
+INDEPENDENT CONTRACTORS
+================================================================================
+
+The parties are independent contractors. This Agreement does not create:
+- Partnership or joint venture
+- Employment relationship
+- Agency or fiduciary relationship
+- Authority to bind the other party
+
+Neither party may:
+- Make commitments on behalf of the other party
+- Represent themselves as agent or representative
+- Create obligations for the other party
+- Use the other party's name without permission
+
+================================================================================
+HEADINGS
+================================================================================
+
+Section headings in this Agreement are for convenience only and shall not 
+affect the interpretation or construction of any provision.
+
+================================================================================
+COUNTERPARTS & SIGNATURES
+================================================================================
+
+This Agreement may be executed in counterparts, each of which shall be deemed 
+an original and all of which together shall constitute one and the same 
+instrument.
+
+Electronic signatures and digital copies shall have the same legal effect as 
+original signatures and physical copies.
+
+================================================================================
+ACKNOWLEDGMENT & ACCEPTANCE
+================================================================================
+
+BY INSTALLING, COPYING, ACCESSING, OR USING THE SOFTWARE, YOU ACKNOWLEDGE 
+THAT YOU HAVE:
+
+1. Read this Agreement in its entirety
+2. Understand all terms and conditions
+3. Had the opportunity to seek legal counsel
+4. Agree to be bound by all provisions
+5. Represent that you have authority to accept these terms
+6. Acknowledge the proprietary nature of the Software
+7. Accept all restrictions and obligations
+
+IF YOU DO NOT AGREE TO ALL TERMS AND CONDITIONS OF THIS AGREEMENT:
+- Do NOT install the Software
+- Do NOT access the Software
+- Do NOT use the Software in any manner
+- Delete or return all copies in your possession
+- Contact the Copyright Holder to discuss alternative arrangements
+
+ACCEPTANCE:
+Your use of the Software constitutes your binding acceptance of this Agreement 
+and creates a legally enforceable contract between you and the Copyright Holder.
+
+================================================================================
+CONTACT INFORMATION FOR LEGAL MATTERS
+================================================================================
+
+For all legal matters, licensing inquiries, and official communications:
+
+Copyright Holder: Mahmoud Fouad
+Email: mahmoud.a.fouad2@gmail.com
+Phone: +966 530 047 640 (Saudi Arabia)
+Alternative: +20 111 658 8189 (Egypt)
+
+Mailing Address: Available upon request for official legal correspondence
+
+All notices should be sent to the email address above with:
+- Subject: "MDLBEAST Software - Legal Notice"
+- Reference to this License Agreement
+- Clear statement of purpose
+
+================================================================================
+EFFECTIVE DATE
+================================================================================
+
+This Agreement is effective as of the date the Software is first accessed, 
+installed, or used by the Licensee, whichever occurs first.
+
+Original Effective Date: January 1, 2024
+Current Version Date: January 18, 2026
+Version: 2.0
 
 ================================================================================
 
 END OF LICENSE AGREEMENT
+
+Copyright © 2024-2026 Mahmoud Fouad
+All Rights Reserved
+
+UNAUTHORIZED USE, REPRODUCTION, OR DISTRIBUTION IS STRICTLY PROHIBITED
+
+================================================================================
