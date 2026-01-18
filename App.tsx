@@ -55,20 +55,61 @@ const App: React.FC = () => {
   const [notificationPreviewLoading, setNotificationPreviewLoading] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  // Restore active tab from localStorage on mount (client-side only)
+  // URL-based tab mapping for better navigation
+  const tabToPath: Record<string, string> = {
+    'dashboard': '/dashboard',
+    'incoming': '/incoming',
+    'outgoing': '/outgoing',
+    'list': '/archive',
+    'scanner': '/scanner',
+    'reports': '/reports',
+    'audit': '/audit',
+    'approvals': '/approvals',
+    'notifications': '/notifications',
+    'internal': '/internal',
+    'users': '/users',
+    'admin': '/admin',
+    'backup': '/backup',
+    'profile': '/profile',
+    'password': '/password'
+  };
+
+  const pathToTab: Record<string, string> = Object.fromEntries(
+    Object.entries(tabToPath).map(([k, v]) => [v, k])
+  );
+
+  // Restore active tab from URL hash or localStorage on mount (client-side only)
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      // First priority: URL hash
+      const hash = window.location.hash.replace('#', '');
+      if (hash && Object.values(tabToPath).some(p => p.replace('/', '') === hash)) {
+        const tab = Object.entries(tabToPath).find(([_, v]) => v.replace('/', '') === hash)?.[0];
+        if (tab) {
+          setActiveTab(tab);
+          return;
+        }
+      }
+      
+      // Second priority: localStorage
       const savedTab = localStorage.getItem('mdlbeast_active_tab');
       if (savedTab && savedTab !== activeTab) {
         setActiveTab(savedTab);
+        // Update URL hash
+        window.history.replaceState(null, '', `#${tabToPath[savedTab]?.replace('/', '') || 'dashboard'}`);
       }
     }
   }, []);
 
-  // Save active tab to localStorage whenever it changes
+  // Save active tab to localStorage and update URL whenever it changes
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('mdlbeast_active_tab', activeTab);
+      // Update URL hash without triggering navigation
+      const newHash = tabToPath[activeTab]?.replace('/', '') || 'dashboard';
+      if (window.location.hash !== `#${newHash}`) {
+        window.history.replaceState(null, '', `#${newHash}`);
+      }
     }
   }, [activeTab]);
   
@@ -294,7 +335,11 @@ const App: React.FC = () => {
     alert(t('alerts.restoreDisabled'));
   };
 
-  const hasToken = typeof window !== 'undefined' && !!localStorage.getItem('auth_token')
+  // Use state to track token presence to avoid hydration mismatch
+  const [hasToken, setHasToken] = useState(false);
+  useEffect(() => {
+    setHasToken(!!localStorage.getItem('auth_token'));
+  }, []);
 
   // Avoid showing Login briefly on refresh when a token exists; show a loading screen until auth check finishes.
   if (!currentUser) {

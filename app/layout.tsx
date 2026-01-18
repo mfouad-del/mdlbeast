@@ -15,8 +15,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" dir="ltr">
-      <body>
+    <html lang="en" dir="ltr" suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <ServiceWorkerRegister />
         <InstallPWA />
         <Providers>{children}</Providers>
