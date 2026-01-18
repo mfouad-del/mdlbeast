@@ -382,12 +382,28 @@ app.post('/debug/set-sequence', async (req, res) => {
   try {
     const { name, value } = req.body || {}
     if (!name || !value) return res.status(400).json({ error: 'name and value are required' })
-    if (!['doc_in_seq','doc_out_seq'].includes(name)) return res.status(400).json({ error: 'unsupported sequence' })
+    
+    // SECURITY: Use case statement to prevent SQL injection - never interpolate user input into SQL
+    const allowedSequences: Record<string, string> = {
+      'doc_in_seq': 'doc_in_seq',
+      'doc_out_seq': 'doc_out_seq'
+    }
+    const safeSeqName = allowedSequences[name]
+    if (!safeSeqName) return res.status(400).json({ error: 'unsupported sequence' })
+    
     const v = Number(value)
     if (!Number.isFinite(v) || v < 1) return res.status(400).json({ error: 'invalid value' })
-    // set sequence so nextval yields 'value' by setting current value to value-1
-    await query(`SELECT setval('${name}', $1)`, [v - 1])
-    const next = await query(`SELECT nextval('${name}') as n`)
+    
+    // Use parameterized identifier via safe lookup
+    const setQuery = safeSeqName === 'doc_in_seq' 
+      ? "SELECT setval('doc_in_seq', $1)"
+      : "SELECT setval('doc_out_seq', $1)"
+    await query(setQuery, [v - 1])
+    
+    const nextQuery = safeSeqName === 'doc_in_seq'
+      ? "SELECT nextval('doc_in_seq') as n"
+      : "SELECT nextval('doc_out_seq') as n"
+    const next = await query(nextQuery)
     return res.json({ ok: true, next: next.rows[0].n })
   } catch (err: any) {
     console.error('Set sequence error:', err)

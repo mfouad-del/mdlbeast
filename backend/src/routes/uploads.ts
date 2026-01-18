@@ -4,6 +4,7 @@ import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
 import { authenticateToken } from '../middleware/auth'
+import { validateUploadedFile, ALLOWED_MIME_TYPES } from '../lib/fileValidation'
 
 const router = express.Router()
 // Secure uploads endpoint
@@ -36,6 +37,16 @@ router.post('/', upload.single('file'), async (req: Request, res: Response) => {
   try {
     const f: any = (req as any).file
     if (!f) return res.status(400).json({ error: 'No file' })
+
+    // Validate file content using magic number detection
+    const fileBuffer = fs.readFileSync(f.path)
+    const validation = validateUploadedFile(fileBuffer, f.mimetype)
+    
+    if (!validation.valid) {
+      // Remove the uploaded file if validation fails
+      try { fs.unlinkSync(f.path) } catch (e) {}
+      return res.status(400).json({ error: validation.error || 'Invalid file type' })
+    }
 
     // Optional folder selection: documents | approvals | signatures | ...
     // Keep it safe: only allow a-z 0-9 _ - /
@@ -113,10 +124,7 @@ router.post('/', upload.single('file'), async (req: Request, res: Response) => {
 
     // Supabase upload path disabled — project migrated to R2. If you need to re-enable Supabase for rollback, set USE_R2_ONLY=false and restore the original code.
     return res.status(500).json({ error: 'Supabase uploads are disabled: server is R2-only. Set USE_R2_ONLY=false to re-enable legacy path.' })
-
-    // default local behavior
-    const url = `/uploads/${f.filename}`
-    res.json({ url, name: f.originalname, size: f.size, storage: 'local' })
+    // NOTE: Dead code removed - was unreachable after return statement
   } catch (err: any) {
     console.error('Upload error:', err)
     res.status(500).json({ error: err.message || 'Upload failed' })

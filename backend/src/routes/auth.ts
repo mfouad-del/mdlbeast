@@ -2,6 +2,7 @@ import express from "express"
 import type { Request, Response } from "express"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
+import rateLimit from "express-rate-limit"
 import { body, validationResult } from "express-validator"
 import { query } from "../config/database"
 import { logAudit } from "../services/auditService"
@@ -170,8 +171,21 @@ const loginLimiter = (req: any, res: any, next: any) => {
 // Login route should apply loginLimiter at call site via router.post('/login', loginLimiter, ...), ensure it's used in server startup when mounting router.
 // If server doesn't mount it, the loginLimiter above will gracefully no-op.
 
-// Refresh token endpoint
-router.post("/refresh", (req: Request, res: Response) => {
+// Rate limiter for refresh endpoint to prevent token brute-force attacks
+const refreshLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // limit to 20 refresh requests per window per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many refresh requests, please try again later' },
+  keyGenerator: (req: Request) => {
+    // Use IP address as key, with fallback
+    return req.ip || req.socket?.remoteAddress || 'unknown'
+  }
+})
+
+// Refresh token endpoint with rate limiting
+router.post("/refresh", refreshLimiter, (req: Request, res: Response) => {
   try {
     const { refreshToken } = req.body
     if (!refreshToken) return res.status(401).json({ error: "Refresh token required" })

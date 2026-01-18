@@ -9,7 +9,30 @@ export function validateEnv() {
   }
 }
 
+/**
+ * Check if debug endpoints should be accessible
+ * SECURITY: In production, debug endpoints are DISABLED by default
+ * They can only be enabled via explicit ENABLE_DEBUG_ENDPOINTS=true
+ */
 export function allowDebugAccess(req: Request, requireAdmin = false) {
+  const isProduction = process.env.NODE_ENV === 'production'
+  
+  // SECURITY: In production, only allow if explicitly enabled
+  if (isProduction) {
+    const explicitlyEnabled = String(process.env.ENABLE_DEBUG_ENDPOINTS || '').toLowerCase() === 'true'
+    if (!explicitlyEnabled) {
+      return false // Debug endpoints are completely disabled in production by default
+    }
+    
+    // Even if enabled, require admin authentication in production
+    const user = (req as any).user
+    if (!user || String(user.role || '').toLowerCase() !== 'admin') {
+      return false
+    }
+    return true
+  }
+
+  // Development/staging environment checks
   // If explicit flag set, allow
   if (String(process.env.ENABLE_DEBUG_ENDPOINTS || '').toLowerCase() === 'true') return true
 

@@ -96,17 +96,25 @@ export class DocumentService {
       if (!direction) throw new Error('Direction (type) is required to generate barcode')
       
       const prefix = direction === 'INCOMING' ? '1' : '2'
-      const seqName = direction === 'INCOMING' ? 'doc_in_seq' : 'doc_out_seq'
       let n: number
       
+      // SECURITY: Use explicit queries instead of string interpolation to prevent SQL injection
       try {
-        const seqRes = await query(`SELECT nextval('${seqName}') as n`)
+        const seqRes = direction === 'INCOMING'
+          ? await query("SELECT nextval('doc_in_seq') as n")
+          : await query("SELECT nextval('doc_out_seq') as n")
         n = seqRes.rows[0].n
       } catch (seqErr: any) {
-         // Create sequence if missing
-         await query(`CREATE SEQUENCE IF NOT EXISTS ${seqName} START 1`)
-         const seqRes2 = await query(`SELECT nextval('${seqName}') as n`)
-         n = seqRes2.rows[0].n
+         // Create sequence if missing - using explicit safe queries
+         if (direction === 'INCOMING') {
+           await query("CREATE SEQUENCE IF NOT EXISTS doc_in_seq START 1")
+           const seqRes2 = await query("SELECT nextval('doc_in_seq') as n")
+           n = seqRes2.rows[0].n
+         } else {
+           await query("CREATE SEQUENCE IF NOT EXISTS doc_out_seq START 1")
+           const seqRes2 = await query("SELECT nextval('doc_out_seq') as n")
+           n = seqRes2.rows[0].n
+         }
       }
       const padded = String(n).padStart(8, '0')
       barcode = `${prefix}-${padded}`
