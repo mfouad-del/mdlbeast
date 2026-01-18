@@ -2,9 +2,14 @@
 
 import React, { ReactNode } from 'react'
 import { AlertCircle, RefreshCw } from 'lucide-react'
+import { useI18n } from '@/lib/i18n-context'
 
 interface Props {
   children: ReactNode
+}
+
+interface InnerProps extends Props {
+  t: (key: string) => string
 }
 
 interface State {
@@ -12,8 +17,8 @@ interface State {
   error: Error | null
 }
 
-export class ErrorBoundary extends React.Component<Props, State> {
-  constructor(props: Props) {
+class ErrorBoundaryInner extends React.Component<InnerProps, State> {
+  constructor(props: InnerProps) {
     super(props)
     this.state = { hasError: false, error: null }
   }
@@ -31,6 +36,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   render() {
+    const { t } = this.props
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-red-50 to-orange-50 p-4">
@@ -40,10 +46,8 @@ export class ErrorBoundary extends React.Component<Props, State> {
                 <AlertCircle className="text-red-600" size={32} />
               </div>
             </div>
-            <h1 className="text-2xl font-black text-slate-900 text-center mb-3">خطأ غير متوقع</h1>
-            <p className="text-slate-600 text-center mb-6 text-sm leading-relaxed">
-              حدث خطأ في التطبيق. الرجاء محاولة تحديث الصفحة أو التواصل مع الدعم الفني إذا استمرت المشكلة.
-            </p>
+            <h1 className="text-2xl font-black text-slate-900 text-center mb-3">{t('new.key.xdxafp')}</h1>
+            <p className="text-slate-600 text-center mb-6 text-sm leading-relaxed">{t('new.key.1zr2fe')}</p>
             {this.state.error && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-6 text-xs text-red-700 font-mono overflow-auto max-h-32">
                 {this.state.error.message}
@@ -53,9 +57,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
               onClick={this.resetError}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-xl flex items-center justify-center gap-2 transition-all"
             >
-              <RefreshCw size={16} />
-              إعادة محاولة
-            </button>
+              <RefreshCw size={16} />{t('new.key.7jlidb')}</button>
           </div>
         </div>
       )
@@ -65,4 +67,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 }
 
-export default ErrorBoundary
+export default function ErrorBoundary(props: Props) {
+  const { t } = useI18n()
+  return <ErrorBoundaryInner {...props} t={t} />
+}

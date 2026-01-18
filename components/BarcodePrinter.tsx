@@ -3,6 +3,7 @@
 import type { Correspondence, SystemSettings } from "@/types"
 import { Printer, ImageIcon } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
+import { useI18n } from '@/lib/i18n-context'
 
 interface BarcodePrinterProps {
   doc: Correspondence
@@ -10,6 +11,7 @@ interface BarcodePrinterProps {
 }
 
 export default function BarcodePrinter({ doc, settings }: BarcodePrinterProps) {
+  const { t } = useI18n()
   const downloadAsPng = () => {
     apiClient.logAction('PRINT_STICKER_IMAGE', `Downloaded sticker image for ${doc.barcode}`, 'DOCUMENT', doc.barcode)
     const canvas = document.createElement("canvas")
@@ -40,7 +42,7 @@ export default function BarcodePrinter({ doc, settings }: BarcodePrinterProps) {
 
       ctx.font = "bold 26px Arial"
       ctx.fillStyle = "#666666"
-      ctx.fillText(`${doc.date} | ${doc.type === "INCOMING" ? "وارد" : "صادر"}`, 500, 440)
+      ctx.fillText(`${doc.date} | ${doc.type === "INCOMING" ? t('new.key.3mij8b') : t('new.key.5fsw78')}`, 500, 440)
       
       ctx.font = "bold 22px Arial"
       ctx.fillText(`المرفقات: ${doc.attachmentCount || '0'}`, 500, 470)
@@ -65,6 +67,7 @@ export default function BarcodePrinter({ doc, settings }: BarcodePrinterProps) {
         <head>
           <style>
             @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@700;900&display=swap');
+import { useI18n } from '../lib/i18n-context'
             body { font-family: 'Tajawal', sans-serif; margin: 0; padding: 10px; direction: rtl; }
             .label-box { 
                width: 320px; border: 4px solid #000; padding: 18px; 
@@ -83,7 +86,7 @@ export default function BarcodePrinter({ doc, settings }: BarcodePrinterProps) {
             <div class="title">${settings?.orgName || "MDLBEAST Entertainment"}</div>
             <img class="barcode-img" src="${barcode}">
             <span class="id-text">${doc.barcode}</span>
-            <div class="footer-text">${doc.date} | ${doc.type === "INCOMING" ? "وارد" : "صادر"}</div>
+            <div class="footer-text">${doc.date} | ${doc.type === "INCOMING" ? t('new.key.3mij8b') : t('new.key.5fsw78')}</div>
             <div class="attachment-text">المرفقات: ${doc.attachmentCount || '0'}</div>
           </div>
           <script>window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 600); }</script>
@@ -98,14 +101,14 @@ export default function BarcodePrinter({ doc, settings }: BarcodePrinterProps) {
       <button
         onClick={handlePrint}
         className="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-400 flex items-center justify-center transition-all shadow-sm hover:shadow-md"
-        title="طباعة ملصق حراري"
+        title={t('new.key.ld9qch')}
       >
         <Printer size={14} />
       </button>
       <button
         onClick={downloadAsPng}
         className="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-400 flex items-center justify-center transition-all shadow-sm hover:shadow-md"
-        title="حفظ كصورة PNG"
+        title={t('new.key.slvsdb')}
       >
         <ImageIcon size={14} />
       </button>

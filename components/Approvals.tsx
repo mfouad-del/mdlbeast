@@ -57,7 +57,7 @@ export default function Approvals({ currentUser }: ApprovalsProps) {
           setPreviewUrl(url);
         } catch (error) {
           console.error('Failed to fetch preview URL:', error);
-          toast({ title: "خطأ", description: "فشل تحميل المعاينة", variant: "destructive" });
+          toast({ title: t('new.key.1faeys'), description: t('new.key.vpn4ha'), variant: "destructive" });
         }
       }
     };
@@ -133,8 +133,8 @@ export default function Approvals({ currentUser }: ApprovalsProps) {
     const maxSize = 50 * 1024 * 1024;
     if (file.size > maxSize) {
       toast({ 
-        title: "خطأ", 
-        description: "حجم الملف أكبر من 50 ميجابايت", 
+        title: t('new.key.1faeys'), 
+        description: t('new.key.pr4y0r'), 
         variant: "destructive" 
       });
       return;
@@ -146,7 +146,7 @@ export default function Approvals({ currentUser }: ApprovalsProps) {
       setNewRequest(prev => ({ ...prev, attachment_url: result.url || result.file?.url }));
       toast({ title: "تم الرفع", description: "تم رفع الملف بنجاح" });
     } catch (error) {
-      toast({ title: "خطأ", description: "فشل رفع الملف", variant: "destructive" });
+      toast({ title: t('new.key.1faeys'), description: t('new.key.7v3omg'), variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -154,6 +154,15 @@ export default function Approvals({ currentUser }: ApprovalsProps) {
 
   const handleSubmitRequest = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!newRequest.attachment_url) {
+      toast({ 
+        title: t('approvals.alert'), 
+        description: t('approvals.attach_file_first'), 
+        variant: "destructive" 
+      });
+      return;
+    }
+
     if (!newRequest.manager_id) {
       toast({ title: t('common.error'), description: t('approvals.select_manager_required'), variant: "destructive" });
       return;
@@ -346,16 +355,6 @@ export default function Approvals({ currentUser }: ApprovalsProps) {
                 <button 
                   type="submit" 
                   disabled={isSubmitting}
-                  onClick={(e) => {
-                    if (!newRequest.attachment_url) {
-                      e.preventDefault();
-                      toast({ 
-                        title: t('approvals.alert'), 
-                        description: t('approvals.attach_file_first'), 
-                        variant: "destructive" 
-                      });
-                    }
-                  }}
                   className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black hover:bg-slate-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? t('approvals.submitting') : t('approvals.submit_request')}

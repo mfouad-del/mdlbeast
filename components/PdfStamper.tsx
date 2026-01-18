@@ -187,16 +187,14 @@ export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) 
               <Layers size={28} />
             </div>
             <div>
-              <h3 className="text-2xl font-black text-slate-900 font-heading">تطبيق ختم المستند الرقمي</h3>
+              <h3 className="text-2xl font-black text-slate-900 font-heading">{t('new.key.gz8snw')}</h3>
               <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-1 flex items-center gap-1.5">
-                <MousePointer2 size={12} /> قم بسحب الختم لوضعه في المكان المناسب على المستند
-              </p>
+                <MousePointer2 size={12} />{t('new.key.obe6z2')}</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
             <div className="bg-blue-50 text-blue-700 px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-blue-100 flex items-center gap-2">
-              <Eye size={14} /> وضع المعاينة والدمغ
-            </div>
+              <Eye size={14} />{t('new.key.zahmch')}</div>
             <button
               onClick={onClose}
               className="p-3 hover:bg-red-50 text-red-500 rounded-full transition-all group active:scale-90"
@@ -224,7 +222,7 @@ export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) 
             ) : (
               <div className="absolute inset-0 flex items-center justify-center text-slate-300 flex flex-col gap-4">
                 <FileSearch size={100} className="opacity-10" />
-                <p className="font-black opacity-20 text-2xl">المستند غير متوفر للمعاينة</p>
+                <p className="font-black opacity-20 text-2xl">{t('new.key.35blp3')}</p>
               </div>
             )}
 
@@ -301,7 +299,7 @@ export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) 
               <div className="flex items-center gap-3 bg-slate-50 px-4 py-3 rounded-xl border border-slate-100">
                 <Scan size={16} className="text-slate-400" />
                 <div className="flex flex-col gap-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-tight">حجم الختم</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-tight">{t('new.key.h6zrx2')}</label>
                     <div className="flex gap-2">
                       <button
                         onClick={() => setStampSize('small')}
@@ -310,9 +308,7 @@ export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) 
                             ? 'bg-slate-900 text-white shadow-md'
                             : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
                         }`}
-                      >
-                        صغير
-                      </button>
+                      >{t('new.key.0o5fs8')}</button>
                       <button
                         onClick={() => setStampSize('default')}
                         className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
@@ -320,16 +316,14 @@ export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) 
                             ? 'bg-slate-900 text-white shadow-md'
                             : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
                         }`}
-                      >
-                        افتراضي
-                      </button>
+                      >{t('new.key.n2uuuw')}</button>
                     </div>
                 </div>
               </div>
 
               <div className="flex items-center gap-4 bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-sm">
                 <div className="flex flex-col">
-                  <label className="text-[10px] font-bold text-slate-500 mb-1">المرفق</label>
+                  <label className="text-[10px] font-bold text-slate-500 mb-1">{t('new.key.75dwjj')}</label>
                   <select
                     value={attachmentIndex}
                     onChange={(e) => { setAttachmentIndex(Number(e.target.value)); setPageIndex(0); }}
@@ -338,7 +332,7 @@ export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) 
                     {(doc.attachments || []).map((_, i) => (
                       <option key={i} value={i}>مرفق {i+1}</option>
                     ))}
-                    {(!doc.attachments || doc.attachments.length === 0) && <option value={0}>مرفق 1</option>}
+                    {(!doc.attachments || doc.attachments.length === 0) && <option value={0}>{t('new.key.gbmnxj')}</option>}
                   </select>
                 </div>
 
@@ -360,7 +354,7 @@ export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) 
                 <div className="h-8 w-px bg-slate-200"></div>
 
                 <div className="flex flex-col">
-                  <label className="text-[10px] font-bold text-slate-500 mb-1">تدوير الملف</label>
+                  <label className="text-[10px] font-bold text-slate-500 mb-1">{t('new.key.coaq07')}</label>
                   <select
                     value={pageRotation}
                     onChange={(e) => setPageRotation(Number(e.target.value) as any)}
@@ -381,9 +375,7 @@ export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) 
               <button
                 onClick={onClose}
                 className="px-6 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50 transition-all"
-              >
-                إلغاء
-              </button>
+              >{t('new.key.otozop')}</button>
 
               {!hasPreview && (
                 <button
@@ -406,9 +398,7 @@ export default function PdfStamper({ doc, settings, onClose }: PdfStamperProps) 
                     onClick={handleClearPreview}
                     className="bg-orange-600 text-white px-8 py-3 rounded-xl font-black text-sm flex items-center gap-3 hover:bg-orange-700 transition-all shadow-lg hover:shadow-xl active:scale-95"
                   >
-                    <X size={16} />
-                    مسح الختم
-                  </button>
+                    <X size={16} />{t('new.key.piimqs')}</button>
                   <button
                     onClick={handleFinalize}
                     disabled={isSaving}

@@ -247,7 +247,7 @@ const BarcodeScanner: React.FC = () => {
   // Priority badge component
   const getPriorityBadge = (priority?: string) => {
     if (!priority) return null
-    const isUrgent = priority.includes('عاجل')
+    const isUrgent = priority.includes(t('new.key.6c24cm'))
     return (
       <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
         isUrgent 
@@ -271,7 +271,7 @@ const BarcodeScanner: React.FC = () => {
         subject: editForm.subject || editForm.title,
         priority: editForm.priority,
         notes: editForm.notes || editForm.description,
-        status: editForm.status || 'جديد'
+        status: editForm.status || t('new.key.tdl4iu')
       })
       
       const updated = await apiClient.getBarcode(foundDoc.barcode)
@@ -374,7 +374,7 @@ const BarcodeScanner: React.FC = () => {
                     autoPlay 
                     playsInline 
                     className="w-full h-full object-cover"
-                    aria-label="بث الكاميرا لمسح الباركود"
+                    aria-label={t('new.key.wca6cc')}
                   />
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div className="w-3/4 h-1/2 border-2 border-blue-400 border-dashed rounded-lg"></div>
@@ -836,9 +836,9 @@ const BarcodeScanner: React.FC = () => {
                           value={editForm.priority || ''}
                           onChange={(e) => setEditForm(prev => ({ ...prev, priority: e.target.value }))}
                         >
-                          <option value="عادي">{t('scanner.priority_normal')}</option>
-                          <option value="عاجل">{t('scanner.priority_urgent')}</option>
-                          <option value="عاجل جداً">{t('scanner.priority_very_urgent')}</option>
+                          <option value={t('new.key.fafis5')}>{t('scanner.priority_normal')}</option>
+                          <option value={t('new.key.6c24cm')}>{t('scanner.priority_urgent')}</option>
+                          <option value={t('new.key.iewttb')}>{t('scanner.priority_very_urgent')}</option>
                         </select>
                       </div>
                       

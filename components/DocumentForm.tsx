@@ -97,8 +97,8 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
     documentDate: new Date().toISOString().split("T")[0],
     description: "",
     statement: "",
-    security: "عادي",
-    priority: "عادي",
+    security: t('new.key.fafis5'),
+    priority: t('new.key.fafis5'),
     attachmentCount: 0,
   })
 
@@ -291,7 +291,7 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
                 value={formData.security}
                 onChange={(e) => handleSelectChange("security", e.target.value)}
               >
-                <option value="عادي">{t('archive.security.normal')}</option>
+                <option value={t('new.key.fafis5')}>{t('archive.security.normal')}</option>
                 <option value="سري">{t('archive.security.secret')}</option>
               </select>
             </div>
@@ -304,8 +304,8 @@ export default function DocumentForm({ type, onSave, companies }: DocumentFormPr
                 value={formData.priority}
                 onChange={(e) => handleSelectChange("priority", e.target.value)}
               >
-                <option value="عادي">{t('archive.priority.normal')}</option>
-                <option value="عاجل">{t('archive.priority.urgent')}</option>
+                <option value={t('new.key.fafis5')}>{t('archive.priority.normal')}</option>
+                <option value={t('new.key.6c24cm')}>{t('archive.priority.urgent')}</option>
               </select>
             </div>
           </div>

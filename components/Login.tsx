@@ -142,7 +142,7 @@ export default function Login({ onLogin, logoUrl }: { onLogin?: (u: any) => void
             className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-full text-xs font-bold text-slate-600 transition-colors z-10"
           >
             <Globe size={14} />
-            {locale === 'en' ? 'العربية' : 'English'}
+            {locale === 'en' ? t('new.key.mopwuy') : 'English'}
           </button>
 
           <header className="text-center mb-6 mt-4">
@@ -159,17 +159,15 @@ export default function Login({ onLogin, logoUrl }: { onLogin?: (u: any) => void
             {showDeploymentNotice && (
               <div className="bg-blue-50 border-2 border-blue-300 text-blue-900 p-4 rounded-xl text-sm font-bold text-center mb-4 animate-pulse">
                 <ShieldCheck size={20} className="inline ml-2" />
-                <div className="mt-2">
-                  {locale === 'ar' 
-                    ? '🔄 تم تحديث النظام إلى إصدار جديد\nبياناتك محفوظة - يرجى تسجيل الدخول مرة أخرى' 
-                    : '🔄 System updated to new version\nYour data is safe - Please login again'}
+                <div className="mt-2 text-center whitespace-pre-line">
+                  {t('auth.system_update_notice')}
                 </div>
                 <button 
                   type="button"
                   onClick={() => setShowDeploymentNotice(false)}
                   className="mt-2 text-xs text-blue-600 hover:text-blue-800 underline"
                 >
-                  {locale === 'ar' ? 'فهمت' : 'Got it'}
+                  {t('auth.got_it')}
                 </button>
               </div>
             )}

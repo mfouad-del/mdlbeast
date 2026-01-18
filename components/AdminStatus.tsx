@@ -460,7 +460,7 @@ export default function AdminStatus() {
           </div>
           <div>
             <h3 className="text-3xl font-black text-slate-900 mb-1">12%</h3>
-            <p className="text-slate-500 text-xs font-bold">متوسط الاستهلاك (طبيعي)</p>
+            <p className="text-slate-500 text-xs font-bold">{t('new.key.tkxtvu')}</p>
           </div>
         </div>
 
@@ -573,17 +573,17 @@ export default function AdminStatus() {
               </div>
               <div className="flex justify-between mt-3 text-xs font-bold text-slate-400">
                 <span>{displayStatus.storage?.total.count || 0} ملف</span>
-                <span>من أصل 10 GB</span>
+                <span>{t('new.key.p8sa6a')}</span>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-slate-50 p-4 rounded-xl">
-                <div className="text-xs text-slate-400 font-bold mb-1">عدد المرفقات</div>
+                <div className="text-xs text-slate-400 font-bold mb-1">{t('new.key.p6bjcx')}</div>
                 <div className="text-xl font-black text-slate-900">{displayStatus.db_stats?.attachmentsCount || displayStatus.storage?.total.count || 0}</div>
               </div>
               <div className="bg-slate-50 p-4 rounded-xl">
-                <div className="text-xs text-slate-400 font-bold mb-1">الوثائق المؤرشفة</div>
+                <div className="text-xs text-slate-400 font-bold mb-1">{t('new.key.9fyql7')}</div>
                 <div className="text-xl font-black text-slate-900">{displayStatus.db_stats?.documents || 0}</div>
               </div>
             </div>

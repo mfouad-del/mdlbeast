@@ -3,8 +3,10 @@ import React, { useEffect, useRef, useState } from 'react'
 import { apiClient } from '@/lib/api-client'
 import { useToast } from '@/hooks/use-toast'
 import { ToastAction } from '@/components/ui/toast'
+import { useI18n } from '@/lib/i18n-context'
 
 export default function AppVersionWatcher() {
+  const { t } = useI18n()
   const { toast } = useToast()
   const [version, setVersion] = useState<any>(null)
   const polling = useRef<number | null>(null)
@@ -21,7 +23,7 @@ export default function AppVersionWatcher() {
           // New version detected
           toast({ title: 'تحديث جديد متاح', description: 'هناك نسخة جديدة من التطبيق. اضغط لإعادة التحميل.', action: (
             <ToastAction asChild altText="reload">
-              <button onClick={() => window.location.reload()} className="font-black text-xs uppercase">إعادة التحميل</button>
+              <button onClick={() => window.location.reload()} className="font-black text-xs uppercase">{t('new.key.mtqwjr')}</button>
             </ToastAction>
           )})
           // Optional: auto reload after short delay

@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { Lock, Check, KeyRound, ShieldCheck, AlertCircle } from 'lucide-react';
 import { apiClient } from '../lib/api-client';
 import { useToast } from '@/hooks/use-toast';
+import { useI18n } from '../lib/i18n-context'
 
 const ChangePassword: React.FC = () => {
+  const { t } = useI18n()
   const { toast } = useToast()
   const [current, setCurrent] = useState('')
   const [newPass, setNewPass] = useState('')
@@ -15,25 +17,25 @@ const ChangePassword: React.FC = () => {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (newPass !== confirm) {
-      setMessage('كلمتا المرور غير متطابقتين')
+      setMessage(t('new.key.0piscv'))
       setMessageType('error')
-      toast({ title: "خطأ", description: "كلمتا المرور غير متطابقتين", variant: "destructive" })
+      toast({ title: t('new.key.1faeys'), description: t('new.key.0piscv'), variant: "destructive" })
       return
     }
     if (!newPass || newPass.length < 6) {
-      setMessage('كلمة المرور يجب أن تكون على الأقل 6 أحرف')
+      setMessage(t('new.key.du8478'))
       setMessageType('error')
-      toast({ title: "خطأ", description: "كلمة المرور قصيرة جداً", variant: "destructive" })
+      toast({ title: t('new.key.1faeys'), description: "كلمة المرور قصيرة جداً", variant: "destructive" })
       return
     }
     try {
       setLoading(true)
       await apiClient.changePassword({ currentPassword: current, newPassword: newPass })
-      setMessage('تم تحديث كلمة المرور بنجاح')
+      setMessage(t('new.key.t4r2bk'))
       setMessageType('success')
       toast({ 
-        title: "تم بنجاح", 
-        description: "تم تحديث كلمة المرور الخاصة بك", 
+        title: t('new.key.ofiet2'), 
+        description: t('new.key.13xjg5'), 
         className: "bg-green-50 border-green-200 text-green-800" 
       })
       setCurrent('')
@@ -41,7 +43,7 @@ const ChangePassword: React.FC = () => {
       setConfirm('')
     } catch (err: any) {
       console.error(err)
-      setMessage(err.message || 'فشل تغيير كلمة المرور')
+      setMessage(err.message || t('new.key.kpr24p'))
       setMessageType('error')
       toast({ title: "فشل التحديث", description: err.message || "حدث خطأ أثناء تغيير كلمة المرور", variant: "destructive" })
     } finally {
@@ -60,8 +62,8 @@ const ChangePassword: React.FC = () => {
             <KeyRound size={24} />
           </div>
           <div>
-            <h2 className="text-2xl font-black text-slate-900">تغيير كلمة المرور</h2>
-            <p className="text-sm text-slate-500">قم بتحديث كلمة المرور الخاصة بك بشكل دوري للحفاظ على أمان حسابك.</p>
+            <h2 className="text-2xl font-black text-slate-900">{t('new.key.59cjy1')}</h2>
+            <p className="text-sm text-slate-500">{t('new.key.tnwgev')}</p>
           </div>
         </div>
 
@@ -75,7 +77,7 @@ const ChangePassword: React.FC = () => {
 
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-bold text-slate-700 block mb-2">كلمة المرور الحالية</label>
+              <label className="text-sm font-bold text-slate-700 block mb-2">{t('new.key.lua9tj')}</label>
               <div className="relative group">
                 <Lock className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={18} />
                 <input 
@@ -83,7 +85,7 @@ const ChangePassword: React.FC = () => {
                   value={current} 
                   onChange={e => { setCurrent(e.target.value); onInput() }} 
                   className="w-full p-4 pr-12 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none font-sans" 
-                  placeholder="أدخل كلمة المرور الحالية..."
+                  placeholder={t('new.key.fl4px7')}
                   required 
                 />
               </div>
@@ -91,7 +93,7 @@ const ChangePassword: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-bold text-slate-700 block mb-2">كلمة المرور الجديدة</label>
+                <label className="text-sm font-bold text-slate-700 block mb-2">{t('new.key.h7osnn')}</label>
                 <div className="relative group">
                   <ShieldCheck className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={18} />
                   <input 
@@ -99,14 +101,14 @@ const ChangePassword: React.FC = () => {
                     value={newPass} 
                     onChange={e => { setNewPass(e.target.value); onInput() }} 
                     className="w-full p-4 pr-12 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none font-sans" 
-                    placeholder="أدخل كلمة المرور الجديدة..."
+                    placeholder={t('new.key.ioli9q')}
                     required 
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-sm font-bold text-slate-700 block mb-2">تأكيد كلمة المرور</label>
+                <label className="text-sm font-bold text-slate-700 block mb-2">{t('new.key.s5fi6x')}</label>
                 <div className="relative group">
                   <Check className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={18} />
                   <input 
@@ -114,7 +116,7 @@ const ChangePassword: React.FC = () => {
                     value={confirm} 
                     onChange={e => { setConfirm(e.target.value); onInput() }} 
                     className="w-full p-4 pr-12 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none font-sans" 
-                    placeholder="أعد كتابة كلمة المرور..."
+                    placeholder={t('new.key.r18nn9')}
                     required 
                   />
                 </div>
@@ -129,12 +131,10 @@ const ChangePassword: React.FC = () => {
               disabled={loading}
             >
               {loading ? (
-                <>جارٍ المعالجة...</>
+                <>{t('new.key.l77x8y')}</>
               ) : (
                 <>
-                  <Check size={20} /> 
-                  تحديث كلمة المرور
-                </>
+                  <Check size={20} />{t('new.key.h4pevx')}</>
               )}
             </button>
           </div>

@@ -5,8 +5,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from './ui/button'
 import { apiClient } from '@/lib/api-client'
 import { useRouter } from 'next/navigation'
+import { useI18n } from '../lib/i18n-context'
 
 export default function SessionExpiredModal() {
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const router = useRouter()
 
@@ -19,6 +21,7 @@ export default function SessionExpiredModal() {
   }, [])
 
   const handleLogin = () => {
+  const { t } = useI18n()
     setOpen(false)
     apiClient.clearToken()
     // After session expiry, redirect user to the public archive root as requested
@@ -30,11 +33,11 @@ export default function SessionExpiredModal() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>جلستك انتهت</DialogTitle>
-          <DialogDescription>يرجى تسجيل الدخول مرة أخرى لحماية بياناتك.</DialogDescription>
+          <DialogTitle>{t('new.key.32ekks')}</DialogTitle>
+          <DialogDescription>{t('new.key.inpqoy')}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button onClick={handleLogin}>اذهب لتسجيل الدخول</Button>
+          <Button onClick={handleLogin}>{t('new.key.cusxmh')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

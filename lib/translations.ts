@@ -186,16 +186,16 @@ export const translations = {
     copyright: "جميع الحقوق محفوظة © 2025",
     loading: "جارٍ التحميل...",
     save: "حفظ",
-    cancel: "إلغاء",
-    delete: "حذف",
-    edit: "تعديل",
+    cancel: 'إلغاء',
+    delete: 'حذف',
+    edit: 'تعديل',
     add: "إضافة",
     search: "بحث",
     filter: "تصفية",
     export: "تصدير",
     import: "استيراد",
     refresh: "تحديث",
-    close: "إغلاق",
+    close: 'إغلاق',
     confirm: "تأكيد",
     back: "رجوع",
     next: "التالي",
@@ -216,7 +216,7 @@ export const translations = {
     backups: "النسخ الاحتياطي",
     systemStatus: "حالة النظام",
     auditLogs: "سجل التدقيق",
-    changePassword: "تغيير كلمة المرور",
+    changePassword: 'تغيير كلمة المرور',
     
     // Dashboard
     totalDocuments: "إجمالي المستندات",
@@ -230,21 +230,21 @@ export const translations = {
     
     // Documents
     documentNumber: "رقم المستند",
-    subject: "الموضوع",
-    sender: "المرسل",
+    subject: 'الموضوع',
+    sender: 'المرسل',
     receiver: "المستلم",
-    date: "التاريخ",
-    priority: "الأولوية",
-    status: "الحالة",
+    date: 'التاريخ',
+    priority: 'الأولوية',
+    status: 'الحالة',
     attachments: "المرفقات",
     notes: "الملاحظات",
-    barcode: "الباركود",
+    barcode: 'الباركود',
     classification: "التصنيف",
     
     // Priority levels
-    urgent: "عاجل",
+    urgent: 'عاجل',
     high: "مرتفع",
-    normal: "عادي",
+    normal: 'عادي',
     low: "منخفض",
     
     // Status
@@ -257,8 +257,8 @@ export const translations = {
     // User Management
     username: "اسم المستخدم",
     password: "كلمة المرور",
-    email: "البريد الإلكتروني",
-    fullName: "الاسم الكامل",
+    email: 'البريد الإلكتروني',
+    fullName: 'الاسم الكامل',
     role: "الدور",
     admin: "مدير",
     manager: "مشرف",
@@ -300,7 +300,7 @@ export const translations = {
     primaryColor: "اللون الأساسي",
     language: "اللغة",
     english: "English",
-    arabic: "العربية",
+    arabic: 'العربية',
     
     // Backups
     systemBackups: "نسخ النظام الاحتياطية",
@@ -321,7 +321,7 @@ export const translations = {
     confirmJSONRestore: "استعادة JSON ستقوم بإدخالات/تحديثات في قاعدة البيانات. موافق؟",
     confirmFullRestore: "تحذير: الاستعادة الشاملة ستستبدل جميع البيانات. لا يمكن التراجع. موافق؟",
     downloadBackup: "تحميل",
-    deleteBackup: "حذف",
+    deleteBackup: 'حذف',
     
     // System Status
     systemStatusTitle: "حالة النظام",

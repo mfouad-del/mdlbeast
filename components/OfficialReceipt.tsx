@@ -2,6 +2,7 @@
 
 import type { Correspondence, SystemSettings } from "@/types"
 import { apiClient } from "@/lib/api-client"
+import { useI18n } from '@/lib/i18n-context'
 
 interface OfficialReceiptProps {
   doc: Correspondence
@@ -9,6 +10,7 @@ interface OfficialReceiptProps {
 }
 
 export default function OfficialReceipt({ doc, settings }: OfficialReceiptProps) {
+  const { t } = useI18n()
   const handlePrint = () => {
     apiClient.logAction('PRINT_RECEIPT', `Printed official receipt for ${doc.barcode}`, 'DOCUMENT', doc.barcode)
     const p = window.open("", "_blank")
@@ -24,6 +26,7 @@ export default function OfficialReceipt({ doc, settings }: OfficialReceiptProps)
           <title>مستند رسمي - ${doc.barcode}</title>
           <style>
             @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap');
+import { useI18n } from '../lib/i18n-context'
             @page { size: A4; margin: 0; }
             body { 
               font-family: 'Tajawal', sans-serif; 
@@ -140,7 +143,7 @@ export default function OfficialReceipt({ doc, settings }: OfficialReceiptProps)
                     <img src="${settings.logoUrl || "https://www.zaco.sa/logo2.png"}">
                   </td>
                   <td width="40%" class="title-cell">
-                     <h1>${settings.orgName || "زوايا البناء للإستشارات الهندسية"}</h1>
+                     <h1>${settings.orgName || t('new.key.6u4kyk')}</h1>
                      <p>${settings.orgNameEn || "ZAWAYA ALBINA ENGINEERING"}</p>
                   </td>
                   <td width="30%" class="barcode-cell">
@@ -153,37 +156,37 @@ export default function OfficialReceipt({ doc, settings }: OfficialReceiptProps)
               <div class="metadata-strip">
                 <div>رقم المرجع: ${doc.barcode}</div>
                 <div>تاريخ القيد: ${doc.dateHijri || doc.date} (${doc.dateGregorian || doc.date})</div>
-                <div>نوع المعاملة: ${doc.type === "INCOMING" ? "وارد" : "صادر"}</div>
+                <div>نوع المعاملة: ${doc.type === "INCOMING" ? t('new.key.3mij8b') : t('new.key.5fsw78')}</div>
               </div>
 
               <div class="main-body">
                 <h2 class="doc-heading">${doc.title || doc.subject}</h2>
                 
-                <div class="info-row"><div class="label">مرسل من:</div><div class="value">${doc.sender}</div></div>
-                <div class="info-row"><div class="label">مرسل إلى:</div><div class="value">${
+                <div class="info-row"><div class="label">{t('new.key.xz9r7e')}</div><div class="value">${doc.sender}</div></div>
+                <div class="info-row"><div class="label">{t('new.key.9205ud')}</div><div class="value">${
                   doc.recipient || doc.receiver
                 }</div></div>
-                <div class="info-row"><div class="label">تاريخ الخطاب:</div><div class="value">${(doc.dateHijri || doc.date) + ' (' + (doc.dateGregorian || doc.date) + ')'}</div></div>
-                <div class="info-row"><div class="label">الأولوية:</div><div class="value">${doc.priority}</div></div>
-                <div class="info-row"><div class="label">درجة السرية:</div><div class="value">${
-                  doc.security || "عام"
+                <div class="info-row"><div class="label">{t('new.key.mzitmm')}</div><div class="value">${(doc.dateHijri || doc.date) + ' (' + (doc.dateGregorian || doc.date) + ')'}</div></div>
+                <div class="info-row"><div class="label">{t('new.key.60i4fd')}</div><div class="value">${doc.priority}</div></div>
+                <div class="info-row"><div class="label">{t('new.key.lrh6uh')}</div><div class="value">${
+                  doc.security || t('new.key.rzaoc6')
                 }</div></div>
 
                 <div class="description-box">
-                  <strong>البيان والوصف الرسمي:</strong><br><br>
+                  <strong>{t('new.key.cd1hws')}</strong><br><br>
                   ${
                     doc.description ||
                     doc.notes ||
-                    "تم قيد هذه المعاملة رقمياً وتوثيقها في السجل الموحد للمؤسسة، وتعتبر هذه النسخة أصلية بموجب الباركود المرجعي المسجل في أنظمة الحوكمة الرقمية."
+                    t('new.key.pjemdi')
                   }
                 </div>
               </div>
 
               <div class="footer-signature">
-                <div class="stamp-placeholder">ختم المؤسسة المعتمد</div>
+                <div class="stamp-placeholder">{t('new.key.u25ofu')}</div>
                 <div class="signature-box">
-                   <div style="font-weight: 900; font-size: 12pt; margin-bottom: 2mm;">يعتمد،، الإدارة العامة</div>
-                   <div style="font-size: 9.5pt;">${(doc as any).signatory || "المدير التنفيذي"}</div>
+                   <div style="font-weight: 900; font-size: 12pt; margin-bottom: 2mm;">{t('new.key.jpyszm')}</div>
+                   <div style="font-size: 9.5pt;">${(doc as any).signatory || t('new.key.82wuaj')}</div>
                 </div>
               </div>
 
@@ -203,7 +206,7 @@ export default function OfficialReceipt({ doc, settings }: OfficialReceiptProps)
     <button
       onClick={handlePrint}
       className="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-400 flex items-center justify-center transition-all shadow-sm hover:shadow-md"
-      title="طباعة خطاب A4"
+      title={t('new.key.b3lqxi')}
     >
       <span className="text-[10px] font-black">A4</span>
     </button>

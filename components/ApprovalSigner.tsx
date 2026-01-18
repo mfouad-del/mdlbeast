@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ZoomIn, ZoomOut, RotateCcw, Save, Move } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { useToast } from '@/hooks/use-toast';
+import { useI18n } from '../lib/i18n-context'
 
 interface ApprovalSignerProps {
   approvalId: number;
@@ -24,6 +25,7 @@ export default function ApprovalSigner({
   onSuccess,
   onCancel
 }: ApprovalSignerProps) {
+  const { t } = useI18n()
   const [selectedType, setSelectedType] = useState<'signature' | 'stamp'>('signature');
   const [signSize, setSignSize] = useState(120);
   const [signPosition, setSignPosition] = useState({ x: 50, y: 50 });
@@ -82,7 +84,7 @@ export default function ApprovalSigner({
         }
       } catch (error) {
         console.error('Failed to fetch URLs:', error);
-        toast({ title: "خطأ", description: "فشل تحميل المعاينة", variant: "destructive" });
+        toast({ title: t('new.key.1faeys'), description: t('new.key.vpn4ha'), variant: "destructive" });
       }
     };
     fetchUrls();
@@ -191,8 +193,8 @@ export default function ApprovalSigner({
       await apiClient.updateApprovalRequest(approvalId, payload);
       
       toast({ 
-        title: "✅ تم الاعتماد", 
-        description: "تم اعتماد المستند وإضافة التوقيع/الختم بنجاح" 
+        title: t('new.key.guxsna'), 
+        description: t('new.key.y41uxn') 
       });
       
       onSuccess();
@@ -200,11 +202,11 @@ export default function ApprovalSigner({
       console.error('Approval failed:', error);
       
       // Check if error is about missing signature/stamp
-      const errorMsg = error?.response?.data?.error || error.message || "فشل اعتماد المستند";
+      const errorMsg = error?.response?.data?.error || error.message || t('new.key.pkvm40');
       const needsSignature = error?.response?.data?.needsSignature;
       
       toast({ 
-        title: needsSignature ? "⚠️ توقيع مطلوب" : "❌ خطأ", 
+        title: needsSignature ? t('new.key.smhu0i') : t('new.key.7q406g'), 
         description: errorMsg, 
         variant: "destructive" 
       });
@@ -220,14 +222,14 @@ export default function ApprovalSigner({
         <div className="p-6 border-b border-slate-200 bg-gradient-to-r from-blue-50 to-slate-50">
           <div className="flex items-center justify-between">
             <div className="flex-1">
-              <h3 className="text-2xl font-black text-slate-900 mb-2">اعتماد وتوقيع المستند</h3>
+              <h3 className="text-2xl font-black text-slate-900 mb-2">{t('new.key.5esn9c')}</h3>
               <div className="bg-white p-4 rounded-xl border-2 border-blue-200 shadow-sm">
                 <p className="font-black text-lg text-slate-900 mb-1">{approvalTitle}</p>
                 {approvalDescription && (
                   <p className="text-sm text-slate-600 leading-relaxed">{approvalDescription}</p>
                 )}
               </div>
-              <p className="text-xs text-slate-500 font-bold mt-3">اختر التوقيع أو الختم ثم اسحبه للمكان المطلوب على المستند</p>
+              <p className="text-xs text-slate-500 font-bold mt-3">{t('new.key.1ktxe4')}</p>
             </div>
             <button 
               onClick={onCancel}
@@ -247,7 +249,7 @@ export default function ApprovalSigner({
               <button 
                 onClick={() => setZoom(Math.max(0.5, zoom - 0.1))}
                 className="p-2 bg-white rounded-lg hover:bg-slate-50 transition-colors"
-                title="تصغير"
+                title={t('new.key.01ngdc')}
               >
                 <ZoomOut size={18} />
               </button>
@@ -257,14 +259,14 @@ export default function ApprovalSigner({
               <button 
                 onClick={() => setZoom(Math.min(3, zoom + 0.1))}
                 className="p-2 bg-white rounded-lg hover:bg-slate-50 transition-colors"
-                title="تكبير"
+                title={t('new.key.1setwe')}
               >
                 <ZoomIn size={18} />
               </button>
               <button 
                 onClick={() => setZoom(1)}
                 className="p-2 bg-white rounded-lg hover:bg-slate-50 transition-colors"
-                title="إعادة"
+                title={t('new.key.w7g2dm')}
               >
                 <RotateCcw size={18} />
               </button>
@@ -272,10 +274,8 @@ export default function ApprovalSigner({
               <button
                 onClick={handleCenter}
                 className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-xs font-bold"
-                title="توسيط التوقيع"
-              >
-                توسيط
-              </button>
+                title={t('new.key.3joyua')}
+              >{t('new.key.b6cwm5')}</button>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -283,11 +283,11 @@ export default function ApprovalSigner({
                   onChange={(e) => setGridSnap(e.target.checked)}
                   className="w-4 h-4 text-blue-600 rounded"
                 />
-                <span className="text-xs font-bold text-slate-600">محاذاة تلقائية</span>
+                <span className="text-xs font-bold text-slate-600">{t('new.key.mtf3o6')}</span>
               </label>
               <div className="flex-1" />
               <Move size={18} className="text-slate-400" />
-              <span className="text-xs text-slate-500 font-bold">اسحب التوقيع/الختم</span>
+              <span className="text-xs text-slate-500 font-bold">{t('new.key.xtzvei')}</span>
             </div>
 
             {/* PDF Container with Signature/Stamp Overlay */}
@@ -305,11 +305,11 @@ export default function ApprovalSigner({
                   src={`${previewUrl}#view=Fit&toolbar=0&navpanes=0`}
                   className="w-full h-full"
                   style={{ minHeight: '85vh', border: 'none' }}
-                  title="معاينة المستند"
+                  title={t('new.key.x8hqk6')}
                 />
               ) : (
                 <div className="flex items-center justify-center h-full">
-                  <p className="text-slate-400 font-bold animate-pulse">جاري التحميل...</p>
+                  <p className="text-slate-400 font-bold animate-pulse">{t('new.key.nkrwo5')}</p>
                 </div>
               )}
 
@@ -329,7 +329,7 @@ export default function ApprovalSigner({
                   >
                     <img 
                       src={currentImageUrl} 
-                      alt={selectedType === 'signature' ? 'التوقيع' : 'الختم'}
+                      alt={selectedType === 'signature' ? t('new.key.aux3wf') : t('new.key.syiuj3')}
                       className="w-full h-full object-contain"
                       draggable={false}
                     />
@@ -345,9 +345,7 @@ export default function ApprovalSigner({
           <div className="w-80 flex flex-col gap-4">
             {/* Type Selection */}
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-              <label className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3 block">
-                اختر نوع الاعتماد
-              </label>
+              <label className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3 block">{t('new.key.iggxn3')}</label>
               <div className="space-y-2">
                 {signedSignatureUrl && (
                   <button
@@ -359,8 +357,8 @@ export default function ApprovalSigner({
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <img src={signedSignatureUrl} alt="التوقيع" className="h-10 w-20 object-contain" />
-                      <span className="font-bold text-sm">التوقيع</span>
+                      <img src={signedSignatureUrl} alt={t('new.key.aux3wf')} className="h-10 w-20 object-contain" />
+                      <span className="font-bold text-sm">{t('new.key.aux3wf')}</span>
                     </div>
                   </button>
                 )}
@@ -374,14 +372,14 @@ export default function ApprovalSigner({
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <img src={signedStampUrl} alt="الختم" className="h-10 w-20 object-contain" />
-                      <span className="font-bold text-sm">ختم القسم</span>
+                      <img src={signedStampUrl} alt={t('new.key.syiuj3')} className="h-10 w-20 object-contain" />
+                      <span className="font-bold text-sm">{t('new.key.smt68h')}</span>
                     </div>
                   </button>
                 )}
                 {!signedSignatureUrl && !signedStampUrl && (
                   <div className="text-center py-4 text-slate-400 text-sm">
-                    <p className="font-bold">جاري التحميل...</p>
+                    <p className="font-bold">{t('new.key.nkrwo5')}</p>
                   </div>
                 )}
               </div>
@@ -389,9 +387,7 @@ export default function ApprovalSigner({
 
             {/* Size Control */}
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-              <label className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3 block">
-                حجم التوقيع/الختم
-              </label>
+              <label className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3 block">{t('new.key.51c0y2')}</label>
               <input
                 type="range"
                 min="60"
@@ -410,9 +406,7 @@ export default function ApprovalSigner({
 
             {/* Position & Size Info */}
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-              <label className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3 block">
-                معلومات التوضيع
-              </label>
+              <label className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3 block">{t('new.key.gjmayg')}</label>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="bg-white p-2 rounded-lg">
                   <span className="text-slate-400">X:</span>{' '}
@@ -423,7 +417,7 @@ export default function ApprovalSigner({
                   <span className="font-bold">{Math.round(signPosition.y)} بكسل</span>
                 </div>
                 <div className="bg-white p-2 rounded-lg col-span-2">
-                  <span className="text-slate-400">الحجم:</span>{' '}
+                  <span className="text-slate-400">{t('new.key.gwux80')}</span>{' '}
                   <span className="font-bold">{signSize} × {signSize} بكسل</span>
                 </div>
               </div>
@@ -438,14 +432,12 @@ export default function ApprovalSigner({
                 className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-4 rounded-2xl font-black text-lg shadow-xl hover:shadow-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <Save size={20} />
-                {isSubmitting ? 'جاري الاعتماد...' : 'تأكيد الاعتماد'}
+                {isSubmitting ? t('new.key.oijdp2') : t('new.key.xmjgkp')}
               </button>
               <button
                 onClick={onCancel}
                 className="w-full bg-slate-100 text-slate-600 py-3 rounded-xl font-bold hover:bg-slate-200 transition-colors"
-              >
-                إلغاء
-              </button>
+              >{t('new.key.otozop')}</button>
             </div>
           </div>
         </div>

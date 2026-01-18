@@ -236,13 +236,13 @@ export default function AuditLogs() {
     if (act.includes('create') || act.includes('add') || act.includes('إنشاء')) return { icon: FilePlus, color: 'text-blue-600', bg: 'bg-blue-100', label: t('audit.action.create') }
     
     // Update/Edit
-    if (act.includes('update') || act.includes('edit') || act.includes('تعديل') || act.includes('تحديث')) return { icon: Edit, color: 'text-amber-600', bg: 'bg-amber-100', label: t('audit.action.update') }
+    if (act.includes('update') || act.includes('edit') || act.includes(t('new.key.8x92zx')) || act.includes('تحديث')) return { icon: Edit, color: 'text-amber-600', bg: 'bg-amber-100', label: t('audit.action.update') }
     
     // Delete/Remove
-    if (act.includes('delete') || act.includes('remove') || act.includes('حذف')) return { icon: Trash2, color: 'text-red-600', bg: 'bg-red-100', label: t('audit.action.delete') }
+    if (act.includes('delete') || act.includes('remove') || act.includes(t('new.key.onrqgj'))) return { icon: Trash2, color: 'text-red-600', bg: 'bg-red-100', label: t('audit.action.delete') }
     
     // Print/Download/PDF
-    if (act.includes('print') || act.includes('طباعة')) return { icon: Activity, color: 'text-indigo-600', bg: 'bg-indigo-100', label: t('audit.action.print') }
+    if (act.includes('print') || act.includes(t('new.key.3nr9i1'))) return { icon: Activity, color: 'text-indigo-600', bg: 'bg-indigo-100', label: t('audit.action.print') }
     if (act.includes('download') || act.includes('تحميل') || act.includes('pdf')) return { icon: FileDown, color: 'text-purple-600', bg: 'bg-purple-100', label: t('audit.action.download') }
     if (act.includes('view') || act.includes('read') || act.includes('عرض')) return { icon: Activity, color: 'text-slate-500', bg: 'bg-slate-100', label: t('audit.action.view') }
     
@@ -326,7 +326,7 @@ export default function AuditLogs() {
   const exportLogs = () => {
     const data = filteredLogs.map(l => ({
       التاريخ: formatDateTimeGregorian(l.created_at),
-      المستخدم: l.full_name || l.username || 'النظام',
+      المستخدم: l.full_name || l.username || t('new.key.kff6c1'),
       العملية: l.action,
       التفاصيل: l.details || '',
       IP: l.ip_address || ''
@@ -368,7 +368,7 @@ export default function AuditLogs() {
               <button
                 onClick={exportLogs}
                 className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-colors"
-                title="تصدير السجلات"
+                title={t('new.key.9cfkjt')}
               >
                 <FileDown size={16} />
                 <span className="hidden sm:inline">CSV</span>
@@ -407,7 +407,7 @@ export default function AuditLogs() {
               </div>
               <div>
                 <div className="text-2xl font-black text-slate-900">{stats.todayCount}</div>
-                <div className="text-xs text-slate-500 font-bold">عمليات اليوم</div>
+                <div className="text-xs text-slate-500 font-bold">{t('new.key.ww1jax')}</div>
               </div>
             </div>
           </div>
@@ -418,7 +418,7 @@ export default function AuditLogs() {
               </div>
               <div>
                 <div className="text-2xl font-black text-slate-900">{stats.loginsCount}</div>
-                <div className="text-xs text-slate-500 font-bold">تسجيلات دخول</div>
+                <div className="text-xs text-slate-500 font-bold">{t('new.key.7egl6s')}</div>
               </div>
             </div>
           </div>
@@ -429,7 +429,7 @@ export default function AuditLogs() {
               </div>
               <div>
                 <div className="text-2xl font-black text-slate-900">{stats.uniqueUsers}</div>
-                <div className="text-xs text-slate-500 font-bold">مستخدمين نشطين</div>
+                <div className="text-xs text-slate-500 font-bold">{t('new.key.5see7q')}</div>
               </div>
             </div>
           </div>
@@ -440,7 +440,7 @@ export default function AuditLogs() {
               </div>
               <div>
                 <div className="text-2xl font-black text-slate-900">{stats.errorsCount}</div>
-                <div className="text-xs text-slate-500 font-bold">أخطاء</div>
+                <div className="text-xs text-slate-500 font-bold">{t('new.key.y5boq4')}</div>
               </div>
             </div>
           </div>
@@ -452,7 +452,7 @@ export default function AuditLogs() {
         <div className="relative">
           <input
             type="text"
-            placeholder="بحث في السجلات..."
+            placeholder={t('new.key.fpxwyf')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-4 pr-10 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-slate-100 outline-none shadow-sm"
@@ -465,10 +465,10 @@ export default function AuditLogs() {
           onChange={(e) => setDateFilter(e.target.value as any)}
           className="px-4 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-700 outline-none shadow-sm"
         >
-          <option value="all">كل الفترات</option>
-          <option value="today">اليوم</option>
-          <option value="week">آخر 7 أيام</option>
-          <option value="month">آخر 30 يوم</option>
+          <option value="all">{t('new.key.cji5of')}</option>
+          <option value="today">{t('new.key.b3243e')}</option>
+          <option value="week">{t('new.key.7j2q9k')}</option>
+          <option value="month">{t('new.key.m5wcho')}</option>
         </select>
 
         <select
@@ -476,12 +476,12 @@ export default function AuditLogs() {
           onChange={(e) => setActionFilter(e.target.value)}
           className="px-4 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-700 outline-none shadow-sm"
         >
-          <option value="all">جميع العمليات</option>
-          <option value="login">تسجيل دخول/خروج</option>
-          <option value="create">إنشاء/إضافة</option>
-          <option value="update">تعديل</option>
-          <option value="delete">حذف</option>
-          <option value="print">طباعة</option>
+          <option value="all">{t('new.key.co8a2n')}</option>
+          <option value="login">{t('new.key.ct9ode')}</option>
+          <option value="create">{t('new.key.gowo99')}</option>
+          <option value="update">{t('new.key.8x92zx')}</option>
+          <option value="delete">{t('new.key.onrqgj')}</option>
+          <option value="print">{t('new.key.3nr9i1')}</option>
         </select>
       </div>
 
@@ -490,12 +490,12 @@ export default function AuditLogs() {
         {loading ? (
           <div className="bg-white rounded-3xl p-12 text-center border border-slate-100 shadow-sm">
              <RefreshCw size={32} className="animate-spin text-slate-300 mx-auto mb-4" />
-             <p className="text-slate-500 font-bold">جاري تحميل السجلات...</p>
+             <p className="text-slate-500 font-bold">{t('new.key.b9edk9')}</p>
           </div>
         ) : filteredLogs.length === 0 ? (
           <div className="bg-white rounded-3xl p-12 text-center border border-slate-100 shadow-sm">
              <Activity size={32} className="text-slate-300 mx-auto mb-4" />
-             <p className="text-slate-500 font-bold">لا توجد سجلات مطابقة للبحث</p>
+             <p className="text-slate-500 font-bold">{t('new.key.gvw8f0')}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -522,7 +522,7 @@ export default function AuditLogs() {
                     <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
                       <div className="col-span-1">
                         <div className="flex items-center gap-2">
-                           <span className="font-bold text-slate-800 text-sm">{log.full_name || log.username || 'النظام'}</span>
+                           <span className="font-bold text-slate-800 text-sm">{log.full_name || log.username || t('new.key.kff6c1')}</span>
                            {log.user_id && <span className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 font-mono">#{log.user_id}</span>}
                         </div>
                         <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
@@ -555,14 +555,14 @@ export default function AuditLogs() {
                           <div className="flex items-start gap-2">
                              <div className="p-1 bg-slate-100 rounded mt-0.5"><Database size={14} className="text-slate-500" /></div>
                              <div>
-                                <span className="text-xs font-bold text-slate-400 block">نوع الكيان</span>
+                                <span className="text-xs font-bold text-slate-400 block">{t('new.key.gq6s3y')}</span>
                                 <span className="text-sm font-bold text-slate-700">{log.entity_type || '-'}</span>
                              </div>
                           </div>
                           <div className="flex items-start gap-2">
                              <div className="p-1 bg-slate-100 rounded mt-0.5"><Activity size={14} className="text-slate-500" /></div>
                              <div>
-                                <span className="text-xs font-bold text-slate-400 block">معرّف الكيان</span>
+                                <span className="text-xs font-bold text-slate-400 block">{t('new.key.epyqqt')}</span>
                                 <span className="text-sm font-bold text-slate-700">{log.entity_id || '-'}</span>
                              </div>
                           </div>
@@ -570,7 +570,7 @@ export default function AuditLogs() {
                             <div className="flex items-start gap-2">
                                <div className="p-1 bg-slate-100 rounded mt-0.5"><Shield size={14} className="text-slate-500" /></div>
                                <div>
-                                  <span className="text-xs font-bold text-slate-400 block">عنوان IP</span>
+                                  <span className="text-xs font-bold text-slate-400 block">{t('new.key.na0rwm')}</span>
                                   <span className="text-sm font-mono text-slate-600 bg-slate-100 px-2 py-0.5 rounded">{log.ip_address}</span>
                                </div>
                             </div>
@@ -581,7 +581,7 @@ export default function AuditLogs() {
                         <div className="space-y-2">
                           <div className="flex items-center gap-2 mb-1">
                              <div className="p-1 bg-blue-50 rounded"><Code2 size={14} className="text-blue-500" /></div>
-                             <span className="text-xs font-bold text-slate-500">تفاصيل العملية</span>
+                             <span className="text-xs font-bold text-slate-500">{t('new.key.242vyk')}</span>
                           </div>
                           <DetailsViewer details={log.details || ''} />
                         </div>
@@ -599,7 +599,7 @@ export default function AuditLogs() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-200">
              {/* Same pagination logic as before */}
              <div className="flex items-center gap-3">
-               <span className="text-xs font-bold text-slate-500">عدد العناصر في الصفحة</span>
+               <span className="text-xs font-bold text-slate-500">{t('new.key.oj91vl')}</span>
                <select
                  value={itemsPerPage}
                  onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}

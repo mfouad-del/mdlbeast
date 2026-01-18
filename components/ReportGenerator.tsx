@@ -81,7 +81,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
     const tableRows = filteredDocs.map(doc => {
       const barcode = doc.barcode || (doc.referenceNumber || '')
       const title = doc.subject || doc.title || doc.description || '—'
-      const typeStr = (doc.type === DocType.INCOMING || String(doc.status) === 'وارد' || String(barcode).toUpperCase().startsWith('IN')) ? t('archive.incoming') : t('archive.outgoing')
+      const typeStr = (doc.type === DocType.INCOMING || String(doc.status) === t('new.key.3mij8b') || String(barcode).toUpperCase().startsWith('IN')) ? t('archive.incoming') : t('archive.outgoing')
       /* const counterparty = (typeStr === t('archive.outgoing') || doc.type === DocType.OUTGOING) // FIX: logic with translated string is risky */
       const isOutgoing = doc.type === DocType.OUTGOING || String(barcode).toUpperCase().startsWith('OUT');
       const counterparty = isOutgoing
@@ -389,7 +389,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ docs, settings }) => 
 
                 <button
                   onClick={() => {
-                    import('../lib/barcode-service').then(m => m.exportToCSV(filteredDocs, `Report_${startDate}_${endDate}`))
+                    import('../lib/barcode-service').then(m => m.exportToCSV(t, filteredDocs, `Report_${startDate}_${endDate}`))
                   }}
                   disabled={filteredDocs.length === 0}
                   className="flex items-center gap-3 bg-slate-800 text-white px-8 py-4 rounded-2xl font-black hover:bg-slate-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-slate-700"

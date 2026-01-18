@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FileSignature, Stamp, Upload, User, Mail, Shield, Save, X } from 'lucide-react';
 import { apiClient } from '../lib/api-client';
 import { useToast } from '../hooks/use-toast';
+import { useI18n } from '../lib/i18n-context'
 
 interface UserProfileProps {
   user: {
@@ -18,6 +19,7 @@ interface UserProfileProps {
 }
 
 const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdate, onClose }) => {
+  const { t } = useI18n()
   const [isUploadingSignature, setIsUploadingSignature] = useState(false);
   const [isUploadingStamp, setIsUploadingStamp] = useState(false);
   const [signatureUrl, setSignatureUrl] = useState(user.signature_url || '');
@@ -44,7 +46,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdate, onClose }) =>
       const uploadedUrl = result.url || result.file?.url;
 
       if (!uploadedUrl) {
-        throw new Error('لم يتم الحصول على رابط الملف');
+        throw new Error(t('new.key.n5kma4'));
       }
 
       // Get signed URL for immediate preview
@@ -82,8 +84,8 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdate, onClose }) =>
       setUploadSuccess(type);
       
       toast({
-        title: '✅ تم الرفع بنجاح',
-        description: `تم رفع ${type === 'signature' ? 'التوقيع الشخصي' : 'ختم القسم'} وحفظه بنجاح`
+        title: t('new.key.ph5k5r'),
+        description: `تم رفع ${type === 'signature' ? t('new.key.8z3vdy') : t('new.key.smt68h')} وحفظه بنجاح`
       });
 
       // Refresh parent component
@@ -94,8 +96,8 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdate, onClose }) =>
     } catch (error: any) {
       console.error('Upload error:', error);
       toast({
-        title: '❌ فشل الرفع',
-        description: error.message || `فشل رفع ${type === 'signature' ? 'التوقيع' : 'الختم'}. حاول مرة أخرى`,
+        title: t('new.key.ktsdwi'),
+        description: error.message || `فشل رفع ${type === 'signature' ? t('new.key.aux3wf') : t('new.key.syiuj3')}. حاول مرة أخرى`,
         variant: 'destructive'
       });
     } finally {
@@ -118,8 +120,8 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdate, onClose }) =>
                 <User size={32} className="text-blue-600" />
               </div>
               <div>
-                <h2 className="text-2xl font-black text-slate-900">الملف الشخصي</h2>
-                <p className="text-sm text-slate-500 font-bold mt-1">إدارة بياناتك والتوقيع والختم</p>
+                <h2 className="text-2xl font-black text-slate-900">{t('new.key.vfvtej')}</h2>
+                <p className="text-sm text-slate-500 font-bold mt-1">{t('new.key.ratx9j')}</p>
               </div>
             </div>
             <button
@@ -138,7 +140,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdate, onClose }) =>
             <div className="flex items-center gap-3">
               <User size={18} className="text-slate-400" />
               <div>
-                <div className="text-xs text-slate-400 font-bold">الاسم الكامل</div>
+                <div className="text-xs text-slate-400 font-bold">{t('new.key.xv37yo')}</div>
                 <div className="text-lg font-black text-slate-900">{user.full_name || user.username}</div>
               </div>
             </div>
@@ -146,7 +148,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdate, onClose }) =>
               <div className="flex items-center gap-3">
                 <Mail size={18} className="text-slate-400" />
                 <div>
-                  <div className="text-xs text-slate-400 font-bold">البريد الإلكتروني</div>
+                  <div className="text-xs text-slate-400 font-bold">{t('new.key.xonpjt')}</div>
                   <div className="text-lg font-black text-slate-900">{user.email}</div>
                 </div>
               </div>
@@ -154,11 +156,11 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdate, onClose }) =>
             <div className="flex items-center gap-3">
               <Shield size={18} className="text-slate-400" />
               <div>
-                <div className="text-xs text-slate-400 font-bold">الدور الوظيفي</div>
+                <div className="text-xs text-slate-400 font-bold">{t('new.key.13fngm')}</div>
                 <div className="text-lg font-black text-slate-900">
-                  {user.role === 'admin' ? 'مدير نظام' :
-                   user.role === 'manager' ? 'مدير تنفيذي' :
-                   user.role === 'supervisor' ? 'مدير مباشر' : 'مستخدم عادي'}
+                  {user.role === 'admin' ? t('new.key.fi5d2u') :
+                   user.role === 'manager' ? t('new.key.r4zoim') :
+                   user.role === 'supervisor' ? t('new.key.fg3v8a') : t('new.key.sslfao')}
                 </div>
               </div>
             </div>
@@ -169,32 +171,28 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdate, onClose }) =>
             <div className="space-y-6">
               <div className="flex items-center gap-2 text-slate-700 font-black text-sm">
                 <FileSignature size={20} />
-                <span>التوقيع والختم</span>
+                <span>{t('new.key.8ovgwj')}</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Signature */}
                 <div className="bg-slate-50 p-6 rounded-2xl space-y-4 relative">
                   {uploadSuccess === 'signature' && (
-                    <div className="absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded-lg text-xs font-bold animate-pulse">
-                      ✓ تم الرفع
-                    </div>
+                    <div className="absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded-lg text-xs font-bold animate-pulse">{t('new.key.gcylk8')}</div>
                   )}
-                  <div className="text-xs font-black text-slate-500 uppercase tracking-widest">
-                    التوقيع الشخصي
-                  </div>
+                  <div className="text-xs font-black text-slate-500 uppercase tracking-widest">{t('new.key.8z3vdy')}</div>
                   {signatureUrl ? (
                     <div className="bg-white p-4 rounded-xl border-2 border-green-200 shadow-sm">
                       <img
                         src={signatureUrl}
-                        alt="التوقيع"
+                        alt={t('new.key.aux3wf')}
                         className="h-20 w-full object-contain"
                         key={signatureUrl} // Force re-render on URL change
                       />
                     </div>
                   ) : (
                     <div className="bg-white p-4 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center h-28">
-                      <p className="text-sm text-slate-400 font-bold">لا يوجد توقيع</p>
+                      <p className="text-sm text-slate-400 font-bold">{t('new.key.9ktbmy')}</p>
                     </div>
                   )}
                   <label className={`cursor-pointer flex items-center justify-center gap-3 p-4 rounded-xl font-bold transition-all ${
@@ -205,7 +203,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdate, onClose }) =>
                         : 'bg-blue-600 hover:bg-blue-700'
                   } text-white`}>
                     <Upload size={18} className={isUploadingSignature ? 'animate-bounce' : ''} />
-                    {isUploadingSignature ? 'جارٍ الرفع...' : signatureUrl ? 'تغيير التوقيع' : 'رفع توقيع'}
+                    {isUploadingSignature ? t('new.key.mqfjq4') : signatureUrl ? t('new.key.pvk4uq') : t('new.key.g8o1ib')}
                     <input
                       type="file"
                       accept="image/*"
@@ -217,33 +215,27 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdate, onClose }) =>
                       }}
                     />
                   </label>
-                  <p className="text-xs text-slate-500 text-center">
-                    يفضل صورة شفافة (PNG) بخلفية بيضاء
-                  </p>
+                  <p className="text-xs text-slate-500 text-center">{t('new.key.v88pv6')}</p>
                 </div>
 
                 {/* Stamp */}
                 <div className="bg-slate-50 p-6 rounded-2xl space-y-4 relative">
                   {uploadSuccess === 'stamp' && (
-                    <div className="absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded-lg text-xs font-bold animate-pulse">
-                      ✓ تم الرفع
-                    </div>
+                    <div className="absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded-lg text-xs font-bold animate-pulse">{t('new.key.gcylk8')}</div>
                   )}
-                  <div className="text-xs font-black text-slate-500 uppercase tracking-widest">
-                    ختم القسم
-                  </div>
+                  <div className="text-xs font-black text-slate-500 uppercase tracking-widest">{t('new.key.smt68h')}</div>
                   {stampUrl ? (
                     <div className="bg-white p-4 rounded-xl border-2 border-green-200 shadow-sm">
                       <img
                         src={stampUrl}
-                        alt="الختم"
+                        alt={t('new.key.syiuj3')}
                         className="h-20 w-full object-contain"
                         key={stampUrl} // Force re-render on URL change
                       />
                     </div>
                   ) : (
                     <div className="bg-white p-4 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center h-28">
-                      <p className="text-sm text-slate-400 font-bold">لا يوجد ختم</p>
+                      <p className="text-sm text-slate-400 font-bold">{t('new.key.t09xba')}</p>
                     </div>
                   )}
                   <label className={`cursor-pointer flex items-center justify-center gap-3 p-4 rounded-xl font-bold transition-all ${
@@ -254,7 +246,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdate, onClose }) =>
                         : 'bg-indigo-600 hover:bg-indigo-700'
                   } text-white`}>
                     <Stamp size={18} className={isUploadingStamp ? 'animate-bounce' : ''} />
-                    {isUploadingStamp ? 'جارٍ الرفع...' : stampUrl ? 'تغيير الختم' : 'رفع ختم'}
+                    {isUploadingStamp ? t('new.key.mqfjq4') : stampUrl ? t('new.key.uuuqdn') : t('new.key.p1snsu')}
                     <input
                       type="file"
                       accept="image/*"
@@ -266,9 +258,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdate, onClose }) =>
                       }}
                     />
                   </label>
-                  <p className="text-xs text-slate-500 text-center">
-                    يفضل صورة شفافة (PNG) بخلفية بيضاء
-                  </p>
+                  <p className="text-xs text-slate-500 text-center">{t('new.key.v88pv6')}</p>
                 </div>
               </div>
             </div>
@@ -280,9 +270,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, onUpdate, onClose }) =>
           <button
             onClick={onClose}
             className="px-8 py-4 bg-slate-100 hover:bg-slate-200 rounded-2xl font-bold transition-colors"
-          >
-            إغلاق
-          </button>
+          >{t('new.key.3lajib')}</button>
         </div>
       </div>
     </div>

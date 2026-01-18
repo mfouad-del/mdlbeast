@@ -18,8 +18,10 @@ export default function RootLayout({
     <html lang="en" dir="ltr" suppressHydrationWarning>
       <body suppressHydrationWarning>
         <ServiceWorkerRegister />
-        <InstallPWA />
-        <Providers>{children}</Providers>
+        <Providers>
+          <InstallPWA />
+          {children}
+        </Providers>
       </body>
     </html>
   )

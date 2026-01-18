@@ -1472,7 +1472,7 @@ export function LanguageSwitcher({ variant = 'button', className = '' }: Languag
         onChange={(e) => setLanguage(e.target.value as Language)}
         className={`px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
       >
-        <option value="ar">العربية</option>
+        <option value="ar">{'العربية'}</option>
         <option value="en">English</option>
       </select>
     )

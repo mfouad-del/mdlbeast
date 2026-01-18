@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Download, X, Monitor, Smartphone } from 'lucide-react'
+import { useI18n } from '../lib/i18n-context'
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
@@ -9,6 +10,7 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export default function InstallPWA() {
+  const { t } = useI18n()
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [showInstallBanner, setShowInstallBanner] = useState(false)
   const [isInstalled, setIsInstalled] = useState(false)
@@ -22,6 +24,7 @@ export default function InstallPWA() {
 
     // Listen for the beforeinstallprompt event
     const handleBeforeInstallPrompt = (e: Event) => {
+  const { t } = useI18n()
       e.preventDefault()
       setDeferredPrompt(e as BeforeInstallPromptEvent)
       setShowInstallBanner(true)
@@ -98,10 +101,8 @@ export default function InstallPWA() {
         </div>
 
         <div className="flex-1">
-          <h3 className="font-black text-slate-900 text-sm mb-1">تثبيت MDLBEAST</h3>
-          <p className="text-xs text-slate-500 mb-3">
-            ثبّت التطبيق على جهازك للوصول السريع والعمل بدون اتصال
-          </p>
+          <h3 className="font-black text-slate-900 text-sm mb-1">{t('new.key.azd003')}</h3>
+          <p className="text-xs text-slate-500 mb-3">{t('new.key.s7138l')}</p>
 
           <div className="flex items-center gap-2 text-[10px] text-slate-400 mb-3">
             <Monitor size={12} />
@@ -115,9 +116,7 @@ export default function InstallPWA() {
             onClick={handleInstallClick}
             className="w-full bg-slate-900 text-white py-2.5 rounded-xl font-bold text-sm hover:bg-black transition-all flex items-center justify-center gap-2 active:scale-95"
           >
-            <Download size={16} />
-            تثبيت التطبيق
-          </button>
+            <Download size={16} />{t('new.key.cjei03')}</button>
         </div>
       </div>
     </div>

@@ -142,7 +142,7 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
     const matchesStartDate = !startDate || docDate >= startDate
     const matchesEndDate = !endDate || docDate <= endDate
 
-    const matchesDirection = directionFilter === 'ALL' || (directionFilter === 'INCOMING' && (doc.status === 'وارد' || (doc.type === 'INCOMING'))) || (directionFilter === 'OUTGOING' && (doc.status === 'صادر' || (doc.type === 'OUTGOING')))
+    const matchesDirection = directionFilter === 'ALL' || (directionFilter === 'INCOMING' && (doc.status === t('new.key.3mij8b') || (doc.type === 'INCOMING'))) || (directionFilter === 'OUTGOING' && (doc.status === t('new.key.5fsw78') || (doc.type === 'OUTGOING')))
 
     return matchesSearch && matchesStartDate && matchesEndDate && matchesDirection
   })
@@ -210,16 +210,16 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
 
           {/* Type Filter */}
           <div className="md:col-span-3 lg:col-span-2 space-y-2">
-            <label className="text-xs font-bold text-slate-500 mr-2">نوع القيد</label>
+            <label className="text-xs font-bold text-slate-500 mr-2">{t('new.key.c0aose')}</label>
             <div className="relative">
               <select
                 className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm outline-none focus:bg-white focus:border-blue-500 transition-all appearance-none cursor-pointer text-slate-700"
                 value={directionFilter}
                 onChange={(e) => setDirectionFilter(e.target.value as any)}
               >
-                <option value="ALL">الكل</option>
-                <option value="INCOMING">وارد</option>
-                <option value="OUTGOING">صادر</option>
+                <option value="ALL">{t('new.key.1okjr8')}</option>
+                <option value="INCOMING">{t('new.key.3mij8b')}</option>
+                <option value="OUTGOING">{t('new.key.5fsw78')}</option>
               </select>
               <ArrowRightLeft className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
             </div>
@@ -236,7 +236,7 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
               <ArrowRightLeft size={20} />
             </button>
             <button
-              onClick={() => exportToCSV(filtered, "Registry_Report")}
+              onClick={() => exportToCSV(t, filtered, "Registry_Report")}
               className="flex-1 bg-slate-900 text-white px-4 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-slate-800 transition-all shadow-lg hover:shadow-xl active:scale-95"
               aria-label={t('archive.extractReport')}
             >
@@ -459,8 +459,8 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
                                       receiver: doc.receiver || doc.recipient || '',
                                       type: doc.type || '',
                                       date: doc.date || '',
-                                      priority: doc.priority || 'عادي',
-                                      classification: doc.classification || doc.security || 'عادي',
+                                      priority: doc.priority || t('new.key.fafis5'),
+                                      classification: doc.classification || doc.security || t('new.key.fafis5'),
                                       notes: doc.notes || '',
                                       attachmentCount: doc.attachmentCount || '0'
                                     })
@@ -638,8 +638,8 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
                               receiver: doc.receiver || doc.recipient || '',
                               type: doc.type || '',
                               date: doc.date || '',
-                              priority: doc.priority || 'عادي',
-                              classification: doc.classification || doc.security || 'عادي',
+                              priority: doc.priority || t('new.key.fafis5'),
+                              classification: doc.classification || doc.security || t('new.key.fafis5'),
                               notes: doc.notes || '',
                               attachmentCount: doc.attachmentCount || doc.attachment_count || '0'
                             })
@@ -773,7 +773,7 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
           <div className="bg-white rounded-[2.5rem] shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-300">
             <div className="p-8 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white">
               <div>
-                <h2 className="text-2xl font-black text-slate-900">تعديل القيد</h2>
+                <h2 className="text-2xl font-black text-slate-900">{t('new.key.ceqt83')}</h2>
                 <p className="text-sm text-slate-500 mt-1">الباركود: {editingDoc.barcode}</p>
               </div>
               <button 
@@ -873,9 +873,9 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
                     onChange={(e) => setEditFormData({...editFormData, priority: e.target.value})}
                     className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all font-bold cursor-pointer"
                   >
-                    <option value="عاديه">{t('archive.normal')}</option>
-                    <option value="عاجله">{t('archive.urgent')}</option>
-                    <option value="عاجل">{t('archive.topPriority')}</option>
+                    <option value={t('new.key.aalvvw')}>{t('archive.normal')}</option>
+                    <option value={t('new.key.xpy7gp')}>{t('archive.urgent')}</option>
+                    <option value={t('new.key.6c24cm')}>{t('archive.topPriority')}</option>
                   </select>
                 </div>
               </div>
@@ -898,7 +898,7 @@ export default function DocumentList({ docs, settings, currentUser, users: _user
                   onChange={(e) => setEditFormData({...editFormData, classification: e.target.value})}
                   className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all font-bold cursor-pointer"
                 >
-                  <option value="عادي">{t('archive.normal')}</option>
+                  <option value={t('new.key.fafis5')}>{t('archive.normal')}</option>
                   <option value="سري">{t('archive.secret')}</option>
                 </select>
               </div>

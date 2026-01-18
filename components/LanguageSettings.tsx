@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import { Globe, Check } from 'lucide-react'
 import { getCurrentLanguage, setCurrentLanguage, Language, t } from '@/lib/translations'
+import { useI18n } from '../lib/i18n-context'
 
 export default function LanguageSettings() {
   const [selectedLang, setSelectedLang] = useState<Language>('en')
@@ -12,6 +13,7 @@ export default function LanguageSettings() {
   }, [])
 
   const handleLanguageChange = (lang: Language) => {
+  const { t } = useI18n()
     setSelectedLang(lang)
     setCurrentLanguage(lang)
     setSaved(true)
@@ -76,8 +78,8 @@ export default function LanguageSettings() {
             )}
           </div>
           <div className="text-right">
-            <div className="text-lg font-black text-slate-900">العربية</div>
-            <div className="text-xs text-slate-500 mt-1">اللغة الثانوية</div>
+            <div className="text-lg font-black text-slate-900">{t('new.key.mopwuy' as any)}</div>
+            <div className="text-xs text-slate-500 mt-1">{t('new.key.56lbpw' as any)}</div>
           </div>
         </button>
       </div>
@@ -96,7 +98,7 @@ export default function LanguageSettings() {
             <p className="font-semibold mb-2">{selectedLang === 'ar' ? 'ملاحظة:' : 'Note:'}</p>
             <p>
               {selectedLang === 'ar' 
-                ? 'سيتم تطبيق اللغة المختارة على جميع عناصر الواجهة وسيتم إعادة تحميل الصفحة تلقائياً.'
+                ? t('new.key.vnf8el' as any)
                 : 'The selected language will be applied to all interface elements and the page will reload automatically.'}
             </p>
           </div>

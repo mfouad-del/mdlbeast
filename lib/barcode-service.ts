@@ -6,11 +6,11 @@ export const generateBusinessBarcode = (prefix: string): string => {
   return `${prefix}-${year}${month}${day}-${random}`
 }
 
-export const exportToCSV = (documents: any[], filename: string) => {
-  const headers = ["الباركود", "النوع", "المرسل", "المستقبل", "التاريخ", "الموضوع", "الأولوية", "الحالة"]
+export const exportToCSV = (t: (key: string) => string, documents: any[], filename: string) => {
+  const headers = [t('new.key.kjtued'), t('new.key.86qtwg'), t('new.key.f9qhpu'), t('new.key.tuk67u'), t('new.key.euz7yf'), t('new.key.evow01'), t('new.key.3yn3iw'), t('new.key.hgd4pf')]
   const rows = documents.map((doc) => [
     doc.barcode,
-    doc.type === "INCOMING" ? "وارد" : "صادر",
+    doc.type === "INCOMING" ? t('new.key.3mij8b') : t('new.key.5fsw78'),
     doc.sender,
     doc.receiver || doc.recipient,
     doc.date,

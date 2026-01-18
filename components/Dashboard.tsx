@@ -29,7 +29,7 @@ export default function Dashboard({ docs }: DashboardProps) {
   // Note: prop based stats are likely wrong due to pagination, so prefer API stats
   const incoming = stats.total > 0 ? stats.incoming : docs.filter((d) => d.type === "INCOMING").length
   const outgoing = stats.total > 0 ? stats.outgoing : docs.filter((d) => d.type === "OUTGOING").length
-  const urgent = stats.total > 0 ? stats.urgent : docs.filter((d) => d.priority === "عاجل جداً" || d.priority === "عاجل" || d.priority === "عاجله").length
+  const urgent = stats.total > 0 ? stats.urgent : docs.filter((d) => d.priority === t('new.key.iewttb') || d.priority === t('new.key.6c24cm') || d.priority === t('new.key.xpy7gp')).length
   const total = stats.total > 0 ? stats.total : docs.length
 
   const parseDocDate = (d: Correspondence) => {
@@ -70,8 +70,8 @@ export default function Dashboard({ docs }: DashboardProps) {
     { name: t('dashboard.outgoing'), value: outgoing, color: "#8b5cf6" },
   ]
 
-  const normalCount = docs.filter((d) => d.priority === "عادي" || d.priority === "عاديه").length
-  const urgentCount = docs.filter((d) => d.priority === "عاجل" || d.priority === "عاجل جداً" || d.priority === "عاجله").length
+  const normalCount = docs.filter((d) => d.priority === t('new.key.fafis5') || d.priority === t('new.key.aalvvw')).length
+  const urgentCount = docs.filter((d) => d.priority === t('new.key.6c24cm') || d.priority === t('new.key.iewttb') || d.priority === t('new.key.xpy7gp')).length
   
   const priorityData = [
     { name: t('dashboard.registered'), value: normalCount, color: "#10b981" }, 
@@ -341,17 +341,17 @@ export default function Dashboard({ docs }: DashboardProps) {
               <div className="flex items-center gap-4">
                 <div
                   className={`w-11 h-11 rounded-xl flex items-center justify-center ${
-                    doc.type === "INCOMING" || (doc.type as string) === 'وارد'
+                    doc.type === "INCOMING" || (doc.type as string) === t('new.key.3mij8b')
                       ? "bg-blue-100 text-blue-600" 
                       : "bg-purple-100 text-purple-600"
                   }`}
                 >
-                  {(doc.type === "INCOMING" || (doc.type as string) === 'وارد') ? <ArrowDownLeft size={18} /> : <ArrowUpRight size={18} />}
+                  {(doc.type === "INCOMING" || (doc.type as string) === t('new.key.3mij8b')) ? <ArrowDownLeft size={18} /> : <ArrowUpRight size={18} />}
                 </div>
                 <div>
                   <div className="text-sm font-black text-slate-900 mb-0.5 group-hover:text-blue-600 transition-colors">{doc.title || doc.subject}</div>
                   <div className="flex items-center gap-2 text-xs text-slate-400">
-                    <span>{(doc.type === 'OUTGOING' || (doc.type as string) === 'صادر') ? doc.recipient : doc.sender}</span>
+                    <span>{(doc.type === 'OUTGOING' || (doc.type as string) === t('new.key.5fsw78')) ? doc.recipient : doc.sender}</span>
                     <span className="w-1 h-1 rounded-full bg-slate-300"></span>
                     <span dir="ltr">
                       {(() => {

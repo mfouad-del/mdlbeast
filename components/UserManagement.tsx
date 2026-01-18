@@ -249,7 +249,7 @@ const UserNode = ({ data }: { data: { user: UserWithChildren, onEdit: (user: Use
                 {getRoleLabel(user.role)}
             </span>
              {user.is_active === false && (
-                 <span className="text-[9px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded">غير نشط</span>
+                 <span className="text-[9px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded">{t('new.key.u0zu52')}</span>
              )}
         </div>
       </div>
@@ -259,14 +259,14 @@ const UserNode = ({ data }: { data: { user: UserWithChildren, onEdit: (user: Use
         <button
           onClick={(e) => { e.stopPropagation(); onEdit(user) }}
           className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all nodrag"
-          title="تعديل"
+          title={t('new.key.8x92zx')}
         >
           <Edit3 size={14} />
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(user) }}
           className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all nodrag"
-          title="حذف"
+          title={t('new.key.onrqgj')}
         >
           <Trash2 size={14} />
         </button>
@@ -512,18 +512,14 @@ const PermissionsEditor: React.FC<PermissionsEditorProps> = ({ permissions, onCh
                         onClick={() => handleBulkChange(true)}
                         disabled={!canManagePermissions}
                         className="text-xs font-bold text-slate-600 hover:text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors"
-                    >
-                        تفعيل الجميع
-                    </button>
+                    >{t('new.key.1b0kgn')}</button>
                     <div className="w-px h-6 bg-slate-200 my-auto"></div>
                     <button
                         type="button"
                         onClick={() => handleBulkChange(false)}
                         disabled={!canManagePermissions}
                          className="text-xs font-bold text-slate-600 hover:text-red-600 hover:bg-red-50 px-3 py-2 rounded-lg transition-colors"
-                    >
-                        إلغاء الجميع
-                    </button>
+                    >{t('new.key.g9euun')}</button>
                 </div>
             </div>
 
@@ -547,9 +543,7 @@ const PermissionsEditor: React.FC<PermissionsEditorProps> = ({ permissions, onCh
                                                 {label}
                                             </span>
                                             {isDiff && currentMode === 'inherit' && (
-                                                <span className="text-[10px] text-amber-600 mt-0.5">
-                                                    * مختلف عن الدور
-                                                </span>
+                                                <span className="text-[10px] text-amber-600 mt-0.5">{t('new.key.6z4cq9')}</span>
                                             )}
                                         </div>
                                         <Switch
@@ -777,8 +771,8 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
 
     if (isOwnChild(targetNode.id, dragged.id.toString())) {
       toast({
-        title: 'غير مسموح',
-        description: 'لا يمكن نقل المستخدم تحت أحد التابعين له',
+        title: t('new.key.dmzvj3'),
+        description: t('new.key.fpcbfb'),
         variant: 'destructive',
       })
       setDraggedUser(null)
@@ -791,7 +785,7 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
 
       const targetData = targetNode.data as { user: UserWithChildren }
       toast({
-        title: 'تم النقل',
+        title: t('new.key.ccv9y2'),
         description: `تم نقل ${dragged.full_name} تحت ${targetData.user.full_name}`,
       })
 
@@ -799,8 +793,8 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
       onUpdateUsers(updatedUsers)
     } catch {
       toast({
-        title: 'خطأ',
-        description: 'فشل نقل المستخدم',
+        title: t('new.key.1faeys'),
+        description: t('new.key.fvefot'),
         variant: 'destructive',
       })
     } finally {
@@ -923,8 +917,8 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
         }
         
         toast({
-          title: "تم التحديث",
-          description: "تم تحديث بيانات المستخدم بنجاح"
+          title: t('new.key.y67v0e'),
+          description: t('new.key.h45du7')
         })
       } else {
         // Create new user
@@ -950,8 +944,8 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
         }
 
         toast({
-          title: "تم الإنشاء",
-          description: "تم إنشاء المستخدم الجديد بنجاح"
+          title: t('new.key.mnea4e'),
+          description: t('new.key.czl5l8')
         })
       }
 
@@ -965,8 +959,8 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
       resetForm()
     } catch (err: any) {
       toast({
-        title: "خطأ",
-        description: err.message || "فشل حفظ المستخدم",
+        title: t('new.key.1faeys'),
+        description: err.message || t('new.key.wjo9hm'),
         variant: "destructive"
       })
     } finally {
@@ -987,7 +981,7 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
       const uploadedUrl = result.url || result.file?.url
 
       if (!uploadedUrl) {
-        throw new Error('لم يتم الحصول على رابط الملف')
+        throw new Error(t('new.key.n5kma4'))
       }
 
       // Get signed URL for preview
@@ -1013,13 +1007,13 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
       }
 
       toast({
-        title: "✅ تم الرفع",
-        description: `تم رفع ${type === 'signature' ? 'التوقيع' : 'الختم'} بنجاح`
+        title: t('new.key.n733ul'),
+        description: `تم رفع ${type === 'signature' ? t('new.key.aux3wf') : t('new.key.syiuj3')} بنجاح`
       })
     } catch (error: any) {
       toast({
-        title: "❌ فشل الرفع",
-        description: error.message || 'فشل رفع الملف',
+        title: t('new.key.ktsdwi'),
+        description: error.message || t('new.key.7v3omg'),
         variant: "destructive"
       })
     } finally {
