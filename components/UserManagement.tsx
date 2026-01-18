@@ -1344,8 +1344,8 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
 
           {/* Signature & Stamp Section - For managers/supervisors/admins */}
           {['manager', 'admin', 'supervisor'].includes(formData.role) && (
-            <div className="mt-6 p-4 bg-emerald-50 rounded-xl border border-emerald-200">
-              <h4 className="text-sm font-black text-emerald-700 mb-4 flex items-center gap-2">
+            <div className="mt-6 p-4 bg-slate-50 rounded-xl border border-slate-200">
+              <h4 className="text-sm font-black text-slate-700 mb-4 flex items-center gap-2">
                 <FileSignature size={16} /> {t('user.form.signature_stamp')}
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1355,7 +1355,7 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
                     {t('user.form.signature')}
                   </div>
                   {(signaturePreviewUrl || formData.signature_url) ? (
-                    <div className="bg-slate-50 p-3 rounded-lg border border-green-200 min-h-[70px] flex items-center justify-center">
+                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 min-h-[70px] flex items-center justify-center">
                       <img
                         src={signaturePreviewUrl || formData.signature_url}
                         alt="Signature"
@@ -1373,7 +1373,7 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
                   <label className={`cursor-pointer flex items-center justify-center gap-2 p-2.5 rounded-lg font-bold text-sm transition-all ${
                     isUploadingSignature 
                       ? 'bg-slate-400 cursor-wait' 
-                      : 'bg-emerald-600 hover:bg-emerald-700'
+                      : 'bg-slate-900 hover:bg-slate-800'
                   } text-white`}>
                     <Upload size={14} className={isUploadingSignature ? 'animate-bounce' : ''} />
                     {isUploadingSignature ? t('user.form.uploading') : (signaturePreviewUrl || formData.signature_url) ? t('user.form.change_signature') : t('user.form.upload_signature')}
@@ -1396,7 +1396,7 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
                     {t('user.form.stamp')}
                   </div>
                   {(stampPreviewUrl || formData.stamp_url) ? (
-                    <div className="bg-slate-50 p-3 rounded-lg border border-green-200 min-h-[70px] flex items-center justify-center">
+                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 min-h-[70px] flex items-center justify-center">
                       <img
                         src={stampPreviewUrl || formData.stamp_url}
                         alt="Stamp"
@@ -1414,7 +1414,7 @@ const UserManagementInner: React.FC<UserManagementProps> = ({
                   <label className={`cursor-pointer flex items-center justify-center gap-2 p-2.5 rounded-lg font-bold text-sm transition-all ${
                     isUploadingStamp 
                       ? 'bg-slate-400 cursor-wait' 
-                      : 'bg-emerald-600 hover:bg-emerald-700'
+                      : 'bg-slate-900 hover:bg-slate-800'
                   } text-white`}>
                     <Stamp size={14} className={isUploadingStamp ? 'animate-bounce' : ''} />
                     {isUploadingStamp ? t('user.form.uploading') : (stampPreviewUrl || formData.stamp_url) ? t('user.form.change_stamp') : t('user.form.upload_stamp')}
