@@ -379,7 +379,11 @@ const App: React.FC = () => {
       <button 
         onClick={() => setActiveTab(id)} 
         title={isSidebarCollapsed ? label : ''}
-        className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-5'} py-3.5 rounded-xl text-sm font-bold transition-all ${activeTab === id ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-600 hover:bg-white hover:text-slate-900 hover:shadow-sm'}`}
+        className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-4'} py-3 rounded-lg text-xs font-bold transition-all duration-200 ${
+          activeTab === id 
+            ? 'bg-slate-900 text-white shadow-md shadow-slate-900/10' 
+            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+        }`}
       >
         <Icon size={isSidebarCollapsed ? 20 : 18} />
         {!isSidebarCollapsed && <span>{label}</span>}
@@ -407,27 +411,31 @@ const App: React.FC = () => {
    }
 
     return (
-      <div className="mb-2">
+      <div className={`mb-3 transition-all duration-300 ${isExpanded ? 'bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden' : 'px-2'}`}>
         <button
           onClick={() => toggleSection(id)}
-          className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-[11px] font-black transition-all group ${
+          className={`w-full flex items-center justify-between px-4 py-3.5 ${!isExpanded && 'rounded-xl'} text-xs font-bold transition-all group ${
             dir === 'rtl' 
-              ? 'text-slate-700 hover:bg-slate-100 hover:text-slate-900' 
-              : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 uppercase tracking-widest'
-          } ${isExpanded ? 'bg-slate-50 text-slate-900' : ''}`}
+              ? 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' 
+              : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 uppercase tracking-wide'
+          } ${isExpanded ? 'bg-slate-50/50 text-slate-900 border-b border-slate-100' : ''}`}
         >
-          <div className="flex items-center gap-2 text-start leading-tight overflow-hidden">
-            <Icon size={16} className={`${isExpanded ? 'text-slate-900' : 'text-slate-400 group-hover:text-slate-900'} transition-colors shrink-0`} />
+          <div className="flex items-center gap-3 text-start leading-tight overflow-hidden">
+            <Icon size={18} className={`${isExpanded ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-600'} transition-colors shrink-0`} />
             <span className="truncate">{title}</span>
           </div>
           <ChevronDown 
             size={14} 
-            className={`transition-transform duration-200 text-slate-400 group-hover:text-slate-900 ${isExpanded ? 'rotate-180 text-slate-900' : ''} shrink-0`} 
+            className={`transition-transform duration-300 text-slate-400 group-hover:text-slate-600 ${isExpanded ? 'rotate-180 text-blue-600' : ''} shrink-0`} 
           />
         </button>
-        <div className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
-          <div className="space-y-1 pt-1 ps-3">
-            {children}
+        <div 
+          className={`grid transition-[grid-template-rows] duration-300 ease-out ${isExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+        >
+          <div className="overflow-hidden">
+            <div className="space-y-1 p-2 pt-3">
+              {children}
+            </div>
           </div>
         </div>
       </div>

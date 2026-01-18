@@ -209,13 +209,13 @@ const UserNode = ({ data }: { data: { user: UserWithChildren, onEdit: (user: Use
 
       {/* Avatar - Larger & Centered Vertical Alignment */}
       <div className="shrink-0 pt-1">
-        {(user as any).profile_picture_url ? (
+        {((user as any).avatar_url || (user as any).profile_picture_url) ? (
             <img 
-            src={(user as any).profile_picture_url.startsWith('http') 
-                ? (user as any).profile_picture_url 
-                : `/uploads/proxy?key=${(user as any).profile_picture_url}`}
+            src={((user as any).avatar_url || (user as any).profile_picture_url).startsWith('http') 
+                ? ((user as any).avatar_url || (user as any).profile_picture_url) 
+                : `/uploads/proxy?key=${((user as any).avatar_url || (user as any).profile_picture_url)}`}
             alt={user.full_name || user.username}
-            className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
+            className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm bg-white"
             onError={(e) => {
                 e.currentTarget.style.display = 'none';
                 const fallback = e.currentTarget.nextElementSibling as HTMLElement;
@@ -225,7 +225,7 @@ const UserNode = ({ data }: { data: { user: UserWithChildren, onEdit: (user: Use
         ) : null}
         <div 
             className="w-12 h-12 rounded-full bg-slate-800 text-white items-center justify-center font-bold text-lg border-2 border-white shadow-sm"
-            style={{ display: (user as any).profile_picture_url ? 'none' : 'flex' }}
+            style={{ display: ((user as any).avatar_url || (user as any).profile_picture_url) ? 'none' : 'flex' }}
         >
             {(user.full_name || user.username || '').substring(0, 2).toUpperCase()}
         </div>
